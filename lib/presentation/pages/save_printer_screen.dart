@@ -1,0 +1,169 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../data/models/printer_model.dart';
+import '../../logic/pos_controller.dart';
+import '../../theme/app_colors.dart';
+
+class SavePrinterScreen extends StatefulWidget {
+  final PrinterModel? printer;
+  
+  const SavePrinterScreen({super.key, this.printer});
+
+  @override
+  State<SavePrinterScreen> createState() => _SavePrinterScreenState();
+}
+
+class _SavePrinterScreenState extends State<SavePrinterScreen> {
+  final POSController pos = Get.find<POSController>();
+  
+  late TextEditingController _nameController;
+  late TextEditingController _ipController;
+  late TextEditingController _portController;
+  final RxList<String> _assignedAreas = <String>[].obs;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.printer?.name ?? "");
+    _ipController = TextEditingController(text: widget.printer?.ipAddress ?? "192.168.1.100");
+    _portController = TextEditingController(text: widget.printer?.port.toString() ?? "9100");
+    
+    if (widget.printer != null) {
+      _assignedAreas.addAll(widget.printer!.assignedAreas);
+    } else {
+      _assignedAreas.add("Cashier"); // Default logic
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _ipController.dispose();
+    _portController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (_nameController.text.trim().isEmpty) {
+      Get.snackbar("error".tr, "name_required".tr, backgroundColor: Colors.red, colorText: Colors.white);
+      return;
+    }
+    if (_ipController.text.trim().isEmpty) {
+      Get.snackbar("error".tr, "IP address required", backgroundColor: Colors.red, colorText: Colors.white);
+      return;
+    }
+
+    final newPrinter = PrinterModel(
+      id: widget.printer?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      name: _nameController.text.trim(),
+      ipAddress: _ipController.text.trim(),
+      port: int.tryParse(_portController.text) ?? 9100,
+      assignedAreas: _assignedAreas.toList(),
+      isDefault: widget.printer?.isDefault ?? false,
+    );
+
+    if (widget.printer == null) {
+      pos.addPrinter(newPrinter);
+    } else {
+      pos.updatePrinter(newPrinter);
+    }
+
+    Get.back();
+    Get.snackbar("success".tr, widget.printer == null ? "Printer Added" : "Printer Updated",
+      backgroundColor: Colors.green, colorText: Colors.white);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Available areas: Cashier + from controller
+    final List<String> availableAreas = ["Cashier", ...pos.preparationAreas];
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(widget.printer == null ? "add_printer".tr : "edit_printer".tr),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check, color: AppColors.primary),
+            onPressed: _save,
+          )
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildTextField("printer_name".tr, _nameController),
+            const SizedBox(height: 16),
+            _buildTextField("IP Address", _ipController, keyboardType: TextInputType.url), // proper keyboard later
+            const SizedBox(height: 16),
+            _buildTextField("Port", _portController, keyboardType: TextInputType.number),
+            const SizedBox(height: 24),
+            
+            Text("assigned_areas".tr, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Obx(() => Column(
+                children: availableAreas.map((area) => CheckboxListTile(
+                  title: Text(area.tr), // Translate area name
+                  value: _assignedAreas.contains(area),
+                  activeColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onChanged: (val) {
+                    if (val == true) {
+                      _assignedAreas.add(area);
+                    } else {
+                      _assignedAreas.remove(area);
+                    }
+                  },
+                )).toList(),
+              )),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: ElevatedButton(
+          onPressed: _save,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 56),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          child: Text("save".tr ?? "Save", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, {TextInputType? keyboardType}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.primary, width: 2)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+      ],
+    );
+  }
+}

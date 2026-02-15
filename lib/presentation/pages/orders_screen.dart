@@ -1,0 +1,408 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import '../../theme/app_colors.dart';
+import '../../logic/pos_controller.dart';
+import '../../data/models/food_item.dart';
+import 'home_screen.dart';
+import 'table_selection_screen.dart';
+import 'cart_screen.dart';
+
+class OrdersScreen extends StatelessWidget {
+  const OrdersScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final POSController pos = Get.find<POSController>();
+
+    final List<FoodItem> catalog = [
+      const FoodItem(id: "1", name: "Cheesy Beef Burger", description: "", price: 12.99, imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=600"),
+      const FoodItem(id: "2", name: "Pepperoni Pizza", description: "", price: 14.50, imageUrl: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?q=80&w=600"),
+      const FoodItem(id: "3", name: "Crispy Fried Chicken", description: "", price: 9.99, imageUrl: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?q=80&w=600"),
+      const FoodItem(id: "4", name: "Fresh Orange Juice", description: "", price: 4.50, imageUrl: "https://images.unsplash.com/photo-1613478223719-2ab802602423?q=80&w=600"),
+    ];
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: Text("order_management".tr),
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.language),
+            onPressed: () => _showLanguageSwitcher(context),
+          ),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: "active".tr),
+              Tab(text: "history".tr),
+            ],
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.primary,
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => pos.allOrders.refresh(),
+            )
+          ],
+        ),
+        body: TabBarView(
+          children: [
+            Obx(() {
+              final activeOrders = pos.allOrders.where((o) => o['status'] != "Completed").toList();
+              return activeOrders.isEmpty
+                  ? _buildEmptyState("no_active_orders".tr, "start_new_sale".tr)
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 100),
+                      itemCount: activeOrders.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) => _buildSlidableOrderCard(activeOrders[index], pos, catalog),
+                    );
+            }),
+            Obx(() {
+              final completedOrders = pos.allOrders.where((o) => o['status'] == "Completed").toList();
+              return completedOrders.isEmpty
+                  ? _buildEmptyState("no_completed_orders".tr, "history_empty".tr)
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 100),
+                      itemCount: completedOrders.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) => _buildSlidableOrderCard(completedOrders[index], pos, catalog),
+                    );
+            }),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showOrderTypeDialog(context, pos),
+          backgroundColor: AppColors.primary,
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
+  void _showLanguageSwitcher(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Sizning tilingiz / Ваш язык / Your Language", 
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            _buildLangItem("O'zbekcha", 'uz', 'UZ'),
+            _buildLangItem("English", 'en', 'US'),
+            _buildLangItem("Русский", 'ru', 'RU'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLangItem(String label, String langCode, String countryCode) {
+    return ListTile(
+      title: Text(label),
+      onTap: () {
+        final locale = Locale(langCode, countryCode);
+        Get.updateLocale(locale);
+        GetStorage().write('lang', '${langCode}_$countryCode');
+        Get.back();
+      },
+      trailing: Get.locale?.languageCode == langCode ? const Icon(Icons.check, color: AppColors.primary) : null,
+    );
+  }
+
+  Widget _buildSlidableOrderCard(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog) {
+    final bool isActive = order['status'] != "Completed";
+
+    return Slidable(
+      key: ValueKey(order['id']),
+      startActionPane: isActive ? ActionPane(
+        motion: const ScrollMotion(),
+        children: [
+          SlidableAction(
+            onPressed: (context) {
+              pos.updateOrderStatus(order['id'], "Bill Printed");
+              Get.snackbar("success".tr, "print_receipt".tr, 
+                backgroundColor: Colors.orange, colorText: Colors.white);
+            },
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+            icon: Icons.receipt_long,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          SlidableAction(
+            onPressed: (context) {
+              pos.loadOrderForEditing(order, catalog);
+              Get.to(() => const CartScreen());
+            },
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            icon: Icons.payments_outlined,
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ],
+      ) : null,
+      endActionPane: ActionPane(
+        motion: const ScrollMotion(),
+        children: [
+          if (isActive) _buildEndAction(order['status'], order, pos, catalog),
+          SlidableAction(
+            onPressed: (context) => _confirmDelete(order['id'], pos),
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+            icon: Icons.delete_outline,
+
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ],
+      ),
+      child: _buildOrderCardContent(order, pos, catalog, isActive),
+    );
+  }
+
+
+
+  Widget _buildOrderCardContent(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog, bool isActive) {
+    final status = order['status'];
+    final mode = order['mode'] ?? "Dine-in";
+    String modeLabel = mode.toString().toLowerCase() == "dine-in" ? 'dine_in'.tr : (mode.toString().toLowerCase() == "takeaway" ? 'takeaway'.tr : 'delivery'.tr);
+    final color = status == "Ready" ? Colors.green : (status == "Preparing" ? Colors.blue : (status == "Pending" ? Colors.orange : Colors.grey));
+    final details = order['details'] as List? ?? [];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Order #${order['id']}", 
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                      if (isActive) _buildActionIcon(status, order, pos, catalog),
+                    ],
+                  ),
+                  Text(
+                    "${order['table']} • $modeLabel • ${order['items']} ${'items'.tr}", 
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+
+          ],
+        ),
+        children: [
+          const Divider(),
+          ...details.map((d) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("${d['qty']} x ${d['name']}", style: const TextStyle(fontSize: 13)),
+                Text("\$${((d['price'] as num? ?? 0) * (d['qty'] as num? ?? 0)).toStringAsFixed(2)}", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          )),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("${'total'.tr}: \$${order['total'].toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEndAction(dynamic status, Map<String, dynamic> order, POSController pos, List<FoodItem> catalog) {
+    if (status == "Bill Printed") {
+       return SlidableAction(
+        onPressed: (context) => _confirmUnlock(order['id'], pos),
+        backgroundColor: Colors.orange,
+        foregroundColor: Colors.white,
+        icon: Icons.lock_open,
+        borderRadius: BorderRadius.circular(20),
+      );
+    } else {
+       return SlidableAction(
+        onPressed: (context) {
+          pos.loadOrderForEditing(order, catalog);
+          Get.to(() => const HomeScreen());
+        },
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        icon: Icons.edit_outlined,
+        borderRadius: BorderRadius.circular(20),
+      );
+    }
+  }
+
+  Widget _buildActionIcon(dynamic status, Map<String, dynamic> order, POSController pos, List<FoodItem> catalog) {
+    if (status == "Bill Printed") {
+      return GestureDetector(
+        onTap: () => _confirmUnlock(order['id'], pos),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
+          child: const Icon(Icons.lock, size: 16, color: Colors.orange),
+        ),
+      );
+    } else {
+      return GestureDetector(
+        onTap: () {
+          pos.loadOrderForEditing(order, catalog);
+          Get.to(() => const HomeScreen());
+        },
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+          child: const Icon(Icons.add, size: 16, color: AppColors.primary),
+        ),
+      );
+    }
+  }
+
+  void _confirmUnlock(int orderId, POSController pos) {
+    Get.dialog(
+      AlertDialog(
+        title: Text("unlock_order".tr),
+        content: Text("unlock_order_msg".tr),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: Text("cancel".tr)),
+          TextButton(
+            onPressed: () {
+              pos.updateOrderStatus(orderId, "Pending");
+              Get.back();
+              Get.snackbar("Success", "Order #$orderId unlocked", backgroundColor: Colors.green, colorText: Colors.white);
+            }, 
+            child: Text("unlock".tr, style: const TextStyle(color: Colors.orange))
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(int orderId, POSController pos) {
+    Get.dialog(
+      AlertDialog(
+        title: Text("delete_confirm_title".tr),
+        content: Text("delete_confirm_msg".tr),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: Text("cancel".tr)),
+          TextButton(
+            onPressed: () {
+              pos.deleteOrder(orderId);
+              Get.back();
+              Get.snackbar("Deleted", "Order #$orderId has been removed", backgroundColor: Colors.red, colorText: Colors.white);
+            }, 
+            child: Text("delete".tr, style: const TextStyle(color: Colors.red))
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String title, String subtitle) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.assignment_outlined, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(title, style: const TextStyle(fontSize: 18, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          Text(subtitle, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+        ],
+      ),
+    );
+  }
+
+  void _showOrderTypeDialog(BuildContext context, POSController pos) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("select_order_type".tr, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                _buildModeOption(Icons.restaurant, "Dine-in", pos),
+                const SizedBox(width: 16),
+                _buildModeOption(Icons.shopping_bag, "Takeaway", pos),
+                const SizedBox(width: 16),
+                _buildModeOption(Icons.delivery_dining, "Delivery", pos),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeOption(IconData icon, String label, POSController pos) {
+    String translatedLabel = label.toLowerCase() == "dine-in" ? 'dine_in'.tr : (label.toLowerCase() == "takeaway" ? 'takeaway'.tr : 'delivery'.tr);
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          pos.clearCurrentOrder(); 
+          pos.setMode(label);
+          Get.back(); 
+          if (label == "Dine-in") {
+            Get.to(() => const TableSelectionScreen());
+          } else {
+            Get.to(() => const HomeScreen());
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: AppColors.primary, size: 28),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
