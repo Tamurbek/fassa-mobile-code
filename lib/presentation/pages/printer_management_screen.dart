@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../logic/pos_controller.dart';
 import '../../data/models/printer_model.dart';
+import '../../data/models/preparation_area_model.dart';
 import '../../theme/app_colors.dart';
 import 'save_printer_screen.dart'; // Import new screen
 
@@ -33,6 +34,8 @@ class PrinterManagementScreen extends StatelessWidget {
           separatorBuilder: (c, i) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final printer = pos.printers[index];
+            final area = pos.preparationAreas.firstWhereOrNull((a) => a.id == printer.preparationAreaId);
+            
             return ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Slidable(
@@ -74,19 +77,17 @@ class PrinterManagementScreen extends StatelessWidget {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("${printer.ipAddress}:${printer.port}"),
+                        Text("${printer.ipAddress ?? 'USB/BT'}:${printer.port}"),
                         const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          children: printer.assignedAreas.map((area) => Container(
+                        if (area != null) 
+                          Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade200,
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(area.tr, style: const TextStyle(fontSize: 10, color: Colors.black87)),
-                          )).toList(),
-                        ),
+                            child: Text(area.name, style: const TextStyle(fontSize: 10, color: Colors.black87)),
+                          ),
                       ],
                     ),
                   ),

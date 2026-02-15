@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../data/models/food_item.dart';
 import '../data/models/printer_model.dart';
+import '../data/models/preparation_area_model.dart';
 import '../data/services/api_service.dart';
 import '../data/services/socket_service.dart';
 
@@ -23,7 +24,7 @@ class POSController extends GetxController {
   // Product Catalog
   var products = <FoodItem>[].obs;
   var categories = <String>["All", "Burger", "Pizza", "Drinks", "Chicken", "Salad", "Dessert"].obs;
-  var preparationAreas = <String>["Kitchen", "Bar"].obs;
+  var preparationAreas = <PreparationAreaModel>[].obs;
   var printers = <PrinterModel>[].obs;
   var selectedCategory = "All".obs;
 
@@ -65,7 +66,7 @@ class POSController extends GetxController {
 
     var storedPrepAreas = _storage.read('preparation_areas');
     if (storedPrepAreas != null) {
-      preparationAreas.assignAll(List<String>.from(storedPrepAreas));
+      preparationAreas.assignAll((storedPrepAreas as List).map((e) => PreparationAreaModel.fromJson(e)).toList());
     }
 
     var storedPrinters = _storage.read('printers');
@@ -110,6 +111,20 @@ class POSController extends GetxController {
       if (backendProducts.isNotEmpty) {
         products.assignAll(backendProducts.map((p) => FoodItem.fromJson(p)).toList());
         saveProducts();
+      }
+
+      // Fetch Preparation Areas
+      final backendPrepAreas = await _api.getPreparationAreas();
+      if (backendPrepAreas.isNotEmpty) {
+        preparationAreas.assignAll(backendPrepAreas.map((a) => PreparationAreaModel.fromJson(a)).toList());
+        savePreparationAreas();
+      }
+
+      // Fetch Printers
+      final backendPrinters = await _api.getPrinters();
+      if (backendPrinters.isNotEmpty) {
+        printers.assignAll(backendPrinters.map((p) => PrinterModel.fromJson(p)).toList());
+        savePrinters();
       }
 
       // Fetch Orders
@@ -429,64 +444,25 @@ class POSController extends GetxController {
     }
   }
 
-  void savePreparationAreas() {
-    _storage.write('preparation_areas', preparationAreas.toList());
+  void addPreparationArea(PreparationAreaModel area) {
+    preparationAreas.add(area);
+    savePreparationAreas();
   }
 
-  void addPreparationArea(String area) {
-    if (!preparationAreas.contains(area)) {
-      preparationAreas.add(area);
+  void savePreparationAreas() {
+    _storage.write('preparation_areas', preparationAreas.map((e) => e.toJson()).toList());
+  }
+
+  void updatePreparationArea(PreparationAreaModel area) {
+    int index = preparationAreas.indexWhere((a) => a.id == area.id);
+    if (index != -1) {
+      preparationAreas[index] = area;
       savePreparationAreas();
     }
   }
 
-  void updatePreparationArea(String oldName, String newName) {
-    if (!preparationAreas.contains(oldName)) return;
-    int index = preparationAreas.indexOf(oldName);
-    preparationAreas[index] = newName;
-    savePreparationAreas();
-
-    // Update products
-    for (int i = 0; i < products.length; i++) {
-      if (products[i].preparationArea == oldName) {
-        products[i] = FoodItem(
-          id: products[i].id,
-          name: products[i].name,
-          description: products[i].description,
-          price: products[i].price,
-          imageUrl: products[i].imageUrl,
-          category: products[i].category,
-          rating: products[i].rating,
-          timeEstimate: products[i].timeEstimate,
-          preparationArea: newName,
-        );
-      }
-    }
-    products.refresh();
-    saveProducts();
-
-    // Update printers
-    for (int i = 0; i < printers.length; i++) {
-      var printer = printers[i];
-      if (printer.assignedAreas.contains(oldName)) {
-        var newAreas = List<String>.from(printer.assignedAreas);
-        newAreas[newAreas.indexOf(oldName)] = newName;
-        printers[i] = PrinterModel(
-          id: printer.id,
-          name: printer.name,
-          ipAddress: printer.ipAddress,
-          port: printer.port,
-          assignedAreas: newAreas,
-          isDefault: printer.isDefault,
-        );
-      }
-    }
-    printers.refresh();
-    savePrinters();
-  }
-
-  void deletePreparationArea(String area) {
-    preparationAreas.remove(area);
+  void deletePreparationArea(String id) {
+    preparationAreas.removeWhere((a) => a.id == id);
     savePreparationAreas();
   }
 
@@ -502,14 +478,7 @@ class POSController extends GetxController {
   void updatePrinter(PrinterModel printer) {
     int index = printers.indexWhere((p) => p.id == printer.id);
     if (index != -1) {
-      printers[index] = PrinterModel(
-        id: printer.id,
-        name: printer.name,
-        ipAddress: printer.ipAddress,
-        port: printer.port,
-        assignedAreas: printer.assignedAreas,
-        isDefault: printer.isDefault,
-      );
+      printers[index] = printer;
       savePrinters();
     }
   }

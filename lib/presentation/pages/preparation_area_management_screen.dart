@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../logic/pos_controller.dart';
+import '../../data/models/preparation_area_model.dart';
 import '../../theme/app_colors.dart';
 
 class PreparationAreaManagementScreen extends StatelessWidget {
@@ -13,7 +14,7 @@ class PreparationAreaManagementScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("preparation_areas".tr), // New translation key needed? Or use preparation_area + s? Let's assume 'assigned_areas' key or add new
+        title: Text("preparation_areas".tr), 
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton(
@@ -23,7 +24,7 @@ class PreparationAreaManagementScreen extends StatelessWidget {
       ),
       body: Obx(() {
         if (pos.preparationAreas.isEmpty) {
-          return Center(child: Text("No preparation areas found.")); // Need translation
+          return const Center(child: Text("No preparation areas found.")); 
         }
         return ListView.separated(
           padding: const EdgeInsets.all(16),
@@ -34,7 +35,7 @@ class PreparationAreaManagementScreen extends StatelessWidget {
             return ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Slidable(
-                key: ValueKey(area),
+                key: ValueKey(area.id),
                 endActionPane: ActionPane(
                   motion: const ScrollMotion(),
                   children: [
@@ -68,7 +69,7 @@ class PreparationAreaManagementScreen extends StatelessWidget {
                       ),
                       child: const Icon(Icons.restaurant, color: AppColors.secondary),
                     ),
-                    title: Text(area.tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(area.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text("${_getItemCount(pos, area)} items assigned"),
                   ),
                 ),
@@ -80,28 +81,28 @@ class PreparationAreaManagementScreen extends StatelessWidget {
     );
   }
 
-  int _getItemCount(POSController pos, String area) {
-    return pos.products.where((p) => p.preparationArea == area).length;
+  int _getItemCount(POSController pos, PreparationAreaModel area) {
+    return pos.products.where((p) => p.preparationAreaId == area.id).length;
   }
 
-  void _confirmDelete(BuildContext context, POSController pos, String area) {
+  void _confirmDelete(BuildContext context, POSController pos, PreparationAreaModel area) {
     int count = _getItemCount(pos, area);
     Get.defaultDialog(
       title: "Confirm Delete",
-      middleText: "Delete '$area'?\nIt has $count items assigned.",
+      middleText: "Delete '${area.name}'?\nIt has $count items assigned.",
       textConfirm: "Delete",
       textCancel: "Cancel",
       confirmTextColor: Colors.white,
       buttonColor: Colors.red,
       onConfirm: () {
-        pos.deletePreparationArea(area);
+        pos.deletePreparationArea(area.id);
         Get.back();
       },
     );
   }
 
-  void _showDialog(BuildContext context, POSController pos, String? area) {
-    final controller = TextEditingController(text: area ?? "");
+  void _showDialog(BuildContext context, POSController pos, PreparationAreaModel? area) {
+    final controller = TextEditingController(text: area?.name ?? "");
     Get.defaultDialog(
       title: area == null ? "Add Area" : "Edit Area",
       content: TextField(
@@ -112,9 +113,17 @@ class PreparationAreaManagementScreen extends StatelessWidget {
         onPressed: () {
           if (controller.text.isNotEmpty) {
             if (area == null) {
-              pos.addPreparationArea(controller.text);
+              pos.addPreparationArea(PreparationAreaModel(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                name: controller.text,
+                cafeId: pos.currentUser.value?['cafe_id'] ?? '',
+              ));
             } else {
-              pos.updatePreparationArea(area, controller.text);
+              pos.updatePreparationArea(PreparationAreaModel(
+                id: area.id,
+                name: controller.text,
+                cafeId: area.cafeId,
+              ));
             }
             Get.back();
           }

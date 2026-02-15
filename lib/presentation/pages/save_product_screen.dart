@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,7 +25,7 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
   late TextEditingController _priceController;
   late TextEditingController _imageController;
   late String _selectedCategory;
-  late String _selectedPrepArea;
+  final RxString _selectedPrepAreaId = "".obs;
 
   @override
   void initState() {
@@ -45,18 +44,8 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
       }
     }
 
-    // Determine initial preparation area
-    _selectedPrepArea = widget.item?.preparationArea ?? (pos.preparationAreas.isNotEmpty ? pos.preparationAreas[0] : "Kitchen");
-    if (!pos.preparationAreas.contains(_selectedPrepArea)) {
-       // If prep area from item is not in list (e.g. deleted), default to first or add it back?
-       // Safe default
-       if (pos.preparationAreas.isNotEmpty) {
-         _selectedPrepArea = pos.preparationAreas[0];
-       } else {
-         pos.addPreparationArea("Kitchen");
-         _selectedPrepArea = "Kitchen";
-       }
-    }
+    // Determine initial preparation area ID
+    _selectedPrepAreaId.value = widget.item?.preparationAreaId ?? (pos.preparationAreas.isNotEmpty ? pos.preparationAreas[0].id : "");
   }
 
   @override
@@ -108,6 +97,8 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
       }
     }
 
+    final selectedArea = pos.preparationAreas.firstWhereOrNull((a) => a.id == _selectedPrepAreaId.value);
+
     final newItem = FoodItem(
       id: widget.item?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
@@ -115,7 +106,8 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
       price: price,
       imageUrl: imageUrl, 
       category: _selectedCategory,
-      preparationArea: _selectedPrepArea,
+      preparationArea: selectedArea?.name ?? "Kitchen",
+      preparationAreaId: _selectedPrepAreaId.value.isEmpty ? null : _selectedPrepAreaId.value,
     );
 
     if (widget.item == null) {
@@ -192,14 +184,13 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
               ),
               child: Obx(() => DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: pos.preparationAreas.contains(_selectedPrepArea) ? _selectedPrepArea : (pos.preparationAreas.isNotEmpty ? pos.preparationAreas.first : ""),
+                  value: _selectedPrepAreaId.value.isEmpty ? null : _selectedPrepAreaId.value,
                   isExpanded: true,
-                  items: pos.preparationAreas.map((c) => DropdownMenuItem(value: c, child: Text(c.tr))).toList(), // Added .tr to display
+                  hint: const Text("Select Area"),
+                  items: pos.preparationAreas.map((area) => DropdownMenuItem(value: area.id, child: Text(area.name))).toList(),
                   onChanged: (val) {
                     if (val != null) {
-                      setState(() {
-                        _selectedPrepArea = val;
-                      });
+                      _selectedPrepAreaId.value = val;
                     }
                   },
                 ),
@@ -276,7 +267,7 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
-          child: Text("save".tr ?? "Save", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          child: Text("save".tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ),
       ),
     );

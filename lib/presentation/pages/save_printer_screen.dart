@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../data/models/printer_model.dart';
+import '../../data/models/preparation_area_model.dart';
 import '../../logic/pos_controller.dart';
 import '../../theme/app_colors.dart';
 
@@ -19,7 +20,7 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
   late TextEditingController _nameController;
   late TextEditingController _ipController;
   late TextEditingController _portController;
-  final RxList<String> _assignedAreas = <String>[].obs;
+  final RxString _selectedAreaId = "".obs;
 
   @override
   void initState() {
@@ -27,12 +28,7 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
     _nameController = TextEditingController(text: widget.printer?.name ?? "");
     _ipController = TextEditingController(text: widget.printer?.ipAddress ?? "192.168.1.100");
     _portController = TextEditingController(text: widget.printer?.port.toString() ?? "9100");
-    
-    if (widget.printer != null) {
-      _assignedAreas.addAll(widget.printer!.assignedAreas);
-    } else {
-      _assignedAreas.add("Cashier"); // Default logic
-    }
+    _selectedAreaId.value = widget.printer?.preparationAreaId ?? "";
   }
 
   @override
@@ -48,18 +44,16 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
       Get.snackbar("error".tr, "name_required".tr, backgroundColor: Colors.red, colorText: Colors.white);
       return;
     }
-    if (_ipController.text.trim().isEmpty) {
-      Get.snackbar("error".tr, "IP address required", backgroundColor: Colors.red, colorText: Colors.white);
-      return;
-    }
 
     final newPrinter = PrinterModel(
       id: widget.printer?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       name: _nameController.text.trim(),
-      ipAddress: _ipController.text.trim(),
+      ipAddress: _ipController.text.trim().isEmpty ? null : _ipController.text.trim(),
       port: int.tryParse(_portController.text) ?? 9100,
-      assignedAreas: _assignedAreas.toList(),
-      isDefault: widget.printer?.isDefault ?? false,
+      connectionType: 'NETWORK',
+      isActive: widget.printer?.isActive ?? true,
+      cafeId: pos.currentUser.value?['cafe_id'] ?? '',
+      preparationAreaId: _selectedAreaId.value.isEmpty ? null : _selectedAreaId.value,
     );
 
     if (widget.printer == null) {
@@ -75,9 +69,6 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Available areas: Cashier + from controller
-    final List<String> availableAreas = ["Cashier", ...pos.preparationAreas];
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -97,35 +88,36 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
           children: [
             _buildTextField("printer_name".tr, _nameController),
             const SizedBox(height: 16),
-            _buildTextField("IP Address", _ipController, keyboardType: TextInputType.url), // proper keyboard later
+            _buildTextField("IP Address", _ipController, keyboardType: TextInputType.url),
             const SizedBox(height: 16),
             _buildTextField("Port", _portController, keyboardType: TextInputType.number),
             const SizedBox(height: 24),
             
-            Text("assigned_areas".tr, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.bold)),
+            Text("preparation_area".tr, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Container(
+            Obx(() => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: Obx(() => Column(
-                children: availableAreas.map((area) => CheckboxListTile(
-                  title: Text(area.tr), // Translate area name
-                  value: _assignedAreas.contains(area),
-                  activeColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  onChanged: (val) {
-                    if (val == true) {
-                      _assignedAreas.add(area);
-                    } else {
-                      _assignedAreas.remove(area);
-                    }
-                  },
-                )).toList(),
-              )),
-            ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedAreaId.value.isEmpty ? null : _selectedAreaId.value,
+                  hint: const Text("Select Area"),
+                  isExpanded: true,
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text("None")),
+                    ...pos.preparationAreas.map((area) => DropdownMenuItem(
+                      value: area.id,
+                      child: Text(area.name),
+                    )),
+                  ],
+                  onChanged: (val) => _selectedAreaId.value = val ?? "",
+                ),
+              ),
+            )),
           ],
         ),
       ),
@@ -139,7 +131,7 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
-          child: Text("save".tr ?? "Save", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          child: Text("save".tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ),
       ),
     );
