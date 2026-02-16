@@ -114,41 +114,53 @@ class POSController extends GetxController {
   }
 
   Future<void> _fetchBackendData() async {
+    if (currentUser.value == null) return;
+    
+    // Fetch Categories
     try {
-      // Fetch Categories
       final backendCategories = await _api.getCategories();
       categoriesObjects.assignAll(List<Map<String, dynamic>>.from(backendCategories));
       categories.assignAll(["All", ...backendCategories.map((c) => c['name'].toString())]);
       _storage.write('categories_objects', categoriesObjects.toList());
       saveCategories();
+    } catch (e) {
+      print("Error fetching categories: $e");
+    }
 
-      // Fetch Products
+    // Fetch Products
+    try {
       final backendProducts = await _api.getProducts();
       products.assignAll(backendProducts.map((p) => FoodItem.fromJson(p)).toList());
       saveProducts();
-
-      // Fetch Preparation Areas
-      final backendPrepAreas = await _api.getPreparationAreas();
-      if (backendPrepAreas.isNotEmpty) {
-        preparationAreas.assignAll(backendPrepAreas.map((a) => PreparationAreaModel.fromJson(a)).toList());
-        savePreparationAreas();
-      }
-
-      // Fetch Printers
-      final backendPrinters = await _api.getPrinters();
-      if (backendPrinters.isNotEmpty) {
-        printers.assignAll(backendPrinters.map((p) => PrinterModel.fromJson(p)).toList());
-        savePrinters();
-      }
-
-      // Fetch Orders
-      final backendOrders = await _api.getOrders();
-      if (backendOrders.isNotEmpty) {
-        allOrders.assignAll(backendOrders.map((o) => _normalizeOrder(o)).toList());
-        saveAllOrders();
-      }
     } catch (e) {
-      print("Error fetching backend data: $e");
+      print("Error fetching products: $e");
+    }
+
+    // Fetch Preparation Areas
+    try {
+      final backendPrepAreas = await _api.getPreparationAreas();
+      preparationAreas.assignAll(backendPrepAreas.map((a) => PreparationAreaModel.fromJson(a)).toList());
+      savePreparationAreas();
+    } catch (e) {
+      print("Error fetching preparation areas: $e");
+    }
+
+    // Fetch Printers
+    try {
+      final backendPrinters = await _api.getPrinters();
+      printers.assignAll(backendPrinters.map((p) => PrinterModel.fromJson(p)).toList());
+      savePrinters();
+    } catch (e) {
+      print("Error fetching printers: $e");
+    }
+
+    // Fetch Orders
+    try {
+      final backendOrders = await _api.getOrders();
+      allOrders.assignAll(backendOrders.map((o) => _normalizeOrder(o)).toList());
+      saveAllOrders();
+    } catch (e) {
+      print("Error fetching orders: $e");
     }
   }
 
@@ -270,6 +282,7 @@ class POSController extends GetxController {
     currentUser.value = user;
     if (user != null) {
       _storage.write('user', user);
+      _fetchBackendData(); // Sync data immediately after login
     } else {
       _storage.remove('user');
     }
