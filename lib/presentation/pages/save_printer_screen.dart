@@ -41,7 +41,7 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
     super.dispose();
   }
 
-  void _save() {
+  void _save() async {
     if (_nameController.text.trim().isEmpty) {
       Get.snackbar("error".tr, "name_required".tr, backgroundColor: Colors.red, colorText: Colors.white);
       return;
