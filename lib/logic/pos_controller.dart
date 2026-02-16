@@ -130,7 +130,19 @@ class POSController extends GetxController {
     // Fetch Products
     try {
       final backendProducts = await _api.getProducts();
-      products.assignAll(backendProducts.map((p) => FoodItem.fromJson(p)).toList());
+      print("Fetched ${backendProducts.length} products from backend");
+      
+      List<FoodItem> parsedProducts = [];
+      for (var p in backendProducts) {
+        try {
+          parsedProducts.add(FoodItem.fromJson(p));
+        } catch (e) {
+          print("Skipping product due to parse error: $e");
+        }
+      }
+      
+      products.assignAll(parsedProducts);
+      print("Successfully parsed ${products.length} products: ${products.map((e) => e.name).join(', ')}");
       saveProducts();
     } catch (e) {
       print("Error fetching products: $e");
@@ -452,9 +464,14 @@ class POSController extends GetxController {
       final json = item.toJson();
       json['cafe_id'] = cafeId;
       
+      // Map imageUrl to image for backend
+      json['image'] = item.imageUrl;
+      
       // Find category ID
       final cat = categoriesObjects.firstWhereOrNull((c) => c['name'] == item.category);
-      if (cat != null) json['category_id'] = cat['id'];
+      if (cat != null) {
+        json['category_id'] = cat['id'];
+      }
 
       final newItem = await _api.createProduct(json);
       products.add(FoodItem.fromJson(newItem));
@@ -470,8 +487,13 @@ class POSController extends GetxController {
       json.remove('id'); // ID in URL
       json['cafe_id'] = cafeId;
       
+      // Map imageUrl to image for backend
+      json['image'] = item.imageUrl;
+      
       final cat = categoriesObjects.firstWhereOrNull((c) => c['name'] == item.category);
-      if (cat != null) json['category_id'] = cat['id'];
+      if (cat != null) {
+        json['category_id'] = cat['id'];
+      }
 
       final updatedItem = await _api.updateProduct(item.id, json);
       int index = products.indexWhere((p) => p.id == item.id);

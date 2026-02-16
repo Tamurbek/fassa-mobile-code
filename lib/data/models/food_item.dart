@@ -37,27 +37,33 @@ class FoodItem {
   };
 
   factory FoodItem.fromJson(Map<String, dynamic> json) {
-    // Check if it's from backend (has category as object) or local (has category as string)
-    String categoryName = "General";
-    if (json['category'] != null) {
-      if (json['category'] is String) {
-        categoryName = json['category'];
-      } else if (json['category'] is Map) {
-        categoryName = json['category']['name'] ?? "General";
+    try {
+      // Check if it's from backend (has category as object) or local (has category as string)
+      String categoryName = "General";
+      if (json['category'] != null) {
+        if (json['category'] is String) {
+          categoryName = json['category'];
+        } else if (json['category'] is Map) {
+          categoryName = json['category']['name'] ?? "General";
+        }
       }
-    }
 
-    return FoodItem(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
-      imageUrl: json['image'] ?? json['imageUrl'] ?? '',
-      category: categoryName,
-      rating: (json['rating'] as num?)?.toDouble() ?? 4.5,
-      timeEstimate: json['timeEstimate'] ?? 20,
-      preparationArea: json['preparationArea'] ?? 'Kitchen',
-      preparationAreaId: json['preparation_area_id'],
-    );
+      return FoodItem(
+        id: json['id']?.toString() ?? '',
+        name: json['name'] ?? '',
+        description: json['description'] ?? '',
+        price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
+        imageUrl: json['image'] ?? json['imageUrl'] ?? '',
+        category: categoryName,
+        rating: double.tryParse(json['rating']?.toString() ?? '4.5') ?? 4.5,
+        timeEstimate: int.tryParse(json['timeEstimate']?.toString() ?? '20') ?? 20,
+        preparationArea: json['preparation_area'] ?? json['preparationArea'] ?? 'Kitchen',
+        preparationAreaId: json['preparation_area_id']?.toString(),
+      );
+    } catch (e) {
+      print("Error parsing FoodItem: $e");
+      print("JSON data: $json");
+      rethrow;
+    }
   }
 }
