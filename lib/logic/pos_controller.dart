@@ -325,11 +325,12 @@ class POSController extends GetxController {
 
     try {
       final newOrder = await _api.createOrder({
-        "tableNumber": orderData["tableNumber"],
+        "table_number": orderData["tableNumber"],
         "type": orderData["type"],
-        "isPaid": isPaid,
+        "is_paid": isPaid,
+        "cafe_id": cafeId,
         "items": (orderData["items"] as List).map((i) => {
-          "productId": i["productId"],
+          "product_id": i["productId"],
           "quantity": i["qty"],
           "price": i["price"]
         }).toList(),
