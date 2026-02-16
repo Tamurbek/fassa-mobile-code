@@ -20,8 +20,10 @@ class PrinterService {
       
       List<int> bytes = [];
 
-      // Header
-      bytes += generator.text(Get.find<POSController>().restaurantName.value,
+      final posController = Get.find<POSController>();
+
+      // Header - Restaurant Identity
+      bytes += generator.text(posController.restaurantName.value,
           styles: const PosStyles(
             align: PosAlign.center,
             height: PosTextSize.size2,
@@ -29,48 +31,99 @@ class PrinterService {
             bold: true,
           ));
       
-      bytes += generator.text(Get.find<POSController>().restaurantAddress.value,
-          styles: const PosStyles(align: PosAlign.center));
-      bytes += generator.text(Get.find<POSController>().restaurantPhone.value,
-          styles: const PosStyles(align: PosAlign.center));
+      if (posController.restaurantAddress.value.isNotEmpty) {
+        bytes += generator.text(posController.restaurantAddress.value,
+            styles: const PosStyles(align: PosAlign.center));
+      }
+      if (posController.restaurantPhone.value.isNotEmpty) {
+        bytes += generator.text(posController.restaurantPhone.value,
+            styles: const PosStyles(align: PosAlign.center));
+      }
+      bytes += generator.feed(1);
+      bytes += generator.text('*** TO\'LOV CHEKI ***', styles: const PosStyles(align: PosAlign.center, bold: true));
       bytes += generator.hr();
 
-      // Order Info
-      bytes += generator.text('Order ID: ${order['id']}',
-          styles: const PosStyles(bold: true));
-      bytes += generator.text('Date: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())}');
-      bytes += generator.text('Mode: ${order['mode']}');
+      // Order Metadata
+      bytes += generator.text('Buyurtma: #${order['id']}', styles: const PosStyles(bold: true));
+      bytes += generator.text('Sana: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())}');
+      
+      String modeName = "Zalda";
+      if (order['mode'] == "Takeaway") modeName = "Olib ketish";
+      else if (order['mode'] == "Delivery") modeName = "Yetkazib berish";
+      
+      bytes += generator.text('Turi: $modeName');
       if (order['table'] != null && order['table'] != '-') {
-        bytes += generator.text('Table: ${order['table']}');
+        bytes += generator.text('Stol: ${order['table']}', styles: const PosStyles(bold: true));
       }
       bytes += generator.hr();
 
-      // Items Header
+      // Items Table Header
       bytes += generator.row([
-        PosColumn(text: 'Item', width: 7, styles: const PosStyles(bold: true)),
-        PosColumn(text: 'Qty', width: 2, styles: const PosStyles(bold: true, align: PosAlign.center)),
-        PosColumn(text: 'Total', width: 3, styles: const PosStyles(bold: true, align: PosAlign.right)),
+        PosColumn(text: 'Nomi', width: 6, styles: const PosStyles(bold: true)),
+        PosColumn(text: 'Soni', width: 2, styles: const PosStyles(bold: true, align: PosAlign.center)),
+        PosColumn(text: 'Narxi', width: 4, styles: const PosStyles(bold: true, align: PosAlign.right)),
       ]);
       bytes += generator.hr(ch: '-');
 
-      // Items
+      // Items Calculation and Printing
       final items = order['details'] as List;
+      double itemsSubtotal = 0;
       for (var item in items) {
+        double price = double.tryParse(item['price'].toString()) ?? 0.0;
+        int qty = int.tryParse(item['qty'].toString()) ?? 0;
+        double lineTotal = price * qty;
+        itemsSubtotal += lineTotal;
+
         bytes += generator.row([
-          PosColumn(text: item['name'], width: 7),
-          PosColumn(text: item['qty'].toString(), width: 2, styles: const PosStyles(align: PosAlign.center)),
-          PosColumn(text: (item['price'] * item['qty']).toStringAsFixed(0), width: 3, styles: const PosStyles(align: PosAlign.right)),
+          PosColumn(text: item['name'], width: 6),
+          PosColumn(text: qty.toString(), width: 2, styles: const PosStyles(align: PosAlign.center)),
+          PosColumn(text: lineTotal.toStringAsFixed(0), width: 4, styles: const PosStyles(align: PosAlign.right)),
         ]);
       }
       bytes += generator.hr();
 
       // Totals
+      // Calculate breakdown based on the same logic as frontend
+      double serviceFee = 0;
+      if (order['mode'] == "Dine-in") {
+        serviceFee = itemsSubtotal * 0.10;
+      } else if (order['mode'] == "Delivery") {
+        serviceFee = 3.00; // Use simple logic for now or get from order
+      }
+      
+      double tax = itemsSubtotal * 0.05;
+      double finalTotal = itemsSubtotal + serviceFee + tax;
+
       bytes += generator.row([
-        PosColumn(text: 'Total Amount:', width: 8, styles: const PosStyles(bold: true)),
-        PosColumn(text: order['total'].toStringAsFixed(0), width: 4, styles: const PosStyles(bold: true, align: PosAlign.right)),
+        PosColumn(text: 'Subtotal:', width: 8),
+        PosColumn(text: '${itemsSubtotal.toStringAsFixed(0)} sum', width: 4, styles: const PosStyles(align: PosAlign.right)),
       ]);
 
-      bytes += generator.feed(2);
+      if (serviceFee > 0) {
+        bytes += generator.row([
+          PosColumn(text: 'Xizmat haqi:', width: 8),
+          PosColumn(text: '${serviceFee.toStringAsFixed(0)} sum', width: 4, styles: const PosStyles(align: PosAlign.right)),
+        ]);
+      }
+
+      bytes += generator.row([
+        PosColumn(text: 'Soliq (5%):', width: 8),
+        PosColumn(text: '${tax.toStringAsFixed(0)} sum', width: 4, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+
+      bytes += generator.hr(ch: '=');
+      bytes += generator.row([
+        PosColumn(text: 'JAMI:', width: 6, styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size1)),
+        PosColumn(text: '${finalTotal.toStringAsFixed(0)} sum', width: 6, styles: const PosStyles(bold: true, align: PosAlign.right, height: PosTextSize.size2, width: PosTextSize.size1)),
+      ]);
+      bytes += generator.hr(ch: '=');
+
+      // Footer
+      bytes += generator.feed(1);
+      bytes += generator.text('Xaridingiz uchun rahmat!', styles: const PosStyles(align: PosAlign.center, italic: true));
+      bytes += generator.text('Yana keling!', styles: const PosStyles(align: PosAlign.center));
+      
+      bytes += generator.feed(3);
       bytes += generator.cut();
 
       // Send to printer
