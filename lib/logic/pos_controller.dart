@@ -18,6 +18,7 @@ class POSController extends GetxController {
   var currentUser = Rxn<Map<String, dynamic>>();
   var pinCode = RxnString();
   var isPinAuthenticated = false.obs;
+  var isPrinting = false.obs;
   
   // Order modes, current selection, table, and editing state
   final List<String> orderModes = ["Dine-in", "Takeaway", "Delivery"];
@@ -498,17 +499,43 @@ class POSController extends GetxController {
   }
 
   Future<void> printOrder(Map<String, dynamic> order) async {
-    // Print to all active printers or specific one? 
-    // Usually we print receipt to a receipt printer, and kitchen orders to kitchen printers.
-    // For now, let's print the receipt to any printer that is active and not kitchen-specific, 
-    // OR just all active printers for simplicity in this demo.
+    isPrinting.value = true;
+    bool anySuccess = false;
+    
+    final details = order['details'] as List? ?? [];
     
     for (var printer in printers) {
-      if (printer.isActive) {
-        // If it's a kitchen printer (has preparationAreaId), we might want a different format, 
-        // but for now we'll use the same service.
-        _printer.printReceipt(printer, order);
+      if (!printer.isActive) continue;
+
+      if (printer.preparationAreaId == null) {
+        // Receipt Printer - Full Ticket
+        final success = await _printer.printReceipt(printer, order);
+        if (success) anySuccess = true;
+      } else {
+        // Kitchen Printer - Filtered items
+        // We need to match items with printer's preparationAreaId
+        // The 'details' in order only have 'id' (productId). We need to find the product to get its prepAreaId.
+        final filteredItems = details.where((d) {
+          final product = products.firstWhereOrNull((p) => p.id == d['id'].toString());
+          return product?.preparationAreaId == printer.preparationAreaId;
+        }).toList();
+
+        if (filteredItems.isNotEmpty) {
+          final success = await _printer.printKitchenTicket(printer, order, filteredItems);
+          if (success) anySuccess = true;
+        }
       }
+    }
+    
+    isPrinting.value = false;
+    if (anySuccess) {
+      Get.snackbar("Printer", "Print job sent successfully", 
+        backgroundColor: AppColors.primary.withOpacity(0.8), colorText: AppColors.white,
+        snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 2));
+    } else if (printers.any((p) => p.isActive)) {
+      Get.snackbar("Printer Error", "Could not connect to printers", 
+        backgroundColor: Get.theme.colorScheme.error, colorText: AppColors.white,
+        snackPosition: SnackPosition.BOTTOM);
     }
   }
 

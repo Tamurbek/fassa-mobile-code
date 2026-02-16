@@ -87,6 +87,58 @@ class PrinterService {
     }
   }
 
+  Future<bool> printKitchenTicket(PrinterModel printer, Map<String, dynamic> order, List<dynamic> items) async {
+    if (printer.ipAddress == null || printer.ipAddress!.isEmpty || items.isEmpty) return false;
+
+    try {
+      final profile = await CapabilityProfile.load();
+      final generator = Generator(
+          printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
+      
+      List<int> bytes = [];
+
+      // Large Header
+      bytes += generator.text('KITCHEN TICKET',
+          styles: const PosStyles(
+            align: PosAlign.center,
+            height: PosTextSize.size2,
+            width: PosTextSize.size2,
+            bold: true,
+          ));
+      
+      bytes += generator.hr();
+      bytes += generator.text('Order ID: #${order['id']}', styles: const PosStyles(height: PosTextSize.size2, width: PosTextSize.size2, bold: true));
+      bytes += generator.text('Table: ${order['table']}', styles: const PosStyles(height: PosTextSize.size2, width: PosTextSize.size2, bold: true));
+      bytes += generator.text('Time: ${DateFormat('HH:mm').format(DateTime.now())}');
+      bytes += generator.hr();
+
+      // Items
+      for (var item in items) {
+        bytes += generator.text('${item['qty']} x ${item['name']}', 
+            styles: const PosStyles(height: PosTextSize.size2, width: PosTextSize.size2, bold: true));
+        if (item['note'] != null && item['note'].toString().isNotEmpty) {
+          bytes += generator.text(' NOTE: ${item['note']}', styles: const PosStyles(italic: true));
+        }
+        bytes += generator.feed(1);
+      }
+
+      bytes += generator.hr();
+      bytes += generator.feed(2);
+      bytes += generator.cut();
+
+      final socket = await Socket.connect(printer.ipAddress, printer.port,
+          timeout: const Duration(seconds: 5));
+      socket.add(bytes);
+      await socket.flush();
+      await socket.close();
+      
+      return true;
+    } catch (e) {
+      print('Kitchen printing error: $e');
+      return false;
+    }
+  }
+
   Future<bool> printTestPage(PrinterModel printer) async {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
 

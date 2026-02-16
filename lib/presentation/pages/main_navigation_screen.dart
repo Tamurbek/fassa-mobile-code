@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../theme/app_colors.dart';
+import '../../logic/pos_controller.dart';
+import '../widgets/printing_overlay.dart';
 import 'home_screen.dart';
 import 'orders_screen.dart';
 import 'reports_screen.dart';
@@ -11,6 +13,7 @@ class MainNavigationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final POSController pos = Get.find<POSController>();
     var currentIndex = 0.obs; // Start with Orders tab as primary
 
     final List<Widget> pages = [
@@ -19,35 +22,41 @@ class MainNavigationScreen extends StatelessWidget {
       const SettingsScreen(), // 2: Profile/Settings
     ];
 
-    return Scaffold(
-      body: Obx(() => IndexedStack(
-        index: currentIndex.value,
-        children: pages,
-      )),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
+    return Obx(() => Stack(
+      children: [
+        Scaffold(
+          body: IndexedStack(
+            index: currentIndex.value,
+            children: pages,
+          ),
+          bottomNavigationBar: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, -5),
+                ),
+              ],
             ),
-          ],
+            child: SafeArea(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildNavItem(0, currentIndex, Icons.receipt_long_rounded, "orders".tr),
+                  _buildNavItem(1, currentIndex, Icons.bar_chart_rounded, "reports".tr),
+                  _buildNavItem(2, currentIndex, Icons.person_outline_rounded, "profile".tr),
+                ],
+              ),
+            ),
+          ),
         ),
-        child: SafeArea(
-          child: Obx(() => Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildNavItem(0, currentIndex, Icons.receipt_long_rounded, "orders".tr),
-              _buildNavItem(1, currentIndex, Icons.bar_chart_rounded, "reports".tr),
-              _buildNavItem(2, currentIndex, Icons.person_outline_rounded, "profile".tr),
-            ],
-          )),
-        ),
-      ),
-    );
+        if (pos.isPrinting.value)
+          const PrintingOverlay(),
+      ],
+    ));
   }
 
   Widget _buildNavItem(int index, RxInt currentIndex, IconData icon, String label) {

@@ -6,6 +6,7 @@ import '../../logic/pos_controller.dart';
 import 'food_detail_screen.dart';
 import 'cart_screen.dart';
 import '../widgets/common_image.dart';
+import '../widgets/printing_overlay.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -21,140 +22,141 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: AppColors.primary, colorText: Colors.white);
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Obx(() => Text(pos.editingOrderId.value != null 
-          ? "${'editing_order'.tr} #${pos.editingOrderId.value}" 
-          : "${pos.currentMode.value.toLowerCase().tr} Terminal")),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (pos.isOrderModified.value) {
-              Get.dialog(
-                AlertDialog(
-                  title: Text(pos.editingOrderId.value != null ? 'cancel_edit'.tr : 'discard_order'.tr),
-                  content: Text('unsaved_changes'.tr),
-                  actions: [
-                    TextButton(onPressed: () => Get.back(), child: Text('keep'.tr)),
-                    TextButton(
-                      onPressed: () {
-                        pos.clearCurrentOrder();
-                        Get.back(); // Close dialog
-                        Get.back(); // Go back to Orders
-                      }, 
-                      child: Text(pos.editingOrderId.value != null ? 'cancel'.tr : 'discard'.tr, 
-                        style: const TextStyle(color: Colors.red))
+    return Obx(() => Stack(
+      children: [
+        Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: Text(pos.editingOrderId.value != null 
+              ? "${'editing_order'.tr} #${pos.editingOrderId.value}" 
+              : "${pos.currentMode.value.toLowerCase().tr} Terminal"),
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
+                if (pos.isOrderModified.value) {
+                  Get.dialog(
+                    AlertDialog(
+                      title: Text(pos.editingOrderId.value != null ? 'cancel_edit'.tr : 'discard_order'.tr),
+                      content: Text('unsaved_changes'.tr),
+                      actions: [
+                        TextButton(onPressed: () => Get.back(), child: Text('keep'.tr)),
+                        TextButton(
+                          onPressed: () {
+                            pos.clearCurrentOrder();
+                            Get.back(); // Close dialog
+                            Get.back(); // Go back to Orders
+                          }, 
+                          child: Text(pos.editingOrderId.value != null ? 'cancel'.tr : 'discard'.tr, 
+                            style: const TextStyle(color: Colors.red))
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              );
-            } else {
-              Get.back();
-            }
-          },
-        ),
-        actions: [
-          Obx(() => (pos.editingOrderId.value != null && pos.isOrderModified.value) 
-            ? IconButton(
-                icon: const Icon(Icons.check, color: Colors.green, size: 28),
-                onPressed: handleSave,
-              )
-            : const SizedBox.shrink()),
-        ],
-      ),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   _buildOperatorHeader(pos),
-                  const SizedBox(height: 16),
-                  _buildSearchBar(),
-                ],
-              ),
+                  );
+                } else {
+                  Get.back();
+                }
+              },
             ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildCategories(pos),
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      "select_items".tr,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                    ),
+            actions: [
+              if (pos.editingOrderId.value != null && pos.isOrderModified.value) 
+                IconButton(
+                    icon: const Icon(Icons.check, color: Colors.green, size: 28),
+                    onPressed: handleSave,
                   ),
-                  const SizedBox(height: 16),
-                  Expanded(child: Obx(() {
-                    final cat = pos.selectedCategory.value;
-                    final items = cat == "All" 
-                      ? pos.products 
-                      : pos.products.where((p) => p.category == cat).toList();
-                    return _buildPopularGrid(items);
-                  })),
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: Obx(() {
-        if (pos.currentOrder.isEmpty) return const SizedBox.shrink();
-        
-        return Container(
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: BoxDecoration(
-            color: AppColors.textPrimary,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
             ],
           ),
-          child: InkWell(
-            onTap: () => Get.to(() => const CartScreen()),
-            child: Row(
+          body: SafeArea(
+            bottom: false,
+            child: Column(
               children: [
-                const Icon(Icons.receipt_long, color: Colors.white, size: 22),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    pos.editingOrderId.value != null 
-                      ? "${'update_review'.tr}: \$${pos.total.toStringAsFixed(2)}"
-                      : "${'review_bill'.tr}: \$${pos.total.toStringAsFixed(2)}",
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                       _buildOperatorHeader(pos),
+                      const SizedBox(height: 16),
+                      _buildSearchBar(),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildCategories(pos),
+                      const SizedBox(height: 24),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          "select_items".tr,
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(child: Builder(builder: (context) {
+                        final cat = pos.selectedCategory.value;
+                        final items = cat == "All" 
+                          ? pos.products 
+                          : pos.products.where((p) => p.category == cat).toList();
+                        return _buildPopularGrid(items);
+                      })),
+                      const SizedBox(height: 100),
+                    ],
                   ),
-                  child: Text("${pos.totalItems} ${'items'.tr}", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
           ),
-        );
-      }),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
+          floatingActionButton: pos.currentOrder.isEmpty ? null : Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            decoration: BoxDecoration(
+              color: AppColors.textPrimary,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: InkWell(
+              onTap: () => Get.to(() => const CartScreen()),
+              child: Row(
+                children: [
+                  const Icon(Icons.receipt_long, color: Colors.white, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      pos.editingOrderId.value != null 
+                        ? "${'update_review'.tr}: \$${pos.total.toStringAsFixed(2)}"
+                        : "${'review_bill'.tr}: \$${pos.total.toStringAsFixed(2)}",
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text("${pos.totalItems} ${'items'.tr}", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        ),
+        if (pos.isPrinting.value)
+          const PrintingOverlay(),
+      ],
+    ));
   }
 
   Widget _buildOperatorHeader(POSController pos) {

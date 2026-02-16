@@ -180,10 +180,9 @@ class CartScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () async {
+                      // Submit and print
                       await pos.submitOrder(isPaid: false);
-                      Get.offAll(() => const OrdersScreen());
-                      Get.snackbar("ordered".tr, "sent_to_kitchen".tr, 
-                        backgroundColor: AppColors.primary, colorText: Colors.white);
+                      Get.close(1); // Go back one or just home
                     },
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 75), 
@@ -211,8 +210,21 @@ class CartScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      Get.snackbar("success".tr, "print_receipt".tr, 
-                        backgroundColor: AppColors.primary, colorText: Colors.white);
+                      // Just print the bill without finalizing payment
+                      // Construct a temporary order object for printing if not saved yet
+                      final tempOrder = {
+                        "id": pos.editingOrderId.value ?? "NEW",
+                        "table": pos.selectedTable.value.isNotEmpty ? "Table ${pos.selectedTable.value}" : "-",
+                        "mode": pos.currentMode.value,
+                        "total": pos.total,
+                        "details": pos.currentOrder.map((e) => {
+                          "id": (e['item'] as FoodItem).id,
+                          "name": (e['item'] as FoodItem).name,
+                          "qty": e['quantity'],
+                          "price": (e['item'] as FoodItem).price,
+                        }).toList(),
+                      };
+                      pos.printOrder(tempOrder);
                     },
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 75), 
@@ -241,9 +253,7 @@ class CartScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () async {
                       await pos.submitOrder(isPaid: true);
-                      Get.offAll(() => const OrdersScreen());
-                      Get.snackbar("success".tr, "payment_completed".tr, 
-                        backgroundColor: Colors.green, colorText: Colors.white);
+                      Get.close(1); // Go back after payment
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(0, 75), 
