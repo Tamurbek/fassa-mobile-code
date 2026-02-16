@@ -337,7 +337,15 @@ class POSController extends GetxController {
       });
       
       final normalizedOrder = _normalizeOrder(newOrder);
-      allOrders.insert(0, normalizedOrder);
+    
+      // Check for duplicates (e.g. if socket already added it)
+      int existingIndex = allOrders.indexWhere((o) => o['id'] == normalizedOrder['id']);
+      if (existingIndex == -1) {
+        allOrders.insert(0, normalizedOrder);
+      } else {
+        // If it exists, update it just in case some normalization/data is better from Direct API
+        allOrders[existingIndex] = normalizedOrder;
+      }
       
       // Print order (Kitchen or Receipt)
       await printOrder(normalizedOrder);
