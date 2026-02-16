@@ -180,9 +180,10 @@ class CartScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () async {
-                      // Submit and print
                       await pos.submitOrder(isPaid: false);
-                      Get.close(1); // Go back one or just home
+                      Get.offAll(() => const MainNavigationScreen());
+                      Get.snackbar("Oshxona", "Buyurtma oshxonaga yuborildi", 
+                        backgroundColor: AppColors.primary, colorText: Colors.white);
                     },
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 75), 
@@ -210,8 +211,6 @@ class CartScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      // Just print the bill without finalizing payment
-                      // Construct a temporary order object for printing if not saved yet
                       final tempOrder = {
                         "id": pos.editingOrderId.value ?? "NEW",
                         "table": pos.selectedTable.value.isNotEmpty ? "Table ${pos.selectedTable.value}" : "-",
@@ -253,7 +252,9 @@ class CartScreen extends StatelessWidget {
                   child: ElevatedButton(
                     onPressed: () async {
                       await pos.submitOrder(isPaid: true);
-                      Get.close(1); // Go back after payment
+                      Get.offAll(() => const MainNavigationScreen());
+                      Get.snackbar("To'lov", "To'lov qabul qilindi va hisob yopildi", 
+                        backgroundColor: Colors.green, colorText: Colors.white);
                     },
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(0, 75), 

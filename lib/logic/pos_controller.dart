@@ -297,16 +297,13 @@ class POSController extends GetxController {
       final normalizedOrder = _normalizeOrder(newOrder);
       allOrders.insert(0, normalizedOrder);
       
-      // Auto Print if enabled
-      if (autoPrintReceipt.value) {
-        printOrder(normalizedOrder);
-      }
+      // Print order (Kitchen or Receipt)
+      await printOrder(normalizedOrder);
 
       clearCurrentOrder();
       saveAllOrders();
     } catch (e) {
       print("Error creating order: $e");
-      // Fallback for offline (optional)
     }
   }
 
@@ -339,24 +336,38 @@ class POSController extends GetxController {
     isOrderModified.value = false;
   }
 
-  void updateExistingOrder({bool isPaid = false}) {
-    int index = allOrders.indexWhere((o) => o['id'] == editingOrderId.value);
-    if (index != -1) {
-      allOrders[index]['items'] = totalItems;
-      allOrders[index]['total'] = total;
-      allOrders[index]['status'] = isPaid ? "Completed" : "Preparing";
-      allOrders[index]['mode'] = currentMode.value;
-      allOrders[index]['table'] = currentMode.value == "Dine-in" ? "Table ${selectedTable.value}" : "-";
-      allOrders[index]['details'] = currentOrder.map((e) => {
-        "id": (e['item'] as FoodItem).id,
-        "name": (e['item'] as FoodItem).name,
-        "qty": e['quantity'],
-        "price": (e['item'] as FoodItem).price,
-      }).toList();
+  Future<void> updateExistingOrder({bool isPaid = false}) async {
+    if (editingOrderId.value == null) return;
+    
+    try {
+      // 1. Update status on backend
+      final newStatus = isPaid ? "Completed" : "Preparing";
+      await updateOrderStatus(editingOrderId.value!, newStatus);
       
-      allOrders.refresh();
-      clearCurrentOrder();
-      saveAllOrders();
+      // 2. Update local state
+      int index = allOrders.indexWhere((o) => o['id'] == editingOrderId.value);
+      if (index != -1) {
+        allOrders[index]['items'] = totalItems;
+        allOrders[index]['total'] = total;
+        allOrders[index]['status'] = newStatus;
+        allOrders[index]['mode'] = currentMode.value;
+        allOrders[index]['table'] = currentMode.value == "Dine-in" ? "Table ${selectedTable.value}" : "-";
+        allOrders[index]['details'] = currentOrder.map((e) => {
+          "id": (e['item'] as FoodItem).id,
+          "name": (e['item'] as FoodItem).name,
+          "qty": e['quantity'],
+          "price": (e['item'] as FoodItem).price,
+        }).toList();
+        
+        // 3. Print if it's a kitchen update
+        await printOrder(allOrders[index]);
+
+        allOrders.refresh();
+        clearCurrentOrder();
+        saveAllOrders();
+      }
+    } catch (e) {
+      print("Error updating existing order: $e");
     }
   }
 
@@ -515,10 +526,10 @@ class POSController extends GetxController {
       } else {
         // Kitchen Printer - Filtered items
         // We need to match items with printer's preparationAreaId
-        // The 'details' in order only have 'id' (productId). We need to find the product to get its prepAreaId.
         final filteredItems = details.where((d) {
-          final product = products.firstWhereOrNull((p) => p.id == d['id'].toString());
-          return product?.preparationAreaId == printer.preparationAreaId;
+          // Robust ID matching: convert both to string and trim
+          final product = products.firstWhereOrNull((p) => p.id.toString().trim() == d['id'].toString().trim());
+          return product?.preparationAreaId != null && product?.preparationAreaId == printer.preparationAreaId;
         }).toList();
 
         if (filteredItems.isNotEmpty) {
