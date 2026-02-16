@@ -110,22 +110,31 @@ class PreparationAreaManagementScreen extends StatelessWidget {
         decoration: const InputDecoration(labelText: "Area Name", border: OutlineInputBorder())
       ),
       confirm: ElevatedButton(
-        onPressed: () {
+        onPressed: () async {
           if (controller.text.isNotEmpty) {
-            if (area == null) {
-              pos.addPreparationArea(PreparationAreaModel(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                name: controller.text,
-                cafeId: pos.currentUser.value?['cafe_id'] ?? '',
-              ));
-            } else {
-              pos.updatePreparationArea(PreparationAreaModel(
-                id: area.id,
-                name: controller.text,
-                cafeId: area.cafeId,
-              ));
+            Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
+            try {
+              if (area == null) {
+                await pos.addPreparationArea(PreparationAreaModel(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  name: controller.text,
+                  cafeId: pos.currentUser.value?['cafe_id'] ?? '',
+                ));
+              } else {
+                await pos.updatePreparationArea(PreparationAreaModel(
+                  id: area.id,
+                  name: controller.text,
+                  cafeId: area.cafeId,
+                ));
+              }
+              Get.back(); // Close loading
+              Get.back(); // Close dialog
+              Get.snackbar("success".tr, area == null ? "Area Added" : "Area Updated",
+                backgroundColor: Colors.green, colorText: Colors.white);
+            } catch (e) {
+              Get.back(); // Close loading
+              Get.snackbar("error".tr, "Save failed: $e", backgroundColor: Colors.red, colorText: Colors.white);
             }
-            Get.back();
           }
         },
         child: Text("save".tr),

@@ -60,11 +60,63 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> createCategory(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/categories/', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateCategory(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/categories/$id', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteCategory(String id) async {
+    try {
+      await _dio.delete('/categories/$id');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Products
   Future<List<dynamic>> getProducts() async {
     try {
       final response = await _dio.get('/products');
       return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createProduct(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/products/', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProduct(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/products/$id', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteProduct(String id) async {
+    try {
+      await _dio.delete('/products/$id');
     } catch (e) {
       rethrow;
     }
@@ -122,11 +174,63 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> createPreparationArea(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/preparation-areas', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updatePreparationArea(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/preparation-areas/$id', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deletePreparationArea(String id) async {
+    try {
+      await _dio.delete('/preparation-areas/$id');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Printers
   Future<List<dynamic>> getPrinters() async {
     try {
       final response = await _dio.get('/printers');
       return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createPrinter(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/printers', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updatePrinter(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/printers/$id', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deletePrinter(String id) async {
+    try {
+      await _dio.delete('/printers/$id');
     } catch (e) {
       rethrow;
     }

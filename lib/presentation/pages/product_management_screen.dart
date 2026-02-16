@@ -193,14 +193,23 @@ class ProductManagementScreen extends StatelessWidget {
       title: category == null ? "Add Category" : "Edit Category",
       content: TextField(controller: controller, decoration: InputDecoration(labelText: "product_name".tr)), // Using product_name as placeholder or better 'category'
       confirm: ElevatedButton(
-        onPressed: () {
+        onPressed: () async {
           if (controller.text.isNotEmpty) {
-            if (category == null) {
-              pos.addCategory(controller.text);
-            } else {
-              pos.updateCategory(category, controller.text);
+            Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
+            try {
+              if (category == null) {
+                await pos.addCategory(controller.text);
+              } else {
+                await pos.updateCategory(category, controller.text);
+              }
+              Get.back(); // Close loading
+              Get.back(); // Close dialog
+              Get.snackbar("success".tr, category == null ? "category_added".tr : "category_updated".tr,
+                backgroundColor: Colors.green, colorText: Colors.white);
+            } catch (e) {
+              Get.back(); // Close loading
+              Get.snackbar("error".tr, "Save failed: $e", backgroundColor: Colors.red, colorText: Colors.white);
             }
-            Get.back();
           }
         },
         child: Text("save".tr),

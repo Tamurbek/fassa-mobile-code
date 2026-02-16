@@ -59,15 +59,21 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
       paperSize: _paperSize.value,
     );
 
-    if (widget.printer == null) {
-      pos.addPrinter(newPrinter);
-    } else {
-      pos.updatePrinter(newPrinter);
+    Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
+    try {
+      if (widget.printer == null) {
+        await pos.addPrinter(newPrinter);
+      } else {
+        await pos.updatePrinter(newPrinter);
+      }
+      Get.back(); // Close loading dialog
+      Get.back(); // Go back
+      Get.snackbar("success".tr, widget.printer == null ? "Printer Added" : "Printer Updated",
+        backgroundColor: Colors.green, colorText: Colors.white);
+    } catch (e) {
+      Get.back(); // Close loading dialog
+      Get.snackbar("error".tr, "Save failed: $e", backgroundColor: Colors.red, colorText: Colors.white);
     }
-
-    Get.back();
-    Get.snackbar("success".tr, widget.printer == null ? "Printer Added" : "Printer Updated",
-      backgroundColor: Colors.green, colorText: Colors.white);
   }
 
   @override

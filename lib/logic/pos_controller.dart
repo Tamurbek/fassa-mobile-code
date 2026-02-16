@@ -30,6 +30,7 @@ class POSController extends GetxController {
   // Product Catalog
   var products = <FoodItem>[].obs;
   var categories = <String>["All"].obs;
+  var categoriesObjects = <Map<String, dynamic>>[].obs;
   var preparationAreas = <PreparationAreaModel>[].obs;
   var printers = <PrinterModel>[].obs;
   var selectedCategory = "All".obs;
@@ -45,6 +46,8 @@ class POSController extends GetxController {
   var restaurantName = "".obs;
   var restaurantAddress = "".obs;
   var restaurantPhone = "".obs;
+
+  String get cafeId => currentUser.value?['cafe_id'] ?? "";
 
   @override
   void onInit() {
@@ -69,6 +72,11 @@ class POSController extends GetxController {
     var storedCategories = _storage.read('categories');
     if (storedCategories != null) {
       categories.assignAll(List<String>.from(storedCategories));
+    }
+
+    var storedCategoriesObjects = _storage.read('categories_objects');
+    if (storedCategoriesObjects != null) {
+      categoriesObjects.assignAll(List<Map<String, dynamic>>.from(storedCategoriesObjects));
     }
 
     var storedPrepAreas = _storage.read('preparation_areas');
@@ -109,7 +117,9 @@ class POSController extends GetxController {
       // Fetch Categories
       final backendCategories = await _api.getCategories();
       if (backendCategories.isNotEmpty) {
+        categoriesObjects.assignAll(List<Map<String, dynamic>>.from(backendCategories));
         categories.assignAll(["All", ...backendCategories.map((c) => c['name'].toString())]);
+        _storage.write('categories_objects', categoriesObjects.toList());
         saveCategories();
       }
 
@@ -147,19 +157,26 @@ class POSController extends GetxController {
 
   Map<String, dynamic> _normalizeOrder(Map<String, dynamic> o) {
     // Convert backend structure to frontend structure
+    // Handle both camelCase (from Websocket) and snake_case (from REST API)
+    final tableNum = o['tableNumber'] ?? o['table_number'];
+    final totalAmt = o['totalAmount'] ?? o['total_amount'];
+    final typeStr = o['type'] ?? 'DINE_IN';
+    final statusStr = o['status'] ?? 'PENDING';
+    final timestamp = o['createdAt'] ?? o['created_at'];
+
     return {
       "id": o['id'],
-      "table": o['tableNumber'] != null ? o['tableNumber'] : "-",
-      "mode": o['type'].toString().toLowerCase().replaceAll("_", "-").capitalizeFirst,
-      "items": (o['items'] as List).fold(0, (sum, item) => sum + (item['quantity'] as int)),
-      "total": double.tryParse(o['totalAmount'].toString()) ?? 0.0,
-      "status": o['status'].toString().replaceAll("_", " ").split(" ").map((s) => s.toLowerCase().capitalizeFirst).join(" "),
-      "timestamp": o['createdAt'],
-      "details": (o['items'] as List).map((i) => {
-        "id": i['productId'],
+      "table": tableNum != null ? tableNum.toString() : "-",
+      "mode": typeStr.toString().toLowerCase().replaceAll("_", "-").capitalizeFirst,
+      "items": (o['items'] as List?)?.fold(0, (sum, item) => sum + ((item['quantity'] ?? item['qty'] ?? 0) as int)) ?? 0,
+      "total": double.tryParse(totalAmt.toString()) ?? 0.0,
+      "status": statusStr.toString().replaceAll("_", " ").split(" ").map((s) => s.toLowerCase().capitalizeFirst).join(" "),
+      "timestamp": timestamp,
+      "details": (o['items'] as List? ?? []).map((i) => {
+        "id": i['productId'] ?? i['product_id'],
         "name": i['product'] != null ? i['product']['name'] : "Unknown",
-        "qty": i['quantity'],
-        "price": double.tryParse(i['price'].toString()) ?? 0.0,
+        "qty": i['quantity'] ?? i['qty'],
+        "price": double.tryParse((i['price'] ?? 0).toString()) ?? 0.0,
       }).toList(),
     };
   }
@@ -412,132 +429,243 @@ class POSController extends GetxController {
     _storage.write('categories', categories.toList());
   }
 
-  void addProduct(FoodItem item) {
-    products.add(item);
-    saveProducts();
-  }
+  Future<void> addProduct(FoodItem item) async {
+    try {
+      final json = item.toJson();
+      json['cafe_id'] = cafeId;
+      
+      // Find category ID
+      final cat = categoriesObjects.firstWhereOrNull((c) => c['name'] == item.category);
+      if (cat != null) json['category_id'] = cat['id'];
 
-  void updateProduct(FoodItem item) {
-    int index = products.indexWhere((p) => p.id == item.id);
-    if (index != -1) {
-      products[index] = item;
+      final newItem = await _api.createProduct(json);
+      products.add(FoodItem.fromJson(newItem));
       saveProducts();
+    } catch (e) {
+      print("Error adding product: $e");
     }
   }
 
-  void deleteProduct(String id) {
-    products.removeWhere((p) => p.id == id);
-    saveProducts();
+  Future<void> updateProduct(FoodItem item) async {
+    try {
+      final json = item.toJson();
+      json.remove('id'); // ID in URL
+      json['cafe_id'] = cafeId;
+      
+      final cat = categoriesObjects.firstWhereOrNull((c) => c['name'] == item.category);
+      if (cat != null) json['category_id'] = cat['id'];
+
+      final updatedItem = await _api.updateProduct(item.id, json);
+      int index = products.indexWhere((p) => p.id == item.id);
+      if (index != -1) {
+        products[index] = FoodItem.fromJson(updatedItem);
+        saveProducts();
+      }
+    } catch (e) {
+      print("Error updating product: $e");
+    }
   }
 
-  void addCategory(String category) {
-    if (!categories.contains(category)) {
-      categories.add(category);
+  Future<void> deleteProduct(String id) async {
+    try {
+      await _api.deleteProduct(id);
+      products.removeWhere((p) => p.id == id);
+      saveProducts();
+    } catch (e) {
+      print("Error deleting product: $e");
+    }
+  }
+
+  Future<void> addCategory(String category) async {
+    if (categories.contains(category)) return;
+    try {
+      final newCat = await _api.createCategory({
+        "name": category,
+        "cafe_id": cafeId,
+        "sort_order": categories.length
+      });
+      categoriesObjects.add(newCat);
+      categories.add(newCat['name']);
+      _storage.write('categories_objects', categoriesObjects.toList());
       saveCategories();
+    } catch (e) {
+      print("Error adding category: $e");
     }
   }
   
-  void updateCategory(String oldName, String newName) {
-    if (!categories.contains(oldName)) return;
-    int index = categories.indexOf(oldName);
-    categories[index] = newName;
-    saveCategories();
+  Future<void> updateCategory(String oldName, String newName) async {
+    final catObj = categoriesObjects.firstWhereOrNull((c) => c['name'] == oldName);
+    if (catObj == null) return;
 
-    // Update products
-    for (int i = 0; i < products.length; i++) {
-      if (products[i].category == oldName) {
-        products[i] = FoodItem(
-          id: products[i].id,
-          name: products[i].name,
-          description: products[i].description,
-          price: products[i].price,
-          imageUrl: products[i].imageUrl,
-          category: newName,
-          rating: products[i].rating,
-          timeEstimate: products[i].timeEstimate,
-        );
-      }
-    }
-    products.refresh();
-    saveProducts();
-  }
+    try {
+      final updatedCat = await _api.updateCategory(catObj['id'], {
+        "name": newName,
+      });
+      
+      int objIndex = categoriesObjects.indexWhere((c) => c['id'] == catObj['id']);
+      if (objIndex != -1) categoriesObjects[objIndex] = updatedCat;
 
-  void deleteCategory(String category) {
-    if (category != "All") {
-      categories.remove(category);
+      int nameIndex = categories.indexOf(oldName);
+      if (nameIndex != -1) categories[nameIndex] = newName;
+
+      _storage.write('categories_objects', categoriesObjects.toList());
       saveCategories();
+
+      // Update products locally
+      for (int i = 0; i < products.length; i++) {
+        if (products[i].category == oldName) {
+          products[i] = FoodItem.fromJson({
+            ...products[i].toJson(),
+            'category': newName,
+          });
+        }
+      }
+      products.refresh();
+      saveProducts();
+    } catch (e) {
+      print("Error updating category: $e");
     }
   }
 
-  void addPreparationArea(PreparationAreaModel area) {
-    preparationAreas.add(area);
-    savePreparationAreas();
+  Future<void> deleteCategory(String category) async {
+    if (category == "All") return;
+    final catObj = categoriesObjects.firstWhereOrNull((c) => c['name'] == category);
+    if (catObj == null) return;
+
+    try {
+      await _api.deleteCategory(catObj['id']);
+      categoriesObjects.removeWhere((c) => c['id'] == catObj['id']);
+      categories.remove(category);
+      _storage.write('categories_objects', categoriesObjects.toList());
+      saveCategories();
+    } catch (e) {
+      print("Error deleting category: $e");
+    }
+  }
+
+  Future<void> addPreparationArea(PreparationAreaModel area) async {
+    try {
+      final json = area.toJson();
+      json['cafe_id'] = cafeId;
+      final newArea = await _api.createPreparationArea(json);
+      preparationAreas.add(PreparationAreaModel.fromJson(newArea));
+      savePreparationAreas();
+    } catch (e) {
+      print("Error adding preparation area: $e");
+    }
   }
 
   void savePreparationAreas() {
     _storage.write('preparation_areas', preparationAreas.map((e) => e.toJson()).toList());
   }
 
-  void updatePreparationArea(PreparationAreaModel area) {
-    int index = preparationAreas.indexWhere((a) => a.id == area.id);
-    if (index != -1) {
-      preparationAreas[index] = area;
-      savePreparationAreas();
+  Future<void> updatePreparationArea(PreparationAreaModel area) async {
+    try {
+      final json = area.toJson();
+      json.remove('id');
+      final updatedArea = await _api.updatePreparationArea(area.id, json);
+      int index = preparationAreas.indexWhere((a) => a.id == area.id);
+      if (index != -1) {
+        preparationAreas[index] = PreparationAreaModel.fromJson(updatedArea);
+        savePreparationAreas();
+      }
+    } catch (e) {
+      print("Error updating preparation area: $e");
     }
   }
 
-  void deletePreparationArea(String id) {
-    preparationAreas.removeWhere((a) => a.id == id);
-    savePreparationAreas();
+  Future<void> deletePreparationArea(String id) async {
+    try {
+      await _api.deletePreparationArea(id);
+      preparationAreas.removeWhere((a) => a.id == id);
+      savePreparationAreas();
+    } catch (e) {
+      print("Error deleting preparation area: $e");
+    }
   }
 
   void savePrinters() {
     _storage.write('printers', printers.map((e) => e.toJson()).toList());
   }
 
-  void addPrinter(PrinterModel printer) {
-    printers.add(printer);
-    savePrinters();
-  }
-
-  void updatePrinter(PrinterModel printer) {
-    int index = printers.indexWhere((p) => p.id == printer.id);
-    if (index != -1) {
-      printers[index] = printer;
+  Future<void> addPrinter(PrinterModel printer) async {
+    try {
+      final json = printer.toJson();
+      json['cafe_id'] = cafeId;
+      final newPrinter = await _api.createPrinter(json);
+      printers.add(PrinterModel.fromJson(newPrinter));
       savePrinters();
+    } catch (e) {
+      print("Error adding printer: $e");
     }
   }
 
-  void deletePrinter(String id) {
-    printers.removeWhere((p) => p.id == id);
-    savePrinters();
+  Future<void> updatePrinter(PrinterModel printer) async {
+    try {
+      final json = printer.toJson();
+      json.remove('id');
+      final updatedPrinter = await _api.updatePrinter(printer.id, json);
+      int index = printers.indexWhere((p) => p.id == printer.id);
+      if (index != -1) {
+        printers[index] = PrinterModel.fromJson(updatedPrinter);
+        savePrinters();
+      }
+    } catch (e) {
+      print("Error updating printer: $e");
+    }
+  }
+
+  Future<void> deletePrinter(String id) async {
+    try {
+      await _api.deletePrinter(id);
+      printers.removeWhere((p) => p.id == id);
+      savePrinters();
+    } catch (e) {
+      print("Error deleting printer: $e");
+    }
   }
 
   Future<void> printOrder(Map<String, dynamic> order) async {
     isPrinting.value = true;
     bool anySuccess = false;
+    bool anyPrinterAttempted = false;
     
     final details = order['details'] as List? ?? [];
     
-    for (var printer in printers) {
-      if (!printer.isActive) continue;
+    final activePrinters = printers.where((p) => p.isActive).toList();
+    
+    if (activePrinters.isEmpty) {
+      Get.snackbar("Printer Warning", "No active printers configured", 
+        backgroundColor: Colors.orange, colorText: AppColors.white,
+        snackPosition: SnackPosition.BOTTOM);
+      isPrinting.value = false;
+      return;
+    }
 
-      if (printer.preparationAreaId == null) {
+    for (var printer in activePrinters) {
+      anyPrinterAttempted = true;
+      if (printer.preparationAreaId == null || printer.preparationAreaId!.isEmpty) {
         // Receipt Printer - Full Ticket
         final success = await _printer.printReceipt(printer, order);
         if (success) anySuccess = true;
       } else {
         // Kitchen Printer - Filtered items
-        // We need to match items with printer's preparationAreaId
         final filteredItems = details.where((d) {
-          // Robust ID matching: convert both to string and trim
-          final product = products.firstWhereOrNull((p) => p.id.toString().trim() == d['id'].toString().trim());
-          return product?.preparationAreaId != null && product?.preparationAreaId == printer.preparationAreaId;
+          final itemId = d['id']?.toString().trim();
+          if (itemId == null) return false;
+          
+          final product = products.firstWhereOrNull((p) => p.id.toString().trim() == itemId);
+          return product != null && 
+                 product.preparationAreaId != null && 
+                 product.preparationAreaId.toString().trim() == printer.preparationAreaId.toString().trim();
         }).toList();
 
         if (filteredItems.isNotEmpty) {
           final success = await _printer.printKitchenTicket(printer, order, filteredItems);
           if (success) anySuccess = true;
+        } else {
+          // No items for this kitchen printer - count as "not failed" but didn't print
+          print("No items for printer ${printer.name} (Area ID: ${printer.preparationAreaId})");
         }
       }
     }
@@ -547,10 +675,18 @@ class POSController extends GetxController {
       Get.snackbar("Printer", "Print job sent successfully", 
         backgroundColor: AppColors.primary.withOpacity(0.8), colorText: AppColors.white,
         snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 2));
-    } else if (printers.any((p) => p.isActive)) {
-      Get.snackbar("Printer Error", "Could not connect to printers", 
-        backgroundColor: Get.theme.colorScheme.error, colorText: AppColors.white,
-        snackPosition: SnackPosition.BOTTOM);
+    } else if (anyPrinterAttempted) {
+      // Check if we didn't print because of filter or because of connection
+      bool hasKitchenPrinters = activePrinters.any((p) => p.preparationAreaId != null && p.preparationAreaId!.isNotEmpty);
+      if (hasKitchenPrinters && !anySuccess) {
+         Get.snackbar("Printer info", "Prints may be filtered or connection failed", 
+          backgroundColor: Colors.blueGrey, colorText: AppColors.white,
+          snackPosition: SnackPosition.BOTTOM);
+      } else {
+        Get.snackbar("Printer Error", "Could not connect to printers", 
+          backgroundColor: Get.theme.colorScheme.error, colorText: AppColors.white,
+          snackPosition: SnackPosition.BOTTOM);
+      }
     }
   }
 

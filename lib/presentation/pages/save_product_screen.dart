@@ -110,15 +110,21 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
       preparationAreaId: _selectedPrepAreaId.value.isEmpty ? null : _selectedPrepAreaId.value,
     );
 
-    if (widget.item == null) {
-      pos.addProduct(newItem);
-    } else {
-      pos.updateProduct(newItem);
+    Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
+    try {
+      if (widget.item == null) {
+        await pos.addProduct(newItem);
+      } else {
+        await pos.updateProduct(newItem);
+      }
+      Get.back(); // Close loading dialog
+      Get.back(); // Go back to management screen
+      Get.snackbar("success".tr, widget.item == null ? "product_added".tr : "product_updated".tr,
+        backgroundColor: Colors.green, colorText: Colors.white);
+    } catch (e) {
+      Get.back(); // Close loading dialog
+      Get.snackbar("error".tr, "Save failed: $e", backgroundColor: Colors.red, colorText: Colors.white);
     }
-
-    Get.back(); // Go back to management screen
-    Get.snackbar("success".tr, widget.item == null ? "product_added".tr : "product_updated".tr,
-      backgroundColor: Colors.green, colorText: Colors.white);
   }
 
   @override
