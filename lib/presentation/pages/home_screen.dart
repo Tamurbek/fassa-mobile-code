@@ -497,14 +497,15 @@ class HomeScreen extends StatelessWidget {
       return const Center(child: Padding(padding: EdgeInsets.all(40.0), child: Text("No items in this category")));
     }
 
-    final int crossAxisCount = Responsive.isMobile(context) ? 1 : (Responsive.isTablet(context) ? 2 : 3);
-    final double childAspectRatio = Responsive.isMobile(context) ? 1.6 : 1.6;
+    final bool isMobile = Responsive.isMobile(context);
+    final int crossAxisCount = isMobile ? 1 : (Responsive.isTablet(context) ? 2 : 2);
+    final double childAspectRatio = isMobile ? 2.8 : 3.2;
 
     return GridView.builder(
-      padding: EdgeInsets.symmetric(horizontal: Responsive.isMobile(context) ? 24 : 40),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 40),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: 1.35,
+        childAspectRatio: childAspectRatio,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -518,63 +519,51 @@ class HomeScreen extends StatelessWidget {
     final POSController pos = Get.find<POSController>();
     final bool isMobile = Responsive.isMobile(context);
 
-    return GestureDetector(
-      onTap: () => Get.to(() => FoodDetailScreen(item: item)),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: AppColors.cardShadow.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: CommonImage(
-                imageUrl: item.imageUrl,
-                width: isMobile ? 85 : 100,
-                height: isMobile ? 85 : 100,
-                fit: BoxFit.cover,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: CommonImage(
+              imageUrl: item.imageUrl,
+              width: isMobile ? 60 : 70,
+              height: isMobile ? 60 : 70,
+              fit: BoxFit.cover,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(item.name, 
-                    style: TextStyle(
-                      fontSize: isMobile ? 16 : 18, 
-                      fontWeight: FontWeight.bold
-                    ), 
-                    maxLines: 1, 
-                    overflow: TextOverflow.ellipsis
-                  ),
-                  const SizedBox(height: 4),
-                  Text(item.description, 
-                    style: TextStyle(
-                      fontSize: isMobile ? 12 : 13, 
-                      color: AppColors.textSecondary
-                    ), 
-                    maxLines: 1, 
-                    overflow: TextOverflow.ellipsis
-                  ),
-                  const SizedBox(height: 8),
-                  Text("\$${item.price.toStringAsFixed(2)}", 
-                    style: TextStyle(
-                      fontSize: isMobile ? 18 : 20, 
-                      fontWeight: FontWeight.bold, 
-                      color: AppColors.primary
-                    )
-                  ),
-                ],
-              ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(item.name, 
+                  style: TextStyle(
+                    fontSize: isMobile ? 14 : 16, 
+                    fontWeight: FontWeight.bold
+                  ), 
+                  maxLines: 1, 
+                  overflow: TextOverflow.ellipsis
+                ),
+                const SizedBox(height: 4),
+                Text("${item.price.toStringAsFixed(0)} so'm", 
+                  style: TextStyle(
+                    fontSize: isMobile ? 16 : 18, 
+                    fontWeight: FontWeight.bold, 
+                    color: AppColors.primary
+                  )
+                ),
+              ],
             ),
-            _buildQuantityControls(item, pos, isMobile),
-          ],
-        ),
+          ),
+          _buildQuantityControls(item, pos, isMobile),
+        ],
       ),
     );
   }
