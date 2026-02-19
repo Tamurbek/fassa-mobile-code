@@ -353,72 +353,61 @@ class OrdersScreen extends StatelessWidget {
     final status = order['status'];
     final mode = order['mode'] ?? "Dine-in";
     String modeLabel = mode.toString().toLowerCase() == "dine-in" ? 'dine_in'.tr : (mode.toString().toLowerCase() == "takeaway" ? 'takeaway'.tr : 'delivery'.tr);
-    final details = order['details'] as List? ?? [];
     final bool isMobile = Responsive.isMobile(context);
 
-    return InkWell(
-      onTap: () {
-        if (status != "Bill Printed") {
-          pos.loadOrderForEditing(order, catalog);
-          Get.to(() => const HomeScreen());
-        }
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              "Order #${order['id']}", 
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            "Order #${order['id']}", 
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
-                          if (isActive) _buildActionIcon(status, order, pos, catalog),
-                        ],
-                      ),
-                      Text(
-                        "${order['table']} • $modeLabel • ${order['items']} ${'items'.tr}", 
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: isMobile ? 12 : 14),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                        ),
+                        if (isActive) _buildActionIcon(status, order, pos, catalog),
+                      ],
+                    ),
+                    Text(
+                      "${order['table']} • $modeLabel • ${order['items']} ${'items'.tr}", 
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: isMobile ? 12 : 14),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "${'total'.tr}: \$${order['total'].toStringAsFixed(2)}", 
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18, color: AppColors.primary)
-                ),
-                Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey.withOpacity(0.5)),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "${'total'.tr}: \$${order['total'].toStringAsFixed(2)}", 
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18, color: AppColors.primary)
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
