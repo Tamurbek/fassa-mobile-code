@@ -8,6 +8,7 @@ import 'food_detail_screen.dart';
 import 'cart_screen.dart';
 import '../widgets/common_image.dart';
 import '../widgets/printing_overlay.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -17,130 +18,46 @@ class HomeScreen extends StatelessWidget {
     final POSController pos = Get.find<POSController>();
     final bool isMobile = Responsive.isMobile(context);
 
-    // Desktop/Laptop POS Layout
-    if (!isMobile) {
-      return Obx(() => Stack(
-        children: [
-          Scaffold(
-            backgroundColor: AppColors.background,
-            appBar: AppBar(
-              title: Text(pos.editingOrderId.value != null 
-                ? "${'editing_order'.tr} #${pos.editingOrderId.value}" 
-                : "${pos.currentMode.value.toLowerCase().tr} Terminal"),
-              centerTitle: true,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => _handleBack(pos),
-              ),
-            ),
-            body: Row(
-              children: [
-                // Right Side: Cart/Receipt Summary (POS Style)
-                Container(
-                  width: 380,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)],
-                  ),
-                  child: _buildPOSCartSidebar(pos),
-                ),
-                const VerticalDivider(width: 1),
-                // Left Side: Products
-                Expanded(
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: _buildSearchBar(),
-                      ),
-                      _buildCategories(pos, context),
-                      const SizedBox(height: 24),
-                      Expanded(
-                        child: Builder(builder: (context) {
-                          final cat = pos.selectedCategory.value;
-                          final items = cat == "All" 
-                            ? pos.products 
-                            : pos.products.where((p) => p.category == cat).toList();
-                          return _buildItemsGrid(items, context);
-                        }),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (pos.isPrinting.value) const PrintingOverlay(),
-        ],
-      ));
-    }
-
-    // Mobile/Original Layout
     return Obx(() => Stack(
       children: [
         Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: Text(pos.editingOrderId.value != null 
-              ? "${'editing_order'.tr} #${pos.editingOrderId.value}" 
-              : "${pos.currentMode.value.toLowerCase().tr} Terminal"),
-            centerTitle: true,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => _handleBack(pos),
-            ),
-            actions: [
-              if (pos.editingOrderId.value != null && pos.isOrderModified.value) 
-                IconButton(
-                    icon: const Icon(Icons.check, color: Colors.green, size: 28),
-                    onPressed: () => _handleSave(pos),
+          backgroundColor: const Color(0xFFF8F9FB),
+          body: Row(
+            children: [
+              // Left Sidebar: Cart (Only on Desktop/Tablet)
+              if (!isMobile)
+                Container(
+                  width: 380,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(right: BorderSide(color: Color(0xFFEDF0F5))),
                   ),
-            ],
-          ),
-          body: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                       _buildOperatorHeader(pos, context),
-                      const SizedBox(height: 16),
-                      _buildSearchBar(),
-                    ],
-                  ),
+                  child: _buildPOSCartSidebar(pos, context),
                 ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildCategories(pos, context),
-                      const SizedBox(height: 24),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(
-                          "select_items".tr,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(child: Builder(builder: (context) {
+              
+              // Main Content
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildTopBar(pos, context),
+                    _buildCategories(pos, context),
+                    Expanded(
+                      child: Builder(builder: (context) {
                         final cat = pos.selectedCategory.value;
                         final items = cat == "All" 
                           ? pos.products 
                           : pos.products.where((p) => p.category == cat).toList();
                         return _buildItemsGrid(items, context);
-                      })),
-                      const SizedBox(height: 100),
-                    ],
-                  ),
+                      }),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          floatingActionButton: pos.currentOrder.isEmpty ? null : _buildMobileCartButton(pos, context),
+          floatingActionButton: isMobile && pos.currentOrder.isNotEmpty 
+            ? _buildMobileCartButton(pos, context) 
+            : null,
           floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         ),
         if (pos.isPrinting.value) const PrintingOverlay(),
@@ -148,87 +65,200 @@ class HomeScreen extends StatelessWidget {
     ));
   }
 
-  void _handleBack(POSController pos) {
-    if (pos.isOrderModified.value) {
-      Get.dialog(
-        AlertDialog(
-          title: Text(pos.editingOrderId.value != null ? 'cancel_edit'.tr : 'discard_order'.tr),
-          content: Text('unsaved_changes'.tr),
-          actions: [
-            TextButton(onPressed: () => Get.back(), child: Text('keep'.tr)),
-            TextButton(
-              onPressed: () {
-                pos.clearCurrentOrder();
-                Get.back();
-                Get.back();
-              }, 
-              child: Text(pos.editingOrderId.value != null ? 'cancel'.tr : 'discard'.tr, 
-                style: const TextStyle(color: Colors.red))
-            ),
-          ],
-        ),
-      );
-    } else {
-      Get.back();
-    }
-  }
-
-  void _handleSave(POSController pos) {
-    pos.updateExistingOrder(isPaid: false);
-    Get.back();
-    Get.snackbar("success".tr, "ordered".tr, 
-      backgroundColor: AppColors.primary, colorText: Colors.white);
-  }
-
-  Widget _buildMobileCartButton(POSController pos, BuildContext context) {
+  Widget _buildTopBar(POSController pos, BuildContext context) {
+    final bool isMobile = Responsive.isMobile(context);
     return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        color: AppColors.textPrimary,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 5))],
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 24 : 40, 
+        MediaQuery.of(context).padding.top + 16, 
+        isMobile ? 24 : 40, 
+        16
       ),
-      child: InkWell(
-        onTap: () => Get.to(() => const CartScreen()),
-        child: Row(
-          children: [
-            const Icon(Icons.receipt_long, color: Colors.white, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                pos.editingOrderId.value != null 
-                  ? "${'update_review'.tr}: \$${pos.total.toStringAsFixed(2)}"
-                  : "${'review_bill'.tr}: \$${pos.total.toStringAsFixed(2)}",
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                overflow: TextOverflow.ellipsis,
+      child: Row(
+        children: [
+          if (!isMobile) ...[
+            const Text(
+              "FAST FOOD PRO",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFFFF9500), letterSpacing: -0.5),
+            ),
+            const SizedBox(width: 40),
+          ],
+          Expanded(
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'search_hint'.tr,
+                  hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
               ),
             ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-              child: Text("${pos.totalItems} ${'items'.tr}", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 16),
+          _buildTopIcon(Icons.notifications_outlined),
+          const SizedBox(width: 12),
+          _buildTopIcon(Icons.settings_outlined, onTap: () => Get.toNamed('/settings')),
+        ],
       ),
     );
   }
 
-  Widget _buildPOSCartSidebar(POSController pos) {
+  Widget _buildTopIcon(IconData icon, {VoidCallback? onTap}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: const Color(0xFF1A1A1A), size: 22),
+        onPressed: onTap,
+      ),
+    );
+  }
+
+  Widget _buildCategories(POSController pos, BuildContext context) {
+    final List<Map<String, dynamic>> catItems = [
+      {"name": "All", "label": "all".tr, "icon": Icons.grid_view_rounded},
+      {"name": "Lavash", "label": "Lavash", "icon": Icons.local_fire_department_rounded},
+      {"name": "Burger", "label": "burger".tr, "icon": Icons.lunch_dining_rounded},
+      {"name": "Ichimliklar", "label": "drinks".tr, "icon": Icons.local_drink_rounded},
+      {"name": "Gazaklar", "label": "Gazaklar", "icon": Icons.bakery_dining_rounded},
+    ];
+
+    return Container(
+      height: 56,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.separated(
+        padding: EdgeInsets.symmetric(horizontal: Responsive.isMobile(context) ? 24 : 40),
+        scrollDirection: Axis.horizontal,
+        itemCount: catItems.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final cat = catItems[index];
+          return Obx(() {
+            final isSelected = pos.selectedCategory.value == cat['name'] as String;
+            return GestureDetector(
+              onTap: () => pos.selectedCategory.value = cat['name'] as String,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFFFF9500) : const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(cat['icon'] as IconData, size: 18, color: isSelected ? Colors.white : const Color(0xFF1A1A1A)),
+                    const SizedBox(width: 8),
+                    Text(
+                      cat['label'] as String,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : const Color(0xFF1A1A1A),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildItemsGrid(List<FoodItem> items, BuildContext context) {
+    final bool isMobile = Responsive.isMobile(context);
+    return GridView.builder(
+      padding: EdgeInsets.all(isMobile ? 24 : 40),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isMobile ? 2 : (Responsive.isTablet(context) ? 3 : 4),
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 20,
+        mainAxisSpacing: 20,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) => _buildFoodCard(items[index], context),
+    );
+  }
+
+  Widget _buildFoodCard(FoodItem item, BuildContext context) {
+    final POSController pos = Get.find<POSController>();
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              width: double.infinity,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CommonImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1A1A1A))),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("${NumberFormat("#,###", "uz_UZ").format(item.price)}", 
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFFFF9500))),
+                        Text("currency".tr, style: const TextStyle(fontSize: 12, color: Color(0xFFFF9500), fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    GestureDetector(
+                      onTap: () => pos.addToCart(item),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(12)),
+                        child: const Icon(Icons.add, color: Color(0xFFFF9500), size: 20),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPOSCartSidebar(POSController pos, BuildContext context) {
     return Column(
       children: [
-        _buildOperatorHeader(pos, Get.context!),
-        const Divider(),
+        _buildOperatorHeader(pos),
         _buildModeSelector(pos),
         Expanded(
           child: pos.currentOrder.isEmpty
               ? _buildEmptyCartPlaceholder()
               : ListView.separated(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   itemCount: pos.currentOrder.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  separatorBuilder: (context, index) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final cartItem = pos.currentOrder[index];
                     return _buildPOSCartItem(cartItem['item'], cartItem['quantity'], index, pos);
@@ -240,138 +270,59 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPOSCartItem(FoodItem item, int quantity, int index, POSController pos) {
+  Widget _buildOperatorHeader(POSController pos) {
     return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      padding: const EdgeInsets.fromLTRB(24, 60, 24, 20),
       child: Row(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                Text("\$${item.price.toStringAsFixed(2)}", style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600)),
-              ],
-            ),
+          const CircleAvatar(
+            backgroundColor: Color(0xFFFFEDD5),
+            child: Icon(Icons.person, color: Color(0xFFFF9500)),
           ),
+          const SizedBox(width: 12),
           Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSmallQtyBtn(Icons.add, () => pos.updateQuantity(index, 1), isPrimary: true),
-              GestureDetector(
-                onTap: () => pos.showQuantityDialog(index),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text(quantity.toString(), 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
-              ),
-              _buildSmallQtyBtn(Icons.remove, () => pos.updateQuantity(index, -1)),
+              Text("operator".tr, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12, fontWeight: FontWeight.bold)),
+              Text((pos.currentUser.value?['name'] as String?) ?? "Unknown", 
+                style: const TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.w800, fontSize: 16)),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSmallQtyBtn(IconData icon, VoidCallback onTap, {bool isPrimary = false}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10), // Increased from 4
-        decoration: BoxDecoration(
-          color: isPrimary ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(10), // Increased from 6
-          border: isPrimary ? null : Border.all(color: Colors.grey.shade300),
-        ),
-        child: Icon(icon, size: 20, color: isPrimary ? Colors.white : AppColors.textPrimary), // Increased from 14
-      ),
-    );
-  }
-
-  Widget _buildPOSOrderSummary(POSController pos) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      color: Colors.white,
-      child: Column(
-        children: [
-          _buildSummaryRow("subtotal".tr, "\$${pos.subtotal.toStringAsFixed(2)}"),
-          _buildSummaryRow("Fee", "\$${pos.serviceFee.toStringAsFixed(2)}"),
-          const Divider(height: 24),
-          _buildSummaryRow("total".tr, "\$${pos.total.toStringAsFixed(2)}", isTotal: true),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => pos.submitOrder(isPaid: false),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(0, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text("kitchen_print".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-              if (pos.isAdmin) ...[
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => pos.submitOrder(isPaid: true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text("pay_finish".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: isTotal ? 18 : 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-          Text(value, style: TextStyle(fontSize: isTotal ? 18 : 14, fontWeight: FontWeight.bold, color: isTotal ? AppColors.primary : null)),
         ],
       ),
     );
   }
 
   Widget _buildModeSelector(POSController pos) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
+    final modes = [
+      {"id": "Dine-in", "label": "dine_in".tr, "icon": Icons.restaurant},
+      {"id": "Takeaway", "label": "takeaway".tr, "icon": Icons.shopping_bag},
+      {"id": "Delivery", "label": "delivery".tr, "icon": Icons.delivery_dining},
+    ];
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(16)),
       child: Row(
-        children: pos.orderModes.map((mode) {
-          final isSelected = pos.currentMode.value == mode;
+        children: modes.map((m) {
+          final isSel = pos.currentMode.value == m['id'] as String;
           return Expanded(
             child: GestureDetector(
-              onTap: () => pos.setMode(mode),
+              onTap: () => pos.setMode(m['id'] as String),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14), // Increased from 8
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
+                  color: isSel ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: isSel ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)] : null,
                 ),
-                child: Center(
-                  child: Text(
-                    mode.toLowerCase().tr,
-                    style: TextStyle(color: isSelected ? Colors.white : AppColors.textSecondary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, fontSize: 13),
-                  ),
+                child: Column(
+                  children: [
+                    Icon(m['icon'] as IconData, size: 18, color: isSel ? const Color(0xFFFF9500) : const Color(0xFF9CA3AF)),
+                    const SizedBox(height: 4),
+                    Text(m['label'] as String, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isSel ? const Color(0xFF1A1A1A) : const Color(0xFF9CA3AF))),
+                  ],
                 ),
               ),
             ),
@@ -381,243 +332,165 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyCartPlaceholder() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.shopping_basket_outlined, size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text("current_bill_empty".tr, style: TextStyle(color: Colors.grey.shade400)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOperatorHeader(POSController pos, BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("${'operator'.tr}: ${pos.currentUser.value?['name'] ?? 'Unknown'}", 
-              style: TextStyle(
-                color: AppColors.textSecondary, 
-                fontSize: Responsive.isMobile(context) ? 13 : 15
-              )
-            ),
-            Obx(() => pos.currentMode.value == "Dine-in" 
-              ? Text("${'table'.tr}: ${pos.selectedTable.value}", 
-                  style: TextStyle(
-                    color: AppColors.textPrimary, 
-                    fontWeight: FontWeight.bold, 
-                    fontSize: Responsive.isMobile(context) ? 14 : 18
-                  )
-                )
-              : const SizedBox.shrink()),
-          ],
-        ),
-        Obx(() => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            pos.currentMode.value.toLowerCase().tr,
-            style: TextStyle(
-              color: AppColors.primary, 
-              fontWeight: FontWeight.bold, 
-              fontSize: Responsive.isMobile(context) ? 12 : 14
-            ),
-          ),
-        )),
-      ],
-    );
-  }
-
-  Widget _buildSearchBar() {
+  Widget _buildPOSCartItem(FoodItem item, int quantity, int index, POSController pos) {
     return Container(
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: AppColors.cardShadow.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
-      ),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'search_hint'.tr,
-          hintStyle: TextStyle(color: Colors.grey.shade400),
-          prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategories(POSController pos, BuildContext context) {
-    return SizedBox(
-      height: 60, // Increased from 50
-      child: Obx(() => ListView.separated(
-        padding: EdgeInsets.symmetric(horizontal: Responsive.isMobile(context) ? 24 : 40),
-        scrollDirection: Axis.horizontal,
-        itemCount: pos.categories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final category = pos.categories[index];
-          return Obx(() {
-            final isSelected = pos.selectedCategory.value == category;
-            return GestureDetector(
-              onTap: () => pos.selectedCategory.value = category,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : AppColors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: isSelected ? null : Border.all(color: Colors.grey.shade200),
-                ),
-                child: Center(
-                  child: Text(
-                    category.tr,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textSecondary, 
-                      fontWeight: FontWeight.w600, 
-                      fontSize: Responsive.isMobile(context) ? 14 : 16
-                    ),
-                  ),
-                ),
-              ),
-            );
-          });
-        },
-      )),
-    );
-  }
-
-  Widget _buildItemsGrid(List<FoodItem> items, BuildContext context) {
-    if (items.isEmpty) {
-      return const Center(child: Padding(padding: EdgeInsets.all(40.0), child: Text("No items in this category")));
-    }
-
-    final bool isMobile = Responsive.isMobile(context);
-    final int crossAxisCount = isMobile ? 1 : (Responsive.isTablet(context) ? 2 : 2);
-    final double childAspectRatio = isMobile ? 2.8 : 3.2;
-
-    return GridView.builder(
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 40),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: childAspectRatio,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) => _buildFoodCard(items[index], context),
-      physics: const BouncingScrollPhysics(),
-    );
-  }
-
-  Widget _buildFoodCard(FoodItem item, BuildContext context) {
-    final POSController pos = Get.find<POSController>();
-    final bool isMobile = Responsive.isMobile(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        color: const Color(0xFFF8F9FB),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: CommonImage(
-              imageUrl: item.imageUrl,
-              width: isMobile ? 60 : 70,
-              height: isMobile ? 60 : 70,
-              fit: BoxFit.cover,
-            ),
+            child: CommonImage(imageUrl: item.imageUrl, width: 50, height: 50, fit: BoxFit.cover),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(item.name, 
-                  style: TextStyle(
-                    fontSize: isMobile ? 14 : 16, 
-                    fontWeight: FontWeight.bold
-                  ), 
-                  maxLines: 1, 
-                  overflow: TextOverflow.ellipsis
-                ),
-                const SizedBox(height: 4),
-                Text("${item.price.toStringAsFixed(0)} so'm", 
-                  style: TextStyle(
-                    fontSize: isMobile ? 16 : 18, 
-                    fontWeight: FontWeight.bold, 
-                    color: AppColors.primary
-                  )
-                ),
+                Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                Text("${NumberFormat("#,###", "uz_UZ").format(item.price)} ${"currency".tr}", 
+                  style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 11, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
-          _buildQuantityControls(item, pos, isMobile),
+          _buildVerticalCounter(index, quantity, pos),
         ],
       ),
     );
   }
 
-  Widget _buildQuantityControls(FoodItem item, POSController pos, bool isMobile) {
-    return Obx(() {
-      final cartItem = pos.currentOrder.firstWhereOrNull((e) => e['item'].id == item.id);
-      final int qty = cartItem != null ? cartItem['quantity'] : 0;
-      final int itemIndex = pos.currentOrder.indexWhere((e) => e['item'].id == item.id);
+  Widget _buildVerticalCounter(int index, int qty, POSController pos) {
+    return Container(
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), border: Border.all(color: const Color(0xFFEDF0F5))),
+      child: Column(
+        children: [
+          _buildCounterBtn(Icons.add, () => pos.updateQuantity(index, 1)),
+          GestureDetector(
+            onTap: () => pos.showQuantityDialog(index),
+            child: Text("$qty", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+          ),
+          _buildCounterBtn(Icons.remove, () => pos.updateQuantity(index, -1)),
+        ],
+      ),
+    );
+  }
 
-      return Column(
+  Widget _buildCounterBtn(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Icon(icon, size: 14, color: const Color(0xFF9CA3AF)),
+      ),
+    );
+  }
+
+  Widget _buildPOSOrderSummary(POSController pos) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFEDF0F5))),
+      ),
+      child: Column(
+        children: [
+          _buildSumRow("subtotal_sum".tr, "${NumberFormat("#,###", "uz_UZ").format(pos.subtotal)} ${"currency".tr}"),
+          _buildSumRow("${"service_fee_label".tr} (0%)", "${NumberFormat("#,###", "uz_UZ").format(pos.serviceFee)} ${"currency".tr}"),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("total".tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
+              Text("${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${"currency".tr}", 
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFFF9500))),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _buildSidebarBtn("kitchen_print_sidebar".tr, const Color(0xFF3B82F6), Icons.print, () => pos.submitOrder(isPaid: false)),
+          const SizedBox(height: 12),
+          _buildSidebarBtn("pay_finish_sidebar".tr, const Color(0xFFFF9500), Icons.payments, () => pos.submitOrder(isPaid: true)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSumRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13, fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 13, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarBtn(String label, Color color, IconData icon, VoidCallback onTap) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 20),
+        label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyCartPlaceholder() {
+    return Center(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
-            onTap: () => pos.addToCart(item),
-            child: Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: AppColors.textPrimary,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.add, size: isMobile ? 22 : 26, color: Colors.white),
-            ),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(color: Color(0xFFF3F4F6), shape: BoxShape.circle),
+            child: const Icon(Icons.shopping_cart_outlined, size: 40, color: Color(0xFF9CA3AF)),
           ),
-          if (qty > 0) ...[
-            GestureDetector(
-              onTap: () => pos.showQuantityDialog(itemIndex),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  qty.toString(),
-                  style: TextStyle(fontSize: isMobile ? 18 : 22, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            GestureDetector(
-              onTap: () => pos.updateQuantity(itemIndex, -1),
-              child: Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.remove, size: isMobile ? 22 : 26, color: AppColors.textPrimary),
-              ),
-            ),
-          ],
+          const SizedBox(height: 20),
+          Text("current_bill_empty".tr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1A1A1A))),
+          const SizedBox(height: 8),
+          Text("empty_cart_msg".tr, 
+            textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13)),
         ],
-      );
-    });
+      ),
+    );
+  }
+
+  Widget _buildMobileCartButton(POSController pos, BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20)],
+      ),
+      child: InkWell(
+        onTap: () => Get.to(() => const CartScreen()),
+        child: Row(
+          children: [
+            const Icon(Icons.shopping_cart, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Text("${pos.totalItems} ${'items'.tr}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            const Spacer(),
+            Text("${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${"currency".tr}", 
+              style: const TextStyle(color: Color(0xFFFF9500), fontWeight: FontWeight.w900, fontSize: 16)),
+          ],
+        ),
+      ),
+    );
   }
 }
 

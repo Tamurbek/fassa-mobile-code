@@ -94,175 +94,225 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    
+    final bool isDesktop = size.width > 900;
+
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: Colors.white,
       body: Row(
         children: [
-          // Left side - Branding/Illustration (Visible on large screens)
-          if (size.width > 800)
+          if (isDesktop)
             Expanded(
-              flex: 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary,
-                      AppColors.primary.withOpacity(0.8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              flex: 1,
+              child: Stack(
+                children: [
+                  Container(
+                    color: const Color(0xFFFF9500),
+                    child: CustomPaint(
+                      painter: GridPainter(),
+                      size: Size.infinite,
+                    ),
                   ),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.restaurant_menu_rounded,
-                        size: 150,
-                        color: AppColors.secondary,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Fast Food Pro',
-                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildMockupLogo(),
+                        const SizedBox(height: 48),
+                        const Text(
+                          'Fast Food Pro',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -1,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'The most powerful POS for your business',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white.withOpacity(0.7),
+                        const SizedBox(height: 12),
+                        Text(
+                          'The most powerful POS for your\nbusiness',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w500,
+                            height: 1.4,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 48),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildTag('Reliable'),
+                            const SizedBox(width: 12),
+                            _buildTag('Fast'),
+                            const SizedBox(width: 12),
+                            _buildTag('Modern'),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-          
-          // Right side - Login Form
           Expanded(
-            flex: 2,
-            child: Container(
-              padding: const EdgeInsets.all(40),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  bottomLeft: Radius.circular(30),
-                ),
+            flex: 1,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? size.width * 0.08 : 24,
+                vertical: 40,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  if (!isDesktop) ...[
+                    Center(child: _buildMobileLogo()),
+                    const SizedBox(height: 40),
+                  ],
+                  const Text(
                     'Login',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1A1A1A),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Welcome back! Please enter your details.',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey[600],
+                    'login_subtitle'.tr,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 48),
-                  
-                  // Email Field
-                  const Text(
-                    'Email Address',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
+                  _buildLabel('email_address'.tr),
+                  const SizedBox(height: 10),
+                  _buildTextField(
                     controller: _emailController,
-                    decoration: InputDecoration(
-                      hintText: 'Enter your email',
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
+                    hintText: 'email_address'.tr,
+                    prefixIcon: Icons.email_outlined,
                   ),
                   const SizedBox(height: 24),
-                  
-                  // Password Field
-                  const Text(
-                    'Password',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      hintText: 'Enter your password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildLabel('password'.tr),
+                      TextButton(
+                        onPressed: () {},
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        child: Text(
+                          'forgot_password'.tr,
+                          style: const TextStyle(
+                            color: Color(0xFFFF9500),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
+                    ],
                   ),
-                  
+                  const SizedBox(height: 10),
+                  _buildTextField(
+                    controller: _passwordController,
+                    hintText: 'password'.tr,
+                    prefixIcon: Icons.lock_outline_rounded,
+                    isPassword: true,
+                    obscureText: _obscurePassword,
+                    onTogglePassword: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: Checkbox(
+                          value: false,
+                          onChanged: (v) {},
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'remember_me'.tr,
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 32),
-                  
-                  // Login Button
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: const Color(0xFFFF9500),
                         foregroundColor: Colors.white,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Sign In',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          : Text(
+                              'sign_in'.tr,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                     ),
                   ),
-                  
                   const SizedBox(height: 24),
-                  
                   Center(
-                    child: TextButton(
-                      onPressed: () {
-                        // Demo mode or Reset password
-                      },
-                      child: const Text(
-                        'Forgot password?',
-                        style: TextStyle(color: AppColors.primary),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                        children: [
+                          TextSpan(text: "${'dont_have_account'.tr} "),
+                          TextSpan(
+                            text: 'contact_support'.tr,
+                            style: const TextStyle(
+                              color: Color(0xFFFF9500),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 60),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'V4.2.0 STABLE',
+                        style: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Text(
+                        '© 2024 FAST FOOD PRO',
+                        style: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -272,4 +322,132 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+
+  Widget _buildMockupLogo() {
+    return Container(
+      width: 140,
+      height: 140,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED).withOpacity(0.3),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: Icon(Icons.fastfood, color: Color(0xFFFF9500), size: 60),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLogo() {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Center(
+        child: Icon(Icons.fastfood, color: Color(0xFFFF9500), size: 36),
+      ),
+    );
+  }
+
+  Widget _buildTag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF4B5563),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData prefixIcon,
+    bool isPassword = false,
+    bool obscureText = false,
+    VoidCallback? onTogglePassword,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword && obscureText,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w500),
+          prefixIcon: Icon(prefixIcon, color: const Color(0xFF9CA3AF), size: 20),
+          suffixIcon: isPassword
+              ? IconButton(
+                  icon: Icon(
+                    obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    color: const Color(0xFF9CA3AF),
+                    size: 20,
+                  ),
+                  onPressed: onTogglePassword,
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
+    );
+  }
+}
+
+class GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.05)
+      ..strokeWidth = 1;
+
+    const spacing = 40.0;
+
+    for (double i = 0; i < size.width; i += spacing) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
+    }
+
+    for (double i = 0; i < size.height; i += spacing) {
+      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

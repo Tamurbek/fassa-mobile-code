@@ -47,6 +47,7 @@ dependencies:
   url_launcher: ^6.3.1
   intl: ^0.19.0
   esc_pos_utils_plus: ^2.0.4
+  fl_chart: ^1.1.1
 
 dev_dependencies:
   flutter_test:

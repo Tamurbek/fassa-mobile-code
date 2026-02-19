@@ -78,138 +78,281 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String title = widget.isSettingNewPin 
-      ? (_isConfirming ? "Confirm PIN" : "Set New PIN") 
-      : "Enter PIN";
+    String titleText = widget.isSettingNewPin 
+      ? (_isConfirming ? "confirm_pin".tr : "set_new_pin".tr) 
+      : "enter_pin".tr;
     
-    String subtitle = widget.isSettingNewPin
-      ? (_isConfirming ? "Enter the same 4 digits again" : "Create a 4-digit security PIN")
-      : "Please enter your security PIN to continue";
-
-    final bool isMobile = Responsive.isMobile(context);
+    String subtitleText = widget.isSettingNewPin
+      ? (_isConfirming ? "confirm_pin_msg".tr : "set_pin_msg".tr)
+      : "pin_subtitle".tr;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 450),
-            child: Column(
-              children: [
-                SizedBox(height: isMobile ? 60 : 80),
-                Icon(Icons.lock_person_rounded, size: isMobile ? 80 : 100, color: AppColors.primary),
-                const SizedBox(height: 24),
-                Text(
-                  title,
-                  style: TextStyle(fontSize: isMobile ? 28 : 34, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Text(
-                    subtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: isMobile ? 16 : 18, color: AppColors.textSecondary),
+      backgroundColor: const Color(0xFFF3F7FA),
+      body: Column(
+        children: [
+          _buildTopBar(),
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                child: Container(
+                  width: 450,
+                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                  padding: const EdgeInsets.all(48),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 30,
+                        offset: const Offset(0, 15),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 50),
-                
-                // PIN Dots
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(4, (index) {
-                    bool isSelected = index < _enteredPin.length;
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 12),
-                      width: isMobile ? 20 : 24,
-                      height: isMobile ? 20 : 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSelected ? AppColors.primary : Colors.grey.shade200,
-                        border: Border.all(
-                          color: isSelected ? AppColors.primary : Colors.grey.shade300,
-                          width: 2,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildHeaderIcon(),
+                      const SizedBox(height: 32),
+                      Text(
+                        titleText,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1A1A1A),
+                          letterSpacing: -0.5,
                         ),
                       ),
-                    );
-                  }),
-                ),
-                
-                const Spacer(),
-                
-                // Numeric Keypad
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: isMobile ? 20 : 40),
-                  child: Column(
-                    children: [
-                      _buildKeypadRow(["1", "2", "3"]),
-                      const SizedBox(height: 20),
-                      _buildKeypadRow(["4", "5", "6"]),
-                      const SizedBox(height: 20),
-                      _buildKeypadRow(["7", "8", "9"]),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const SizedBox(width: 70), 
-                          _buildKeyButton("0"),
-                          _buildIconButton(Icons.backspace_rounded, _onBackspace),
-                        ],
+                      const SizedBox(height: 12),
+                      Text(
+                        subtitleText,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF6B7280),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      _buildPinIndicators(),
+                      const SizedBox(height: 48),
+                      _buildKeypad(),
+                      const SizedBox(height: 40),
+                      TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          'forgot_pin'.tr,
+                          style: const TextStyle(
+                            color: Color(0xFF9CA3AF),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: isMobile ? 40 : 60),
-              ],
+              ),
             ),
           ),
+          _buildFooter(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            const Icon(Icons.print_rounded, color: Color(0xFFFF9500), size: 28),
+            const SizedBox(width: 12),
+            const Text(
+              'POS Terminal #04',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const Spacer(),
+            _buildTopBarIcon(Icons.settings_outlined),
+            const SizedBox(width: 12),
+            _buildTopBarIcon(Icons.help_outline_rounded),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildKeypadRow(List<String> digits) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: digits.map((d) => _buildKeyButton(d)).toList(),
+  Widget _buildTopBarIcon(IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, color: const Color(0xFF4B5563), size: 20),
     );
   }
 
-  Widget _buildKeyButton(String digit) {
-    return InkWell(
-      onTap: () => _onDigitPress(digit),
-      borderRadius: BorderRadius.circular(40),
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.grey.shade50,
+  Widget _buildHeaderIcon() {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: const BoxDecoration(
+        color: Color(0xFFFFF7ED),
+        shape: BoxShape.circle,
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.lock_rounded,
+          color: Color(0xFFFF9500),
+          size: 36,
         ),
-        child: Center(
-          child: Text(
-            digit,
-            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+      ),
+    );
+  }
+
+  Widget _buildPinIndicators() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(4, (index) {
+        final bool isFilled = index < _enteredPin.length;
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isFilled ? const Color(0xFFFF9500) : Colors.white,
+            border: Border.all(
+              color: isFilled ? const Color(0xFFFF9500) : const Color(0xFFD1D5DB),
+              width: 2,
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildKeypad() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildKeypadButton('1'),
+            const SizedBox(width: 16),
+            _buildKeypadButton('2'),
+            const SizedBox(width: 16),
+            _buildKeypadButton('3'),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildKeypadButton('4'),
+            const SizedBox(width: 16),
+            _buildKeypadButton('5'),
+            const SizedBox(width: 16),
+            _buildKeypadButton('6'),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildKeypadButton('7'),
+            const SizedBox(width: 16),
+            _buildKeypadButton('8'),
+            const SizedBox(width: 16),
+            _buildKeypadButton('9'),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(width: 80), 
+            const SizedBox(width: 16),
+            _buildKeypadButton('0'),
+            const SizedBox(width: 16),
+            _buildKeypadButton('', isBackspace: true),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildKeypadButton(String digit, {bool isBackspace = false}) {
+    return Material(
+      color: const Color(0xFFF9FAFB),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: () => isBackspace ? _onBackspace() : _onDigitPress(digit),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Center(
+            child: isBackspace
+                ? const Icon(Icons.backspace_outlined, color: Color(0xFF4B5563), size: 24)
+                : Text(
+                    digit,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildIconButton(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(40),
-      child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.grey.shade50,
-        ),
-        child: Center(
-          child: Icon(icon, size: 30, color: AppColors.textPrimary),
-        ),
+  Widget _buildFooter() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.verified_user_rounded, color: Color(0xFF9CA3AF), size: 14),
+              const SizedBox(width: 8),
+              Text(
+                'secure_encryption'.tr,
+                style: const TextStyle(
+                  color: Color(0xFF9CA3AF),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '© 2024 POS System Cloud. ${'all_rights_reserved'.tr}',
+            style: const TextStyle(
+              color: Color(0xFFD1D5DB),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

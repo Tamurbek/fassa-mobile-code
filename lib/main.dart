@@ -7,10 +7,18 @@ import 'presentation/pages/main_navigation_screen.dart';
 import 'presentation/pages/auth/login_page.dart';
 import 'presentation/pages/auth/pin_code_screen.dart';
 import 'translations/app_translations.dart';
+import 'presentation/pages/settings_screen.dart';
+import 'presentation/pages/reports_screen.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
+  
+  // Initialize locale data
+  await initializeDateFormatting('uz_UZ', null);
+  await initializeDateFormatting('en_US', null);
+  await initializeDateFormatting('ru_RU', null);
   
   // Initialize Controller
   Get.put(POSController());
@@ -42,6 +50,8 @@ class FastFoodApp extends StatelessWidget {
         GetPage(name: '/login', page: () => const LoginPage()),
         GetPage(name: '/pin', page: () => const PinCodeScreen()),
         GetPage(name: '/main', page: () => const MainNavigationScreen()),
+        GetPage(name: '/settings', page: () => const SettingsScreen()),
+        GetPage(name: '/reports', page: () => const ReportsScreen()),
       ],
     );
   }
