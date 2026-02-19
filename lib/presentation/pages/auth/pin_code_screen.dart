@@ -88,75 +88,84 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F7FA),
-      body: Column(
-        children: [
-          _buildTopBar(),
-          Expanded(
-            child: Center(
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildTopBar(),
+            Expanded(
               child: SingleChildScrollView(
-                child: Container(
-                  width: 450,
-                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-                  padding: const EdgeInsets.all(48),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(32),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 30,
-                        offset: const Offset(0, 15),
-                      ),
-                    ],
-                  ),
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildHeaderIcon(),
-                      const SizedBox(height: 32),
-                      Text(
-                        titleText,
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF1A1A1A),
-                          letterSpacing: -0.5,
+                      Container(
+                        width: 400,
+                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(32),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildHeaderIcon(),
+                            const SizedBox(height: 24),
+                            Text(
+                              titleText,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF1A1A1A),
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              subtitleText,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF6B7280),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            _buildPinIndicators(),
+                            const SizedBox(height: 32),
+                            _buildKeypad(),
+                            const SizedBox(height: 24),
+                            TextButton(
+                              onPressed: () {},
+                              child: Text(
+                                'forgot_pin'.tr,
+                                style: const TextStyle(
+                                  color: Color(0xFF9CA3AF),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        subtitleText,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFF6B7280),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      _buildPinIndicators(),
-                      const SizedBox(height: 48),
-                      _buildKeypad(),
-                      const SizedBox(height: 40),
-                      TextButton(
-                        onPressed: () {},
-                        child: Text(
-                          'forgot_pin'.tr,
-                          style: const TextStyle(
-                            color: Color(0xFF9CA3AF),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
+                      _buildFooter(),
                     ],
                   ),
                 ),
               ),
             ),
-          ),
-          _buildFooter(),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -250,42 +259,42 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildKeypadButton('1'),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _buildKeypadButton('2'),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _buildKeypadButton('3'),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildKeypadButton('4'),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _buildKeypadButton('5'),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _buildKeypadButton('6'),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildKeypadButton('7'),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _buildKeypadButton('8'),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _buildKeypadButton('9'),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(width: 80), 
-            const SizedBox(width: 16),
+            const SizedBox(width: 72), 
+            const SizedBox(width: 12),
             _buildKeypadButton('0'),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             _buildKeypadButton('', isBackspace: true),
           ],
         ),
@@ -301,18 +310,18 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
         onTap: () => isBackspace ? _onBackspace() : _onDigitPress(digit),
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          width: 80,
-          height: 80,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
           ),
           child: Center(
             child: isBackspace
-                ? const Icon(Icons.backspace_outlined, color: Color(0xFF4B5563), size: 24)
+                ? const Icon(Icons.backspace_outlined, color: Color(0xFF4B5563), size: 22)
                 : Text(
                     digit,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1A1A),
                     ),
