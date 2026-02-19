@@ -34,7 +34,7 @@ class PrinterManagementScreen extends StatelessWidget {
           separatorBuilder: (c, i) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final printer = pos.printers[index];
-            final area = pos.preparationAreas.firstWhereOrNull((a) => a.id == printer.preparationAreaId);
+            final printerAreas = pos.preparationAreas.where((a) => printer.preparationAreaIds.contains(a.id)).toList();
             
             return ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -79,15 +79,24 @@ class PrinterManagementScreen extends StatelessWidget {
                       children: [
                         Text("${printer.ipAddress ?? 'USB/BT'}:${printer.port}"),
                         const SizedBox(height: 4),
-                        if (area != null) 
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(area.name, style: const TextStyle(fontSize: 10, color: Colors.black87)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: printerAreas.isEmpty ? Colors.orange.shade50 : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(4),
+                            border: printerAreas.isEmpty ? Border.all(color: Colors.orange.withOpacity(0.3)) : null,
                           ),
+                          child: Text(
+                            printerAreas.isEmpty 
+                                ? "KASSA" 
+                                : printerAreas.map((a) => a.name).join(", "),
+                            style: TextStyle(
+                              fontSize: 10, 
+                              color: printerAreas.isEmpty ? Colors.orange.shade900 : Colors.black87,
+                              fontWeight: printerAreas.isEmpty ? FontWeight.bold : FontWeight.normal,
+                            )
+                          ),
+                        ),
                       ],
                     ),
                   ),
