@@ -37,6 +37,7 @@ class POSController extends GetxController {
   var preparationAreas = <PreparationAreaModel>[].obs;
   var printers = <PrinterModel>[].obs;
   var selectedCategory = "All".obs;
+  var users = <Map<String, dynamic>>[].obs;
 
   var selectedTable = "".obs;
   var editingOrderId = RxnInt(); // Track if we are editing an existing order
@@ -53,12 +54,9 @@ class POSController extends GetxController {
   var serviceFeeTakeaway = 0.0.obs;
   var serviceFeeDelivery = 3000.0.obs;
 
-  // Subscription
-  var subscriptionDaysLeft = RxnInt();    // null = VIP (cheksiz)
-  var isSubscriptionExpired = false.obs;
-  var isVip = false.obs;
-  var subscriptionEndDate = RxnString();  // ISO string or null
-  Timer? _subscriptionTimer;
+  // Role helpers
+  bool get isAdmin => currentUser.value?['role'] == "CAFE_ADMIN" || currentUser.value?['role'] == "SYSTEM_ADMIN";
+  bool get isWaiter => currentUser.value?['role'] == "WAITER";
 
   String get cafeId => currentUser.value?['cafe_id'] ?? "";
 
@@ -220,6 +218,11 @@ class POSController extends GetxController {
       currentUser.value = Map<String, dynamic>.from(storedUser);
     }
 
+    var storedWaiters = _storage.read('all_users');
+    if (storedWaiters != null) {
+      users.assignAll(List<Map<String, dynamic>>.from(storedWaiters));
+    }
+
     pinCode.value = _storage.read('pin_code');
 
     var storedPrinted = _storage.read('printed_kitchen_items');
@@ -370,6 +373,17 @@ class POSController extends GetxController {
       saveAllOrders();
     } catch (e) {
       print("Error fetching orders: $e");
+    }
+
+    // Fetch Users (Waiters)
+    if (isAdmin) {
+      try {
+        final backendUsers = await _api.getUsers();
+        users.assignAll(List<Map<String, dynamic>>.from(backendUsers));
+        _storage.write('all_users', users.toList());
+      } catch (e) {
+        print("Error fetching users: $e");
+      }
     }
   }
 
@@ -1043,5 +1057,40 @@ class POSController extends GetxController {
 
   Future<void> testPrinter(PrinterModel printer) async {
     await _printer.printTestPage(printer);
+  }
+
+  // User/Waiter Management
+  Future<void> addUser(Map<String, dynamic> userData) async {
+    try {
+      final newUser = await _api.createUser(userData);
+      users.add(newUser);
+      _storage.write('all_users', users.toList());
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateUserProfile(String id, Map<String, dynamic> userData) async {
+    try {
+      final updatedUser = await _api.updateUser(id, userData);
+      int index = users.indexWhere((u) => u['id'] == id);
+      if (index != -1) {
+        users[index] = updatedUser;
+        users.refresh();
+        _storage.write('all_users', users.toList());
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteUser(String id) async {
+    try {
+      await _api.deleteUser(id);
+      users.removeWhere((u) => u['id'] == id);
+      _storage.write('all_users', users.toList());
+    } catch (e) {
+      rethrow;
+    }
   }
 }

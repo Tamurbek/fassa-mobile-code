@@ -135,30 +135,31 @@ class OrdersScreen extends StatelessWidget {
             icon: Icons.receipt_long,
             borderRadius: BorderRadius.circular(20),
           ),
-          SlidableAction(
-            onPressed: (context) {
-              pos.loadOrderForEditing(order, catalog);
-              Get.to(() => const CartScreen());
-            },
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-            icon: Icons.payments_outlined,
-            borderRadius: BorderRadius.circular(20),
-          ),
+          if (pos.isAdmin)
+            SlidableAction(
+              onPressed: (context) {
+                pos.loadOrderForEditing(order, catalog);
+                Get.to(() => const CartScreen());
+              },
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              icon: Icons.payments_outlined,
+              borderRadius: BorderRadius.circular(20),
+            ),
         ],
       ) : null,
       endActionPane: ActionPane(
         motion: const ScrollMotion(),
         children: [
           if (isActive) _buildEndAction(order['status'], order, pos, catalog),
-          SlidableAction(
-            onPressed: (context) => _confirmDelete(order['id'], pos),
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            icon: Icons.delete_outline,
-
-            borderRadius: BorderRadius.circular(20),
-          ),
+          if (pos.isAdmin)
+            SlidableAction(
+              onPressed: (context) => _confirmDelete(order['id'], pos),
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              icon: Icons.delete_outline,
+              borderRadius: BorderRadius.circular(20),
+            ),
         ],
       ),
       child: _buildOrderCardContent(order, pos, catalog, isActive),
@@ -241,13 +242,16 @@ class OrdersScreen extends StatelessWidget {
 
   Widget _buildEndAction(dynamic status, Map<String, dynamic> order, POSController pos, List<FoodItem> catalog) {
     if (status == "Bill Printed") {
-       return SlidableAction(
-        onPressed: (context) => _confirmUnlock(order['id'], pos),
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
-        icon: Icons.lock_open,
-        borderRadius: BorderRadius.circular(20),
-      );
+       if (pos.isAdmin) {
+         return SlidableAction(
+           onPressed: (context) => _confirmUnlock(order['id'], pos),
+           backgroundColor: Colors.orange,
+           foregroundColor: Colors.white,
+           icon: Icons.lock_open,
+           borderRadius: BorderRadius.circular(20),
+         );
+       }
+       return const SizedBox.shrink(); // No action for waiters on printed bills
     } else {
        return SlidableAction(
         onPressed: (context) {
@@ -264,13 +268,10 @@ class OrdersScreen extends StatelessWidget {
 
   Widget _buildActionIcon(dynamic status, Map<String, dynamic> order, POSController pos, List<FoodItem> catalog) {
     if (status == "Bill Printed") {
-      return GestureDetector(
-        onTap: () => _confirmUnlock(order['id'], pos),
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
-          child: const Icon(Icons.lock, size: 16, color: Colors.orange),
-        ),
+      return Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
+        child: Icon(Icons.lock, size: 16, color: Colors.orange.withOpacity(pos.isAdmin ? 1.0 : 0.5)),
       );
     } else {
       return GestureDetector(
@@ -343,6 +344,13 @@ class OrdersScreen extends StatelessWidget {
   }
 
   void _showOrderTypeDialog(BuildContext context, POSController pos) {
+    if (pos.isWaiter) {
+      pos.clearCurrentOrder(); 
+      pos.setMode("Dine-in");
+      Get.to(() => const TableSelectionScreen());
+      return;
+    }
+    
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),

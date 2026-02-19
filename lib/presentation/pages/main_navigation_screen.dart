@@ -46,7 +46,8 @@ class MainNavigationScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildNavItem(0, currentIndex, Icons.receipt_long_rounded, "orders".tr),
-                  _buildNavItem(1, currentIndex, Icons.bar_chart_rounded, "reports".tr),
+                  if (pos.isAdmin)
+                    _buildNavItem(1, currentIndex, Icons.bar_chart_rounded, "reports".tr),
                   _buildNavItem(2, currentIndex, Icons.person_outline_rounded, "profile".tr),
                 ],
               ),

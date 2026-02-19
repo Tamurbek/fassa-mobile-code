@@ -247,39 +247,41 @@ class CartScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      bool success = await pos.submitOrder(isPaid: true);
-                      if (success) {
-                        Get.offAll(() => const MainNavigationScreen());
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(0, 75), 
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.check_circle_outline_rounded, size: 20),
-                        const SizedBox(height: 4),
-                        Text(
-                          "pay_finish".tr, 
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                if (pos.isAdmin) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        bool success = await pos.submitOrder(isPaid: true);
+                        if (success) {
+                          Get.offAll(() => const MainNavigationScreen());
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(0, 75), 
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.check_circle_outline_rounded, size: 20),
+                          const SizedBox(height: 4),
+                          Text(
+                            "pay_finish".tr, 
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ],

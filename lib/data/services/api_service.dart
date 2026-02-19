@@ -278,4 +278,40 @@ class ApiService {
       rethrow;
     }
   }
+
+  // Users
+  Future<List<dynamic>> getUsers() async {
+    try {
+      final response = await _dio.get('/users/');
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createUser(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/users/', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/users/$id', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteUser(String id) async {
+    try {
+      await _dio.delete('/users/$id');
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
