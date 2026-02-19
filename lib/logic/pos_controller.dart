@@ -672,7 +672,8 @@ class POSController extends GetxController {
   void logout() {
     setCurrentUser(null);
     _api.setToken(null);
-    Get.offAllNamed('/login'); // We should define routes in main.dart
+    isPinAuthenticated.value = false;
+    Get.offAllNamed('/login');
   }
 
   Future<bool> submitOrder({bool isPaid = false}) async {

@@ -38,6 +38,11 @@ class FastFoodApp extends StatelessWidget {
       locale: initialLocale,
       fallbackLocale: const Locale('en', 'US'),
       home: _getInitialScreen(),
+      getPages: [
+        GetPage(name: '/login', page: () => const LoginPage()),
+        GetPage(name: '/pin', page: () => const PinCodeScreen()),
+        GetPage(name: '/main', page: () => const MainNavigationScreen()),
+      ],
     );
   }
 

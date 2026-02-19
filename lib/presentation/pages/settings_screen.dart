@@ -139,7 +139,7 @@ class SettingsScreen extends StatelessWidget {
               _buildSettingsItem(Icons.info_outline, "app_version".tr, "v1.0.5", () {}),
               
               const SizedBox(height: 40),
-              _buildLogoutButton(),
+              _buildLogoutButton(pos),
             ],
           ),
         ),
@@ -271,9 +271,9 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLogoutButton() {
+  Widget _buildLogoutButton(POSController pos) {
     return ElevatedButton(
-      onPressed: () {},
+      onPressed: () => pos.logout(),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.red.shade50,
         foregroundColor: Colors.red,
