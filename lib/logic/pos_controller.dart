@@ -713,110 +713,113 @@ class POSController extends GetxController {
     }
 
     for (var printer in activePrinters) {
-      bool success = false;
-      if (printer.preparationAreaId == null || printer.preparationAreaId!.isEmpty) {
-        // Receipt Printer - Full Ticket
-        if (isKitchenOnly) continue; // Skip receipt printer if only kitchen print requested
-        
-        success = await _printer.printReceipt(printer, order, title: receiptTitle);
-        if (success) successPrinters.add(printer.name);
-        else failedPrinters.add(printer.name);
-      } else {
-        // Kitchen Printer - DIFF LOGIC
-        final orderIdStr = order['id']?.toString() ?? "0";
-        final previouslyPrinted = printedKitchenQuantities[orderIdStr] ?? {};
-        
-        List<dynamic> addedItems = [];
-        List<dynamic> cancelledItems = [];
+      try {
+        bool success = false;
+        // A printer is a kitchen printer if it has one or more preparation areas assigned.
+        // If assigned areas are empty, it's a "Kassa" (Cashier) printer.
+        bool isKitchenPrinter = printer.preparationAreaIds.isNotEmpty;
 
-        // 1. Identify what items belong to THIS printer's area
-        final areaItems = details.where((d) {
-          final itemId = d['id']?.toString().trim();
-          if (itemId == null) return false;
-          final product = products.firstWhereOrNull((p) => p.id.toString().trim() == itemId);
-          return product != null && 
-                 product.preparationAreaId != null && 
-                 product.preparationAreaId.toString().trim() == printer.preparationAreaId.toString().trim();
-        }).toList();
+        if (!isKitchenPrinter) {
+          // --- KASSA (CASHIER) PRINTER LOGIC ---
+          // Cashier printers only print "Hisob cheki" or "To'lov cheki".
+          // They should be skipped if we are only pushing items to kitchen.
+          if (isKitchenOnly) continue; 
+          
+          print("Printing receipt to Kassa printer: ${printer.name}");
+          success = await _printer.printReceipt(printer, order, title: receiptTitle);
+          if (success) successPrinters.add(printer.name);
+          else failedPrinters.add(printer.name);
+        } else {
+          // --- OSHXONA (KITCHEN) PRINTER LOGIC ---
+          // Skip kitchen printers if this is a Bill/Payment call (ReceiptTitle is set)
+          // unless we want both (but usually kitchen print is triggered separately).
+          if (!isKitchenOnly && receiptTitle != null) continue; 
 
-        // 2. Compare current quantities with previously printed for this order
-        // Check for new or increased quantities
-        for (var item in areaItems) {
-          final String pId = item['id'].toString();
-          final int currentQty = int.tryParse(item['qty'].toString()) ?? 0;
-          final int prevQty = previouslyPrinted[pId] ?? 0;
+          print("Processing Kitchen printer: ${printer.name} (Areas: ${printer.preparationAreaIds.join(',')})");
+          final orderIdStr = order['id']?.toString() ?? "0";
+          final previouslyPrintedRaw = printedKitchenQuantities[orderIdStr];
+          final Map<String, int> previouslyPrinted = previouslyPrintedRaw != null 
+              ? Map<String, int>.from(previouslyPrintedRaw) : {};
+          
+          List<dynamic> addedItems = [];
+          List<dynamic> cancelledItems = [];
 
-          if (currentQty > prevQty) {
-            addedItems.add({
-              ...item,
-              'qty': currentQty - prevQty, // Print only the difference
-            });
+          // 1. Identify items belonging to ANY of this printer's assigned areas
+          final areaItems = details.where((d) {
+            final itemId = d['id']?.toString().trim();
+            if (itemId == null) return false;
+            final product = products.firstWhereOrNull((p) => p.id.toString().trim() == itemId);
+            if (product == null || product.preparationAreaId == null) return false;
+            
+            final String prodAreaId = product.preparationAreaId.toString().trim();
+            return printer.preparationAreaIds.any((id) => id.trim() == prodAreaId);
+          }).toList();
+
+          // 2. Diff Logic
+          for (var item in areaItems) {
+            final String pId = item['id'].toString();
+            final int currentQty = int.tryParse(item['qty'].toString()) ?? 0;
+            final int prevQty = previouslyPrinted[pId] ?? 0;
+
+            if (currentQty > prevQty) {
+              addedItems.add({...item, 'qty': currentQty - prevQty});
+            }
+          }
+
+          if (previouslyPrinted.isNotEmpty) {
+             previouslyPrinted.forEach((pId, prevQty) {
+                final product = products.firstWhereOrNull((p) => p.id.toString().trim() == pId.trim());
+                if (product != null && product.preparationAreaId != null) {
+                  final String prodAreaId = product.preparationAreaId.toString().trim();
+                  bool isMyArea = printer.preparationAreaIds.any((id) => id.trim() == prodAreaId);
+                  
+                  if (isMyArea) {
+                    final currentItem = areaItems.firstWhereOrNull((i) => i['id'].toString() == pId);
+                    final int currentQty = currentItem != null ? (int.tryParse(currentItem['qty'].toString()) ?? 0) : 0;
+                    if (currentQty < prevQty) {
+                      cancelledItems.add({'id': pId, 'name': product?.name ?? "Unknown", 'qty': prevQty - currentQty});
+                    }
+                  }
+                }
+             });
+          }
+
+          // 3. Print and Update Tracking
+          bool jobPrinted = false;
+          if (addedItems.isNotEmpty) {
+             success = await _printer.printKitchenTicket(printer, order, addedItems);
+             if (success) {
+               successPrinters.add("${printer.name} (Yangilar)");
+               jobPrinted = true;
+             } else failedPrinters.add(printer.name);
+          }
+
+          if (cancelledItems.isNotEmpty) {
+             success = await _printer.printCancellationTicket(printer, order, cancelledItems);
+             if (success) {
+               successPrinters.add("${printer.name} (Bekor)");
+               jobPrinted = true;
+             } else failedPrinters.add("${printer.name} (Bekor xatosi)");
+          }
+
+          if (jobPrinted) {
+            final currentPrintedMap = Map<String, int>.from(printedKitchenQuantities[orderIdStr] ?? {});
+            for (var item in areaItems) {
+              currentPrintedMap[item['id'].toString()] = int.tryParse(item['qty'].toString()) ?? 0;
+            }
+            printedKitchenQuantities[orderIdStr] = currentPrintedMap;
+            _storage.write('printed_kitchen_items', Map.from(printedKitchenQuantities));
+          }
+
+          if (addedItems.isEmpty && cancelledItems.isEmpty) {
+            filteredPrinters.add(printer.name);
           }
         }
-
-        // Check for cancellations (if this order was printed before)
-        if (previouslyPrinted.isNotEmpty) {
-           previouslyPrinted.forEach((pId, prevQty) {
-              // Does this pId belong to this printer's area?
-              final product = products.firstWhereOrNull((p) => p.id.toString().trim() == pId.trim());
-              bool isMyArea = product != null && 
-                             product.preparationAreaId != null && 
-                             product.preparationAreaId.toString().trim() == printer.preparationAreaId.toString().trim();
-              
-              if (isMyArea) {
-                final currentItem = areaItems.firstWhereOrNull((i) => i['id'].toString() == pId);
-                final int currentQty = currentItem != null ? (int.tryParse(currentItem['qty'].toString()) ?? 0) : 0;
-                
-                if (currentQty < prevQty) {
-                  cancelledItems.add({
-                    'id': pId,
-                    'name': product?.name ?? "Unknown",
-                    'qty': prevQty - currentQty,
-                  });
-                }
-              }
-           });
-        }
-
-        // 3. Print tickets if needed
-        bool printJobDone = false;
-        if (addedItems.isNotEmpty) {
-           success = await _printer.printKitchenTicket(printer, order, addedItems);
-           if (success) {
-             printJobDone = true;
-             successPrinters.add("${printer.name} (Yangilar)");
-           } else failedPrinters.add(printer.name);
-        }
-
-        if (cancelledItems.isNotEmpty) {
-           success = await _printer.printCancellationTicket(printer, order, cancelledItems);
-           if (success) {
-             printJobDone = true;
-             successPrinters.add("${printer.name} (Bekor)");
-           } else failedPrinters.add("${printer.name} (Bekor xatosi)");
-        }
-
-        // 4. If any print was successful or no diff found, update the printed tracking
-        // (We do this globally for the order after the loop if we want, or per printer)
-        if (printJobDone || (addedItems.isEmpty && cancelledItems.isEmpty)) {
-           // Tracking updated below per printer area basis
-        }
-        
-        if (addedItems.isEmpty && cancelledItems.isEmpty) {
-          filteredPrinters.add(printer.name);
-        }
+      } catch (e) {
+        print("Error processing printer ${printer.name}: $e");
+        failedPrinters.add(printer.name);
       }
     }
-
-    // 5. Finalize printed tracking: Update the global state for this order
-    // This ensures that next time we only print what's CHANGED relative to this moment
-    final String currentOrderId = order['id']?.toString() ?? "0";
-    Map<String, int> newPrintedMap = {};
-    for (var d in details) {
-      newPrintedMap[d['id'].toString()] = int.tryParse(d['qty'].toString()) ?? 0;
-    }
-    printedKitchenQuantities[currentOrderId] = newPrintedMap;
-    _storage.write('printed_kitchen_items', Map.from(printedKitchenQuantities));
     
     isPrinting.value = false;
 

@@ -20,7 +20,7 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
   late TextEditingController _nameController;
   late TextEditingController _ipController;
   late TextEditingController _portController;
-  final RxString _selectedAreaId = "".obs;
+  final RxList<String> _selectedAreaIds = <String>[].obs;
   final RxString _paperSize = "80mm".obs;
 
   @override
@@ -29,7 +29,7 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
     _nameController = TextEditingController(text: widget.printer?.name ?? "");
     _ipController = TextEditingController(text: widget.printer?.ipAddress ?? "192.168.1.100");
     _portController = TextEditingController(text: widget.printer?.port.toString() ?? "9100");
-    _selectedAreaId.value = widget.printer?.preparationAreaId ?? "";
+    _selectedAreaIds.assignAll(widget.printer?.preparationAreaIds ?? []);
     _paperSize.value = widget.printer?.paperSize ?? "80mm";
   }
 
@@ -55,7 +55,7 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
       connectionType: 'NETWORK',
       isActive: widget.printer?.isActive ?? true,
       cafeId: pos.currentUser.value?['cafe_id'] ?? '',
-      preparationAreaId: _selectedAreaId.value.isEmpty ? null : _selectedAreaId.value,
+      preparationAreaIds: _selectedAreaIds.toList(),
       paperSize: _paperSize.value,
     );
 
@@ -104,29 +104,30 @@ class _SavePrinterScreenState extends State<SavePrinterScreen> {
             
             Text("preparation_area".tr, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Obx(() => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedAreaId.value.isEmpty ? null : _selectedAreaId.value,
-                  hint: const Text("Select Area"),
-                  isExpanded: true,
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text("None")),
-                    ...pos.preparationAreas.map((area) => DropdownMenuItem(
-                      value: area.id,
-                      child: Text(area.name),
-                    )),
-                  ],
-                  onChanged: (val) => _selectedAreaId.value = val ?? "",
-                ),
-              ),
+            const Text("Tanlanmasa, 'Kassa' (Faqat hisob/to'lov cheki) bo'lib ishlaydi.", style: TextStyle(color: Colors.grey, fontSize: 11)),
+            const SizedBox(height: 12),
+            Obx(() => Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: pos.preparationAreas.map((area) {
+                final isSelected = _selectedAreaIds.contains(area.id);
+                return FilterChip(
+                  label: Text(area.name),
+                  selected: isSelected,
+                  selectedColor: AppColors.primary.withOpacity(0.2),
+                  checkmarkColor: AppColors.primary,
+                  onSelected: (selected) {
+                    if (selected) {
+                      _selectedAreaIds.add(area.id);
+                    } else {
+                      _selectedAreaIds.remove(area.id);
+                    }
+                  },
+                );
+              }).toList(),
             )),
+            const SizedBox(height: 16),
+            const Divider(),
             const SizedBox(height: 16),
 
             Text("Paper Size", style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.bold)),
