@@ -137,15 +137,20 @@ class PrinterService {
       bytes += generator.hr(ch: '-');
 
       // --- Totals ---
+      double feeDineInRate = (order['service_fee_dine_in'] ?? 10.0).toDouble();
+      double feeTakeaway = (order['service_fee_takeaway'] ?? 0.0).toDouble();
+      double feeDelivery = (order['service_fee_delivery'] ?? 3000.0).toDouble();
+
       double serviceFee = 0;
       if (order['mode'] == "Dine-in") {
-        serviceFee = itemsSubtotal * 0.10;
+        serviceFee = itemsSubtotal * (feeDineInRate / 100);
+      } else if (order['mode'] == "Takeaway") {
+        serviceFee = feeTakeaway;
       } else if (order['mode'] == "Delivery") {
-        serviceFee = 3000; // Example fixed fee if delivery
+        serviceFee = feeDelivery;
       }
       
-      double tax = itemsSubtotal * 0.05;
-      double finalTotal = itemsSubtotal + serviceFee + tax;
+      double finalTotal = itemsSubtotal + serviceFee;
 
       bytes += generator.row([
         PosColumn(text: _normalizeString('JAMI:'), width: 7),
@@ -158,11 +163,6 @@ class PrinterService {
           PosColumn(text: _normalizeString('${_formatPrice(serviceFee)} so\'m'), width: 5, styles: const PosStyles(align: PosAlign.right)),
         ]);
       }
-
-      bytes += generator.row([
-        PosColumn(text: _normalizeString('SOLIQ (5%):'), width: 7),
-        PosColumn(text: _normalizeString('${_formatPrice(tax)} so\'m'), width: 5, styles: const PosStyles(align: PosAlign.right)),
-      ]);
 
       bytes += generator.hr(ch: '=');
       bytes += generator.row([

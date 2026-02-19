@@ -49,6 +49,9 @@ class POSController extends GetxController {
   var restaurantName = "".obs;
   var restaurantAddress = "".obs;
   var restaurantPhone = "".obs;
+  var serviceFeeDineIn = 10.0.obs;
+  var serviceFeeTakeaway = 0.0.obs;
+  var serviceFeeDelivery = 3000.0.obs;
 
   // Subscription
   var subscriptionDaysLeft = RxnInt();    // null = VIP (cheksiz)
@@ -208,6 +211,9 @@ class POSController extends GetxController {
     restaurantName.value = _storage.read('restaurant_name') ?? "Fast Food Pro";
     restaurantAddress.value = _storage.read('restaurant_address') ?? "Tashkent, Uzbekistan";
     restaurantPhone.value = _storage.read('restaurant_phone') ?? "+998 90 123 45 67";
+    serviceFeeDineIn.value = _storage.read('service_fee_dine_in') ?? 10.0;
+    serviceFeeTakeaway.value = _storage.read('service_fee_takeaway') ?? 0.0;
+    serviceFeeDelivery.value = _storage.read('service_fee_delivery') ?? 3000.0;
 
     var storedUser = _storage.read('user');
     if (storedUser != null) {
@@ -238,8 +244,74 @@ class POSController extends GetxController {
     isPinAuthenticated.value = status;
   }
 
+  Future<void> updateCafeInfo({
+    String? name,
+    String? address,
+    String? phone,
+    double? serviceFeeDineInVal,
+    double? serviceFeeTakeawayVal,
+    double? serviceFeeDeliveryVal,
+  }) async {
+    try {
+      final Map<String, dynamic> updateData = {};
+      if (name != null) updateData['name'] = name;
+      if (address != null) updateData['address'] = address;
+      if (phone != null) updateData['phone'] = phone;
+      if (serviceFeeDineInVal != null) updateData['service_fee_dine_in'] = serviceFeeDineInVal;
+      if (serviceFeeTakeawayVal != null) updateData['service_fee_takeaway'] = serviceFeeTakeawayVal;
+      if (serviceFeeDeliveryVal != null) updateData['service_fee_delivery'] = serviceFeeDeliveryVal;
+
+      if (updateData.isEmpty) return;
+
+      final updatedCafe = await _api.updateCafe(cafeId, updateData);
+      
+      // Update local observables
+      if (name != null) restaurantName.value = updatedCafe['name'];
+      if (address != null) restaurantAddress.value = updatedCafe['address'];
+      if (phone != null) restaurantPhone.value = updatedCafe['phone'];
+      if (serviceFeeDineInVal != null) serviceFeeDineIn.value = (updatedCafe['service_fee_dine_in'] as num).toDouble();
+      if (serviceFeeTakeawayVal != null) serviceFeeTakeaway.value = (updatedCafe['service_fee_takeaway'] as num).toDouble();
+      if (serviceFeeDeliveryVal != null) serviceFeeDelivery.value = (updatedCafe['service_fee_delivery'] as num).toDouble();
+
+      // Save to local storage
+      if (name != null) _storage.write('restaurant_name', restaurantName.value);
+      if (address != null) _storage.write('restaurant_address', restaurantAddress.value);
+      if (phone != null) _storage.write('restaurant_phone', restaurantPhone.value);
+      if (serviceFeeDineInVal != null) _storage.write('service_fee_dine_in', serviceFeeDineIn.value);
+      if (serviceFeeTakeawayVal != null) _storage.write('service_fee_takeaway', serviceFeeTakeaway.value);
+      if (serviceFeeDeliveryVal != null) _storage.write('service_fee_delivery', serviceFeeDelivery.value);
+
+      Get.snackbar("Muvaffaqiyatli", "Sozlamalar saqlandi", 
+        backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      print("Error updating cafe info: $e");
+      Get.snackbar("Xato", "Sozlamalarni saqlashda xatolik yuz berdi", 
+        backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   Future<void> _fetchBackendData() async {
     if (currentUser.value == null) return;
+    
+    // Fetch Cafe Info (including service fees)
+    try {
+      final cafe = await _api.getCafe(cafeId);
+      restaurantName.value = cafe['name'] ?? "";
+      restaurantAddress.value = cafe['address'] ?? "";
+      restaurantPhone.value = cafe['phone'] ?? "";
+      serviceFeeDineIn.value = (cafe['service_fee_dine_in'] ?? 10.0).toDouble();
+      serviceFeeTakeaway.value = (cafe['service_fee_takeaway'] ?? 0.0).toDouble();
+      serviceFeeDelivery.value = (cafe['service_fee_delivery'] ?? 3000.0).toDouble();
+      
+      _storage.write('restaurant_name', restaurantName.value);
+      _storage.write('restaurant_address', restaurantAddress.value);
+      _storage.write('restaurant_phone', restaurantPhone.value);
+      _storage.write('service_fee_dine_in', serviceFeeDineIn.value);
+      _storage.write('service_fee_takeaway', serviceFeeTakeaway.value);
+      _storage.write('service_fee_delivery', serviceFeeDelivery.value);
+    } catch (e) {
+      print("Error fetching cafe info: $e");
+    }
     
     // Fetch Categories
     try {
@@ -354,16 +426,18 @@ class POSController extends GetxController {
   // Service fee calculation based on mode
   double get serviceFee {
     if (currentMode.value == "Dine-in") {
-      return subtotal * 0.10; // 10% Service for Dine-in
+      return subtotal * (serviceFeeDineIn.value / 100);
+    } else if (currentMode.value == "Takeaway") {
+      return serviceFeeTakeaway.value;
     } else if (currentMode.value == "Delivery") {
-      return 3.00; // $3.00 flat fee for Delivery
+      return serviceFeeDelivery.value;
     }
-    return 0.0; // Free for Takeaway
+    return 0.0;
   }
 
-  double get tax => subtotal * 0.05; // 5% flat tax
+  double get tax => 0.0;
 
-  double get total => subtotal + serviceFee + tax;
+  double get total => subtotal + serviceFee;
 
   void setMode(String mode) {
     currentMode.value = mode;
@@ -843,7 +917,14 @@ class POSController extends GetxController {
 
         if (shouldPrintCurrentReceipt && !isKitchenOnly) {
           print("Printing receipt/bill to: ${printer.name}");
-          success = await _printer.printReceipt(printer, order, title: receiptTitle);
+          
+          // Add service fees to the order map for the printer to use
+          final orderForPrinting = Map<String, dynamic>.from(order);
+          orderForPrinting['service_fee_dine_in'] = serviceFeeDineIn.value;
+          orderForPrinting['service_fee_takeaway'] = serviceFeeTakeaway.value;
+          orderForPrinting['service_fee_delivery'] = serviceFeeDelivery.value;
+          
+          success = await _printer.printReceipt(printer, orderForPrinting, title: receiptTitle);
           if (success) successPrinters.add(printer.name);
           else failedPrinters.add(printer.name);
         }

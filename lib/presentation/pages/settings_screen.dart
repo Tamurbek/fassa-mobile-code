@@ -56,19 +56,40 @@ class SettingsScreen extends StatelessWidget {
             Icons.store, 
             "restaurant_name".tr, 
             pos.restaurantName.value, 
-            () => _showEditDialog(context, "restaurant_name".tr, pos.restaurantName, 'restaurant_name')
+            () => _showEditDialog(context, "restaurant_name".tr, pos.restaurantName, 'restaurant_name', onSave: (val) => pos.updateCafeInfo(name: val))
           )),
           Obx(() => _buildSettingsItem(
             Icons.location_on, 
             "restaurant_address".tr, 
             pos.restaurantAddress.value, 
-            () => _showEditDialog(context, "restaurant_address".tr, pos.restaurantAddress, 'restaurant_address')
+            () => _showEditDialog(context, "restaurant_address".tr, pos.restaurantAddress, 'restaurant_address', onSave: (val) => pos.updateCafeInfo(address: val))
           )),
           Obx(() => _buildSettingsItem(
             Icons.phone, 
             "restaurant_phone".tr, 
             pos.restaurantPhone.value, 
-            () => _showEditDialog(context, "restaurant_phone".tr, pos.restaurantPhone, 'restaurant_phone')
+            () => _showEditDialog(context, "restaurant_phone".tr, pos.restaurantPhone, 'restaurant_phone', onSave: (val) => pos.updateCafeInfo(phone: val))
+          )),
+
+          const SizedBox(height: 24),
+          _buildSectionTitle("Xizmat haqi sozlamalari"),
+          Obx(() => _buildSettingsItem(
+            Icons.room_service, 
+            "Zalda xizmat ko'rsatish (%)", 
+            "${pos.serviceFeeDineIn.value}%", 
+            () => _showEditDialog(context, "Zalda xizmat ko'rsatish (%)", pos.serviceFeeDineIn.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeDineInVal: double.tryParse(val)))
+          )),
+          Obx(() => _buildSettingsItem(
+            Icons.shopping_bag, 
+            "Olib ketish xizmati (so'm)", 
+            "${pos.serviceFeeTakeaway.value} so'm", 
+            () => _showEditDialog(context, "Olib ketish xizmati (so'm)", pos.serviceFeeTakeaway.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeTakeawayVal: double.tryParse(val)))
+          )),
+          Obx(() => _buildSettingsItem(
+            Icons.delivery_dining, 
+            "Yetkazib berish xizmati (so'm)", 
+            "${pos.serviceFeeDelivery.value} so'm", 
+            () => _showEditDialog(context, "Yetkazib berish xizmati (so'm)", pos.serviceFeeDelivery.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeDeliveryVal: double.tryParse(val)))
           )),
 
           const SizedBox(height: 24),
@@ -282,7 +303,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, String title, RxString observable, String storageKey) {
+  void _showEditDialog(BuildContext context, String title, RxString observable, String storageKey, {bool isNumeric = false, Function(String)? onSave}) {
     final controller = TextEditingController(text: observable.value);
     Get.defaultDialog(
       title: title,
@@ -290,6 +311,7 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: TextField(
           controller: controller,
+          keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             hintText: title,
@@ -298,8 +320,14 @@ class SettingsScreen extends StatelessWidget {
       ),
       confirm: ElevatedButton(
         onPressed: () {
-          observable.value = controller.text;
-          GetStorage().write(storageKey, controller.text);
+          if (onSave != null) {
+            onSave(controller.text);
+          } else {
+            observable.value = controller.text;
+            if (storageKey.isNotEmpty) {
+              GetStorage().write(storageKey, controller.text);
+            }
+          }
           Get.back();
         },
         style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),

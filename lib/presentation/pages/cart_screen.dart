@@ -172,7 +172,6 @@ class CartScreen extends StatelessWidget {
           children: [
             _buildSummaryRow("subtotal".tr, "\$${pos.subtotal.toStringAsFixed(2)}"),
             _buildSummaryRow("$modeLabel ${'fee'.tr}", "\$${pos.serviceFee.toStringAsFixed(2)}"),
-            _buildSummaryRow("${'tax'.tr} (5%)", "\$${pos.tax.toStringAsFixed(2)}"),
             const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider()),
             _buildSummaryRow("total".tr, "\$${pos.total.toStringAsFixed(2)}", isTotal: true),
             const SizedBox(height: 20),

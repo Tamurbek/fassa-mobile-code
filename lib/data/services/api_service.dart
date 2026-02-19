@@ -252,6 +252,24 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getCafe(String id) async {
+    try {
+      final response = await _dio.get('/cafes/$id');
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateCafe(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/cafes/$id', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> getLatestVersion() async {
     try {
       final response = await _dio.get('/system/version');
