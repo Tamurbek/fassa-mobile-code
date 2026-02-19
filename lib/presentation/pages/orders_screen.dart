@@ -81,6 +81,8 @@ class OrdersScreen extends StatelessWidget {
                     var filtered = pos.allOrders.where((o) => o['status'] != "Completed").toList();
                     if (selectedFilter.value != "All") {
                       filtered = filtered.where((o) => o['mode'] == selectedFilter.value).toList();
+                    } else {
+                      filtered = _sortOrders(filtered);
                     }
                     return filtered.isEmpty
                         ? _buildEmptyState("no_active_orders".tr, "start_new_sale".tr)
@@ -92,6 +94,8 @@ class OrdersScreen extends StatelessWidget {
                     var filtered = pos.allOrders.where((o) => o['status'] == "Completed").toList();
                     if (selectedFilter.value != "All") {
                       filtered = filtered.where((o) => o['mode'] == selectedFilter.value).toList();
+                    } else {
+                      filtered = _sortOrders(filtered);
                     }
                     return filtered.isEmpty
                         ? _buildEmptyState("no_completed_orders".tr, "history_empty".tr)
@@ -111,6 +115,22 @@ class OrdersScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<Map<String, dynamic>> _sortOrders(List<Map<String, dynamic>> orders) {
+    final Map<String, int> modePriority = {
+      "Dine-in": 0,
+      "Takeaway": 1,
+      "Delivery": 2,
+    };
+    
+    final sorted = List<Map<String, dynamic>>.from(orders);
+    sorted.sort((a, b) {
+      int pA = modePriority[a['mode']] ?? 99;
+      int pB = modePriority[b['mode']] ?? 99;
+      return pA.compareTo(pB);
+    });
+    return sorted;
   }
 
   Widget _buildOrdersTable(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context) {
