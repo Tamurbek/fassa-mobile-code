@@ -72,24 +72,24 @@ class SettingsScreen extends StatelessWidget {
           )),
 
           const SizedBox(height: 24),
-          _buildSectionTitle("Xizmat haqi sozlamalari"),
+          _buildSectionTitle("service_fee_settings".tr),
           Obx(() => _buildSettingsItem(
             Icons.room_service, 
-            "Zalda xizmat ko'rsatish (%)", 
+            "dine_in_service_fee".tr, 
             "${pos.serviceFeeDineIn.value}%", 
-            () => _showEditDialog(context, "Zalda xizmat ko'rsatish (%)", pos.serviceFeeDineIn.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeDineInVal: double.tryParse(val)))
+            () => _showEditDialog(context, "dine_in_service_fee".tr, pos.serviceFeeDineIn.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeDineInVal: double.tryParse(val)))
           )),
           Obx(() => _buildSettingsItem(
             Icons.shopping_bag, 
-            "Olib ketish xizmati (so'm)", 
+            "takeaway_service_fee".tr, 
             "${pos.serviceFeeTakeaway.value} so'm", 
-            () => _showEditDialog(context, "Olib ketish xizmati (so'm)", pos.serviceFeeTakeaway.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeTakeawayVal: double.tryParse(val)))
+            () => _showEditDialog(context, "takeaway_service_fee".tr, pos.serviceFeeTakeaway.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeTakeawayVal: double.tryParse(val)))
           )),
           Obx(() => _buildSettingsItem(
             Icons.delivery_dining, 
-            "Yetkazib berish xizmati (so'm)", 
+            "delivery_service_fee".tr, 
             "${pos.serviceFeeDelivery.value} so'm", 
-            () => _showEditDialog(context, "Yetkazib berish xizmati (so'm)", pos.serviceFeeDelivery.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeDeliveryVal: double.tryParse(val)))
+            () => _showEditDialog(context, "delivery_service_fee".tr, pos.serviceFeeDelivery.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeDeliveryVal: double.tryParse(val)))
           )),
 
           const SizedBox(height: 24),
