@@ -423,8 +423,8 @@ class POSController extends GetxController {
       final backendTables = await _api.getTables();
       for (var t in backendTables) {
         final String loc = t['location'] ?? "Zal";
-        final String num = t['number'] ?? "01";
-        final String tableId = "$loc-$num";
+        final String tableNum = t['number'] ?? "01";
+        final String tableId = "$loc-$tableNum";
         tableBackendIds[tableId] = t['id'].toString();
         
         if (t['x'] != null && t['y'] != null) {
