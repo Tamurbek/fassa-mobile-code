@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../data/models/food_item.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/responsive.dart';
 import '../../logic/pos_controller.dart';
 import 'food_detail_screen.dart';
 import 'cart_screen.dart';
@@ -17,7 +18,7 @@ class HomeScreen extends StatelessWidget {
 
     void handleSave() {
       pos.updateExistingOrder(isPaid: false);
-      Get.back(); // Return to Orders
+      Get.back();
       Get.snackbar("success".tr, "ordered".tr, 
         backgroundColor: AppColors.primary, colorText: Colors.white);
     }
@@ -44,8 +45,8 @@ class HomeScreen extends StatelessWidget {
                         TextButton(
                           onPressed: () {
                             pos.clearCurrentOrder();
-                            Get.back(); // Close dialog
-                            Get.back(); // Go back to Orders
+                            Get.back();
+                            Get.back();
                           }, 
                           child: Text(pos.editingOrderId.value != null ? 'cancel'.tr : 'discard'.tr, 
                             style: const TextStyle(color: Colors.red))
@@ -71,11 +72,14 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: Responsive.isMobile(context) ? 24 : 40, 
+                    vertical: 8
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                       _buildOperatorHeader(pos),
+                       _buildOperatorHeader(pos, context),
                       const SizedBox(height: 16),
                       _buildSearchBar(),
                     ],
@@ -85,13 +89,19 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildCategories(pos),
+                      _buildCategories(pos, context),
                       const SizedBox(height: 24),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: Responsive.isMobile(context) ? 24 : 40
+                        ),
                         child: Text(
                           "select_items".tr,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          style: TextStyle(
+                            fontSize: Responsive.isMobile(context) ? 20 : 24, 
+                            fontWeight: FontWeight.bold, 
+                            color: AppColors.textPrimary
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -100,7 +110,7 @@ class HomeScreen extends StatelessWidget {
                         final items = cat == "All" 
                           ? pos.products 
                           : pos.products.where((p) => p.category == cat).toList();
-                        return _buildPopularGrid(items);
+                        return _buildItemsGrid(items, context);
                       })),
                       const SizedBox(height: 100),
                     ],
@@ -111,7 +121,10 @@ class HomeScreen extends StatelessWidget {
           ),
           floatingActionButton: pos.currentOrder.isEmpty ? null : Container(
             padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.symmetric(horizontal: 24),
+            constraints: BoxConstraints(maxWidth: Responsive.isMobile(context) ? double.infinity : 400),
+            margin: EdgeInsets.symmetric(
+              horizontal: Responsive.isMobile(context) ? 24 : 0
+            ),
             decoration: BoxDecoration(
               color: AppColors.textPrimary,
               borderRadius: BorderRadius.circular(20),
@@ -159,28 +172,43 @@ class HomeScreen extends StatelessWidget {
     ));
   }
 
-  Widget _buildOperatorHeader(POSController pos) {
+  Widget _buildOperatorHeader(POSController pos, BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("${'operator'.tr}: ${pos.currentUser.value?['name'] ?? 'Unknown'}", style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            Text("${'operator'.tr}: ${pos.currentUser.value?['name'] ?? 'Unknown'}", 
+              style: TextStyle(
+                color: AppColors.textSecondary, 
+                fontSize: Responsive.isMobile(context) ? 13 : 15
+              )
+            ),
             Obx(() => pos.currentMode.value == "Dine-in" 
-              ? Text("${'table'.tr}: ${pos.selectedTable.value}", style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14))
+              ? Text("${'table'.tr}: ${pos.selectedTable.value}", 
+                  style: TextStyle(
+                    color: AppColors.textPrimary, 
+                    fontWeight: FontWeight.bold, 
+                    fontSize: Responsive.isMobile(context) ? 14 : 18
+                  )
+                )
               : const SizedBox.shrink()),
           ],
         ),
         Obx(() => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: AppColors.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             pos.currentMode.value.toLowerCase().tr,
-            style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+            style: TextStyle(
+              color: AppColors.primary, 
+              fontWeight: FontWeight.bold, 
+              fontSize: Responsive.isMobile(context) ? 12 : 14
+            ),
           ),
         )),
       ],
@@ -206,11 +234,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCategories(POSController pos) {
+  Widget _buildCategories(POSController pos, BuildContext context) {
     return SizedBox(
-      height: 45,
+      height: 50,
       child: Obx(() => ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: EdgeInsets.symmetric(horizontal: Responsive.isMobile(context) ? 24 : 40),
         scrollDirection: Axis.horizontal,
         itemCount: pos.categories.length,
         separatorBuilder: (context, index) => const SizedBox(width: 12),
@@ -222,7 +250,7 @@ class HomeScreen extends StatelessWidget {
               onTap: () => pos.selectedCategory.value = category,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.primary : AppColors.white,
                   borderRadius: BorderRadius.circular(14),
@@ -230,8 +258,12 @@ class HomeScreen extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    category.tr, // Ensure keys exist or it will just show category name
-                    style: TextStyle(color: isSelected ? Colors.white : AppColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 14),
+                    category.tr,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : AppColors.textSecondary, 
+                      fontWeight: FontWeight.w600, 
+                      fontSize: Responsive.isMobile(context) ? 14 : 16
+                    ),
                   ),
                 ),
               ),
@@ -242,25 +274,31 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPopularGrid(List<FoodItem> items) {
+  Widget _buildItemsGrid(List<FoodItem> items, BuildContext context) {
     if (items.isEmpty) {
       return const Center(child: Padding(padding: EdgeInsets.all(40.0), child: Text("No items in this category")));
     }
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: ListView.separated(
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: items.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 16),
-        itemBuilder: (context, index) => _buildFoodCard(items[index]),
+
+    final int crossAxisCount = Responsive.isMobile(context) ? 1 : (Responsive.isTablet(context) ? 2 : 3);
+    final double childAspectRatio = Responsive.isMobile(context) ? 2.8 : 2.5;
+
+    return GridView.builder(
+      padding: EdgeInsets.symmetric(horizontal: Responsive.isMobile(context) ? 24 : 40),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: childAspectRatio,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
       ),
+      itemCount: items.length,
+      itemBuilder: (context, index) => _buildFoodCard(items[index], context),
+      physics: const BouncingScrollPhysics(),
     );
   }
 
-  Widget _buildFoodCard(FoodItem item) {
+  Widget _buildFoodCard(FoodItem item, BuildContext context) {
     final POSController pos = Get.find<POSController>();
+    final bool isMobile = Responsive.isMobile(context);
 
     return GestureDetector(
       onTap: () => Get.to(() => FoodDetailScreen(item: item)),
@@ -275,10 +313,10 @@ class HomeScreen extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: CommonImage( // Updated to use CommonImage
+              child: CommonImage(
                 imageUrl: item.imageUrl,
-                width: 85,
-                height: 85,
+                width: isMobile ? 85 : 100,
+                height: isMobile ? 85 : 100,
                 fit: BoxFit.cover,
               ),
             ),
@@ -286,59 +324,86 @@ class HomeScreen extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(item.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 1),
+                  Text(item.name, 
+                    style: TextStyle(
+                      fontSize: isMobile ? 16 : 18, 
+                      fontWeight: FontWeight.bold
+                    ), 
+                    maxLines: 1, 
+                    overflow: TextOverflow.ellipsis
+                  ),
                   const SizedBox(height: 4),
-                  Text(item.description, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 1),
+                  Text(item.description, 
+                    style: TextStyle(
+                      fontSize: isMobile ? 12 : 13, 
+                      color: AppColors.textSecondary
+                    ), 
+                    maxLines: 1, 
+                    overflow: TextOverflow.ellipsis
+                  ),
                   const SizedBox(height: 8),
-                  Text("\$${item.price.toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  Text("\$${item.price.toStringAsFixed(2)}", 
+                    style: TextStyle(
+                      fontSize: isMobile ? 18 : 20, 
+                      fontWeight: FontWeight.bold, 
+                      color: AppColors.primary
+                    )
+                  ),
                 ],
               ),
             ),
-            Obx(() {
-              final cartItem = pos.currentOrder.firstWhereOrNull((e) => e['item'].id == item.id);
-              final int qty = cartItem != null ? cartItem['quantity'] : 0;
-              final int itemIndex = pos.currentOrder.indexWhere((e) => e['item'].id == item.id);
-
-              return Row(
-                children: [
-                  if (qty > 0) ...[
-                    GestureDetector(
-                      onTap: () => pos.updateQuantity(itemIndex, -1),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.remove, size: 20, color: AppColors.textPrimary),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        qty.toString(),
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                  GestureDetector(
-                    onTap: () => pos.addToCart(item),
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.textPrimary,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.add, size: 20, color: Colors.white),
-                    ),
-                  ),
-                ],
-              );
-            }),
+            _buildQuantityControls(item, pos, isMobile),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildQuantityControls(FoodItem item, POSController pos, bool isMobile) {
+    return Obx(() {
+      final cartItem = pos.currentOrder.firstWhereOrNull((e) => e['item'].id == item.id);
+      final int qty = cartItem != null ? cartItem['quantity'] : 0;
+      final int itemIndex = pos.currentOrder.indexWhere((e) => e['item'].id == item.id);
+
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (qty > 0) ...[
+            GestureDetector(
+              onTap: () => pos.updateQuantity(itemIndex, -1),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.remove, size: isMobile ? 20 : 22, color: AppColors.textPrimary),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Text(
+                qty.toString(),
+                style: TextStyle(fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+          GestureDetector(
+            onTap: () => pos.addToCart(item),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.textPrimary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.add, size: isMobile ? 20 : 22, color: Colors.white),
+            ),
+          ),
+        ],
+      );
+    });
+  }
 }
+

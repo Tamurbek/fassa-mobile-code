@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/responsive.dart';
 import '../../logic/pos_controller.dart';
 import '../../data/models/food_item.dart';
 import 'home_screen.dart';
@@ -15,8 +16,8 @@ class OrdersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final POSController pos = Get.find<POSController>();
-
     final List<FoodItem> catalog = pos.products;
+    final bool isMobile = Responsive.isMobile(context);
 
     return DefaultTabController(
       length: 2,
@@ -42,7 +43,8 @@ class OrdersScreen extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () => pos.allOrders.refresh(),
-            )
+            ),
+            if (!isMobile) const SizedBox(width: 16),
           ],
         ),
         body: TabBarView(
@@ -51,23 +53,13 @@ class OrdersScreen extends StatelessWidget {
               final activeOrders = pos.allOrders.where((o) => o['status'] != "Completed").toList();
               return activeOrders.isEmpty
                   ? _buildEmptyState("no_active_orders".tr, "start_new_sale".tr)
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 100),
-                      itemCount: activeOrders.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) => _buildSlidableOrderCard(activeOrders[index], pos, catalog),
-                    );
+                  : _buildOrdersGrid(activeOrders, pos, catalog, context);
             }),
             Obx(() {
               final completedOrders = pos.allOrders.where((o) => o['status'] == "Completed").toList();
               return completedOrders.isEmpty
                   ? _buildEmptyState("no_completed_orders".tr, "history_empty".tr)
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 100),
-                      itemCount: completedOrders.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 16),
-                      itemBuilder: (context, index) => _buildSlidableOrderCard(completedOrders[index], pos, catalog),
-                    );
+                  : _buildOrdersGrid(completedOrders, pos, catalog, context);
             }),
           ],
         ),
@@ -77,6 +69,28 @@ class OrdersScreen extends StatelessWidget {
           child: const Icon(Icons.add, color: Colors.white),
         ),
       ),
+    );
+  }
+
+  Widget _buildOrdersGrid(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context) {
+    final int crossAxisCount = Responsive.isMobile(context) ? 1 : (Responsive.isTablet(context) ? 2 : 3);
+    final isMobile = Responsive.isMobile(context);
+
+    return GridView.builder(
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 24 : 40, 
+        12, 
+        isMobile ? 24 : 40, 
+        100
+      ),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: isMobile ? 1.4 : 1.2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: orders.length,
+      itemBuilder: (context, index) => _buildSlidableOrderCard(orders[index], pos, catalog, context),
     );
   }
 
@@ -115,7 +129,7 @@ class OrdersScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSlidableOrderCard(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog) {
+  Widget _buildSlidableOrderCard(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog, BuildContext context) {
     final bool isActive = order['status'] != "Completed";
 
     return Slidable(
@@ -162,80 +176,80 @@ class OrdersScreen extends StatelessWidget {
             ),
         ],
       ),
-      child: _buildOrderCardContent(order, pos, catalog, isActive),
+      child: _buildOrderCardContent(order, pos, catalog, isActive, context),
     );
   }
 
-
-
-  Widget _buildOrderCardContent(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog, bool isActive) {
+  Widget _buildOrderCardContent(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog, bool isActive, BuildContext context) {
     final status = order['status'];
     final mode = order['mode'] ?? "Dine-in";
     String modeLabel = mode.toString().toLowerCase() == "dine-in" ? 'dine_in'.tr : (mode.toString().toLowerCase() == "takeaway" ? 'takeaway'.tr : 'delivery'.tr);
-    final color = status == "Ready" ? Colors.green : (status == "Preparing" ? Colors.blue : (status == "Pending" ? Colors.orange : Colors.grey));
     final details = order['details'] as List? ?? [];
+    final bool isMobile = Responsive.isMobile(context);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          "Order #${order['id']}", 
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                      if (isActive) _buildActionIcon(status, order, pos, catalog),
-                    ],
-                  ),
-                  Text(
-                    "${order['table']} • $modeLabel • ${order['items']} ${'items'.tr}", 
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-
-          ],
+    return InkWell(
+      onTap: () {
+        if (status != "Bill Printed") {
+          pos.loadOrderForEditing(order, catalog);
+          Get.to(() => const HomeScreen());
+        }
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
         ),
-        children: [
-          const Divider(),
-          ...details.map((d) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("${d['qty']} x ${d['name']}", style: const TextStyle(fontSize: 13)),
-                Text("\$${((d['price'] as num? ?? 0) * (d['qty'] as num? ?? 0)).toStringAsFixed(2)}", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              "Order #${order['id']}", 
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                          if (isActive) _buildActionIcon(status, order, pos, catalog),
+                        ],
+                      ),
+                      Text(
+                        "${order['table']} • $modeLabel • ${order['items']} ${'items'.tr}", 
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: isMobile ? 12 : 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-          )),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("${'total'.tr}: \$${order['total'].toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-
-            ],
-          ),
-        ],
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "${'total'.tr}: \$${order['total'].toStringAsFixed(2)}", 
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18, color: AppColors.primary)
+                ),
+                Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey.withOpacity(0.5)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -251,7 +265,7 @@ class OrdersScreen extends StatelessWidget {
            borderRadius: BorderRadius.circular(20),
          );
        }
-       return const SizedBox.shrink(); // No action for waiters on printed bills
+       return const SizedBox.shrink(); 
     } else {
        return SlidableAction(
         onPressed: (context) {
@@ -356,6 +370,7 @@ class OrdersScreen extends StatelessWidget {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
       builder: (context) => Container(
         padding: const EdgeInsets.all(32),
+        constraints: BoxConstraints(maxWidth: Responsive.isMobile(context) ? double.infinity : 500),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -379,7 +394,6 @@ class OrdersScreen extends StatelessWidget {
   }
 
   Widget _buildModeOption(IconData icon, String label, POSController pos) {
-    String translatedLabel = label.toLowerCase() == "dine-in" ? 'dine_in'.tr : (label.toLowerCase() == "takeaway" ? 'takeaway'.tr : 'delivery'.tr);
     return Expanded(
       child: InkWell(
         onTap: () {
@@ -410,3 +424,4 @@ class OrdersScreen extends StatelessWidget {
     );
   }
 }
+

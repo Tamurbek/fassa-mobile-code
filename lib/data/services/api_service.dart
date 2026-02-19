@@ -261,6 +261,26 @@ class ApiService {
     }
   }
 
+  // Tables & Floor Plan
+  Future<List<dynamic>> getTables() async {
+    try {
+      final response = await _dio.get('/tables');
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateTablePosition(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.patch('/tables/$id/position', data: data);
+      return response.data;
+    } catch (e) {
+      // If endpoint doesn't exist, we might need a fallback or different approach
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> updateCafe(String id, Map<String, dynamic> data) async {
     try {
       final response = await _dio.put('/cafes/$id', data: data);

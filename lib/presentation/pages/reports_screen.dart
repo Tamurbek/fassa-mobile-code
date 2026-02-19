@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/responsive.dart';
 import '../../logic/pos_controller.dart';
 import 'package:intl/intl.dart';
 
@@ -18,7 +19,6 @@ class ReportsScreen extends StatelessWidget {
         centerTitle: true,
       ),
       body: Obx(() {
-        // Calculate real stats from allOrders
         final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
         final todayOrders = pos.allOrders.where((o) => (o['timestamp'] ?? '').startsWith(today)).toList();
         
@@ -27,7 +27,6 @@ class ReportsScreen extends StatelessWidget {
         double avgBill = orderCount > 0 ? todayRevenue / orderCount : 0.0;
         double totalRevenue = pos.allOrders.fold(0, (sum, o) => sum + (o['total'] as double));
 
-        // Calculate top selling items from allOrders
         Map<String, int> itemSales = {};
         Map<String, double> itemRevenue = {};
         
@@ -52,30 +51,39 @@ class ReportsScreen extends StatelessWidget {
           "revenue": "\$${itemRevenue[name]!.toStringAsFixed(2)}"
         }).toList();
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("sales_analytics".tr, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-              _buildStatsGrid(todayRevenue, orderCount, avgBill, totalRevenue),
-              const SizedBox(height: 32),
-              Text("top_selling".tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              _buildTopSellingList(topSelling),
-              const SizedBox(height: 32),
-              _buildSessionAction(),
-            ],
+        return Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: Responsive.isMobile(context) ? double.infinity : 1000
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(Responsive.isMobile(context) ? 24 : 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("sales_analytics".tr, style: TextStyle(fontSize: Responsive.isMobile(context) ? 22 : 28, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+                  _buildStatsGrid(todayRevenue, orderCount, avgBill, totalRevenue, context),
+                  const SizedBox(height: 32),
+                  Text("top_selling".tr, style: TextStyle(fontSize: Responsive.isMobile(context) ? 18 : 22, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  _buildTopSellingList(topSelling, context),
+                  const SizedBox(height: 32),
+                  _buildSessionAction(context),
+                ],
+              ),
+            ),
           ),
         );
       }),
     );
   }
 
-  Widget _buildStatsGrid(double todayRevenue, int orderCount, double avgBill, double totalRevenue) {
+  Widget _buildStatsGrid(double todayRevenue, int orderCount, double avgBill, double totalRevenue, BuildContext context) {
+    final int crossAxisCount = Responsive.isMobile(context) ? 2 : 4;
+    
     return GridView.count(
-      crossAxisCount: 2,
+      crossAxisCount: crossAxisCount,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 16,
@@ -121,7 +129,7 @@ class ReportsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTopSellingList(List<Map<String, String>> items) {
+  Widget _buildTopSellingList(List<Map<String, String>> items, BuildContext context) {
     if (items.isEmpty) {
       return Container(
         height: 100,
@@ -158,7 +166,7 @@ class ReportsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSessionAction() {
+  Widget _buildSessionAction(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -181,7 +189,13 @@ class ReportsScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {},
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: EdgeInsets.symmetric(
+                horizontal: Responsive.isMobile(context) ? 16 : 32,
+                vertical: 12
+              )
+            ),
             child: Text("close_register".tr),
           ),
         ],
@@ -189,3 +203,4 @@ class ReportsScreen extends StatelessWidget {
     );
   }
 }
+

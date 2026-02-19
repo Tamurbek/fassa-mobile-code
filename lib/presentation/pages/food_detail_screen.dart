@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../data/models/food_item.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/responsive.dart';
 import '../../logic/pos_controller.dart';
 import '../widgets/common_image.dart';
 
@@ -14,106 +15,203 @@ class FoodDetailScreen extends StatelessWidget {
     var quantity = 1.obs;
 
     return Scaffold(
-      backgroundColor: AppColors.white,
-      body: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: MediaQuery.of(context).size.height * 0.45,
-            child: Hero(
-              tag: 'food-image-${item.id}',
-              child: CommonImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
+      backgroundColor: AppColors.background,
+      body: Responsive(
+        mobile: _buildMobileLayout(context, quantity),
+        desktop: _buildDesktopLayout(context, quantity),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(BuildContext context, RxInt quantity) {
+    return Stack(
+      children: [
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: MediaQuery.of(context).size.height * 0.45,
+          child: Hero(
+            tag: 'food-image-${item.id}',
+            child: CommonImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildRoundButton(icon: Icons.arrow_back_ios_new, onTap: () => Get.back()),
+                _buildRoundButton(icon: Icons.favorite_border, iconColor: Colors.red, onTap: () {}),
+              ],
             ),
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.6,
+            width: double.infinity,
+            decoration: const BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.vertical(top: Radius.circular(36))),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildRoundButton(icon: Icons.arrow_back_ios_new, onTap: () => Get.back()),
-                  _buildRoundButton(icon: Icons.favorite_border, iconColor: Colors.red, onTap: () {}),
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+                  const SizedBox(height: 24),
+                  _buildItemHeader(),
+                  const SizedBox(height: 32),
+                  _buildDescription(),
+                  const SizedBox(height: 32),
+                  _buildQuantitySection(quantity),
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.6,
-              width: double.infinity,
-              decoration: const BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.vertical(top: Radius.circular(36))),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                              const SizedBox(height: 8),
-                              Row(children: [const Icon(Icons.star, color: Colors.amber, size: 20), const SizedBox(width: 4), Text(item.rating.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))]),
-                            ],
-                          ),
-                        ),
-                        Text("\$${item.price.toStringAsFixed(2)}", style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    const Text("Description", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                    const SizedBox(height: 12),
-                    Text("${item.description}. Premium quality ingredients prepared for our POS terminal.", style: const TextStyle(fontSize: 15, color: AppColors.textSecondary, height: 1.5)),
-                    const SizedBox(height: 32),
-                    const Text("Quantity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        _buildQuantityButton(icon: Icons.remove, onTap: () { if (quantity.value > 1) quantity.value--; }),
-                        Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Obx(() => Text(quantity.value.toString().padLeft(2, '0'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
-                        _buildQuantityButton(icon: Icons.add, onTap: () => quantity.value++, isPrimary: true),
-                      ],
-                    ),
-                  ],
+        ),
+        _buildBottomBar(quantity),
+      ],
+    );
+  }
+
+  Widget _buildDesktopLayout(BuildContext context, RxInt quantity) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: Container(
+          margin: const EdgeInsets.all(40),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(36),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(36),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Hero(
+                    tag: 'food-image-${item.id}',
+                    child: CommonImage(imageUrl: item.imageUrl, fit: BoxFit.cover, height: double.infinity),
+                  ),
                 ),
-              ),
+                Expanded(
+                  flex: 6,
+                  child: Padding(
+                    padding: const EdgeInsets.all(40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildRoundButton(icon: Icons.arrow_back_ios_new, onTap: () => Get.back()),
+                            _buildRoundButton(icon: Icons.favorite_border, iconColor: Colors.red, onTap: () {}),
+                          ],
+                        ),
+                        const SizedBox(height: 40),
+                        _buildItemHeader(isDesktop: true),
+                        const SizedBox(height: 24),
+                        _buildDescription(),
+                        const SizedBox(height: 40),
+                        _buildQuantitySection(quantity),
+                        const Spacer(),
+                        _buildBottomBar(quantity, isDesktop: true),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          Positioned(
-            bottom: 30,
-            left: 24,
-            right: 24,
-            child: ElevatedButton(
-              onPressed: () {
-                final pos = Get.find<POSController>();
-                for (int i = 0; i < quantity.value; i++) {
-                  pos.addToCart(item);
-                }
-                Get.back();
-              },
-              style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 65), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.receipt_long),
-                  const SizedBox(width: 12),
-                  const Text("Add to Bill", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const Spacer(),
-                  Obx(() => Text("\$${(item.price * quantity.value).toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
-                ],
-              ),
-            ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemHeader({bool isDesktop = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item.name, style: TextStyle(fontSize: isDesktop ? 32 : 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              const SizedBox(height: 8),
+              Row(children: [const Icon(Icons.star, color: Colors.amber, size: 20), const SizedBox(width: 4), Text(item.rating.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))]),
+            ],
           ),
+        ),
+        Text("\$${item.price.toStringAsFixed(2)}", style: TextStyle(fontSize: isDesktop ? 34 : 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
+      ],
+    );
+  }
+
+  Widget _buildDescription() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Description", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        const SizedBox(height: 12),
+        Text("${item.description}. Premium quality ingredients prepared for our POS terminal.", style: const TextStyle(fontSize: 15, color: AppColors.textSecondary, height: 1.5)),
+      ],
+    );
+  }
+
+  Widget _buildQuantitySection(RxInt quantity) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Quantity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            _buildQuantityButton(icon: Icons.remove, onTap: () { if (quantity.value > 1) quantity.value--; }),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Obx(() => Text(quantity.value.toString().padLeft(2, '0'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
+            _buildQuantityButton(icon: Icons.add, onTap: () => quantity.value++, isPrimary: true),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomBar(RxInt quantity, {bool isDesktop = false}) {
+    final Widget button = ElevatedButton(
+      onPressed: () {
+        final pos = Get.find<POSController>();
+        for (int i = 0; i < quantity.value; i++) {
+          pos.addToCart(item);
+        }
+        Get.back();
+      },
+      style: ElevatedButton.styleFrom(
+        minimumSize: Size(double.infinity, isDesktop ? 75 : 65), 
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.receipt_long),
+          const SizedBox(width: 12),
+          const Text("Add to Bill", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Spacer(),
+          Obx(() => Text("\$${(item.price * quantity.value).toStringAsFixed(2)}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
         ],
       ),
+    );
+
+    if (isDesktop) return button;
+
+    return Positioned(
+      bottom: 30,
+      left: 24,
+      right: 24,
+      child: button,
     );
   }
 
@@ -131,3 +229,4 @@ class FoodDetailScreen extends StatelessWidget {
     );
   }
 }
+

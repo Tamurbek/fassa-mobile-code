@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../logic/pos_controller.dart';
 import '../../../theme/app_colors.dart';
+import '../../../theme/responsive.dart';
 import '../main_navigation_screen.dart';
 
 class PinCodeScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class PinCodeScreen extends StatefulWidget {
 class _PinCodeScreenState extends State<PinCodeScreen> {
   final POSController pos = Get.find<POSController>();
   String _enteredPin = "";
-  String _firstPin = ""; // Used for confirmation when setting new pin
+  String _firstPin = ""; 
   bool _isConfirming = false;
 
   void _onDigitPress(String digit) {
@@ -41,14 +42,12 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   void _handlePinComplete() async {
     if (widget.isSettingNewPin) {
       if (!_isConfirming) {
-        // First step of setting pin
         setState(() {
           _firstPin = _enteredPin;
           _enteredPin = "";
           _isConfirming = true;
         });
       } else {
-        // Confirmation step
         if (_enteredPin == _firstPin) {
           pos.setPinCode(_enteredPin);
           pos.authenticatePin(true);
@@ -64,7 +63,6 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
         }
       }
     } else {
-      // Verifying existing pin
       if (_enteredPin == pos.pinCode.value) {
         pos.authenticatePin(true);
         Get.offAll(() => const MainNavigationScreen());
@@ -88,76 +86,83 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
       ? (_isConfirming ? "Enter the same 4 digits again" : "Create a 4-digit security PIN")
       : "Please enter your security PIN to continue";
 
+    final bool isMobile = Responsive.isMobile(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 60),
-            Icon(Icons.lock_person_rounded, size: 80, color: AppColors.primary),
-            const SizedBox(height: 24),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
-              ),
-            ),
-            const SizedBox(height: 60),
-            
-            // PIN Dots
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(4, (index) {
-                bool isSelected = index < _enteredPin.length;
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isSelected ? AppColors.primary : Colors.grey.shade200,
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : Colors.grey.shade300,
-                      width: 2,
-                    ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Column(
+              children: [
+                SizedBox(height: isMobile ? 60 : 80),
+                Icon(Icons.lock_person_rounded, size: isMobile ? 80 : 100, color: AppColors.primary),
+                const SizedBox(height: 24),
+                Text(
+                  title,
+                  style: TextStyle(fontSize: isMobile ? 28 : 34, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: isMobile ? 16 : 18, color: AppColors.textSecondary),
                   ),
-                );
-              }),
-            ),
-            
-            const Spacer(),
-            
-            // Numeric Keypad
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-              child: Column(
-                children: [
-                  _buildKeypadRow(["1", "2", "3"]),
-                  const SizedBox(height: 20),
-                  _buildKeypadRow(["4", "5", "6"]),
-                  const SizedBox(height: 20),
-                  _buildKeypadRow(["7", "8", "9"]),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ),
+                const SizedBox(height: 50),
+                
+                // PIN Dots
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(4, (index) {
+                    bool isSelected = index < _enteredPin.length;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 12),
+                      width: isMobile ? 20 : 24,
+                      height: isMobile ? 20 : 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                        border: Border.all(
+                          color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                          width: 2,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                
+                const Spacer(),
+                
+                // Numeric Keypad
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: isMobile ? 20 : 40),
+                  child: Column(
                     children: [
-                      const SizedBox(width: 70), // Spacer for layout
-                      _buildKeyButton("0"),
-                      _buildIconButton(Icons.backspace_rounded, _onBackspace),
+                      _buildKeypadRow(["1", "2", "3"]),
+                      const SizedBox(height: 20),
+                      _buildKeypadRow(["4", "5", "6"]),
+                      const SizedBox(height: 20),
+                      _buildKeypadRow(["7", "8", "9"]),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const SizedBox(width: 70), 
+                          _buildKeyButton("0"),
+                          _buildIconButton(Icons.backspace_rounded, _onBackspace),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                SizedBox(height: isMobile ? 40 : 60),
+              ],
             ),
-            const SizedBox(height: 40),
-          ],
+          ),
         ),
       ),
     );
@@ -209,3 +214,4 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
     );
   }
 }
+

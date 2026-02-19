@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/responsive.dart';
 import '../../logic/pos_controller.dart';
 import 'package:fast_food_app/presentation/pages/product_management_screen.dart';
 import 'package:fast_food_app/presentation/pages/printer_management_screen.dart';
@@ -22,103 +23,111 @@ class SettingsScreen extends StatelessWidget {
         title: Text("settings".tr),
         centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          _buildProfileHeader(pos),
-          const SizedBox(height: 32),
-          
-          if (pos.isAdmin) ...[
-            _buildSectionTitle("printer_settings".tr),
-            Obx(() => _buildSettingsItem(
-              Icons.receipt, 
-              "printer_paper_size".tr, 
-              pos.printerPaperSize.value, 
-              () => _showPaperSizeDialog(context, pos)
-            )),
-            Obx(() => _buildSwitchItem(
-              Icons.print, 
-              "auto_print_receipt".tr, 
-              pos.autoPrintReceipt.value, 
-              (val) {
-                pos.autoPrintReceipt.value = val;
-                storage.write('auto_print_receipt', val);
-              }
-            )),
-            _buildSettingsItem(Icons.devices, "printer_management".tr, "", () => Get.to(() => const PrinterManagementScreen())),
-            _buildSettingsItem(Icons.restaurant, "preparation_area_management".tr, "", () => Get.to(() => const PreparationAreaManagementScreen())),
-          ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: Responsive.isMobile(context) ? double.infinity : 600
+          ),
+          child: ListView(
+            padding: EdgeInsets.all(Responsive.isMobile(context) ? 24 : 40),
+            children: [
+              _buildProfileHeader(pos),
+              const SizedBox(height: 32),
+              
+              if (pos.isAdmin) ...[
+                _buildSectionTitle("printer_settings".tr),
+                Obx(() => _buildSettingsItem(
+                  Icons.receipt, 
+                  "printer_paper_size".tr, 
+                  pos.printerPaperSize.value, 
+                  () => _showPaperSizeDialog(context, pos)
+                )),
+                Obx(() => _buildSwitchItem(
+                  Icons.print, 
+                  "auto_print_receipt".tr, 
+                  pos.autoPrintReceipt.value, 
+                  (val) {
+                    pos.autoPrintReceipt.value = val;
+                    storage.write('auto_print_receipt', val);
+                  }
+                )),
+                _buildSettingsItem(Icons.devices, "printer_management".tr, "", () => Get.to(() => const PrinterManagementScreen())),
+                _buildSettingsItem(Icons.restaurant, "preparation_area_management".tr, "", () => Get.to(() => const PreparationAreaManagementScreen())),
+              ],
 
-          if (pos.isAdmin) ...[
-            const SizedBox(height: 24),
-            _buildSectionTitle("Xodimlar".tr),
-            _buildSettingsItem(Icons.people_outline, "Afitsantlar boshqaruvi", "Waiter management", () => Get.to(() => const WaiterManagementScreen())),
-          ],
+              if (pos.isAdmin) ...[
+                const SizedBox(height: 24),
+                _buildSectionTitle("Xodimlar".tr),
+                _buildSettingsItem(Icons.people_outline, "Afitsantlar boshqaruvi", "Waiter management", () => Get.to(() => const WaiterManagementScreen())),
+              ],
 
-          if (pos.isAdmin) ...[
-            const SizedBox(height: 24),
-            _buildSectionTitle("menu_management".tr),
-            _buildSettingsItem(Icons.restaurant_menu, "menu_management".tr, "products".tr, () => Get.to(() => const ProductManagementScreen())),
-          ],
-          if (pos.isAdmin) ...[
-            const SizedBox(height: 24),
-            _buildSectionTitle("restaurant_info".tr),
-            Obx(() => _buildSettingsItem(
-              Icons.store, 
-              "restaurant_name".tr, 
-              pos.restaurantName.value, 
-              () => _showEditDialog(context, "restaurant_name".tr, pos.restaurantName, 'restaurant_name', onSave: (val) => pos.updateCafeInfo(name: val))
-            )),
-            Obx(() => _buildSettingsItem(
-              Icons.location_on, 
-              "restaurant_address".tr, 
-              pos.restaurantAddress.value, 
-              () => _showEditDialog(context, "restaurant_address".tr, pos.restaurantAddress, 'restaurant_address', onSave: (val) => pos.updateCafeInfo(address: val))
-            )),
-            Obx(() => _buildSettingsItem(
-              Icons.phone, 
-              "restaurant_phone".tr, 
-              pos.restaurantPhone.value, 
-              () => _showEditDialog(context, "restaurant_phone".tr, pos.restaurantPhone, 'restaurant_phone', onSave: (val) => pos.updateCafeInfo(phone: val))
-            )),
-          ],
+              if (pos.isAdmin) ...[
+                const SizedBox(height: 24),
+                _buildSectionTitle("menu_management".tr),
+                _buildSettingsItem(Icons.restaurant_menu, "menu_management".tr, "products".tr, () => Get.to(() => const ProductManagementScreen())),
+              ],
+              if (pos.isAdmin) ...[
+                const SizedBox(height: 24),
+                _buildSectionTitle("restaurant_info".tr),
+                Obx(() => _buildSettingsItem(
+                  Icons.store, 
+                  "restaurant_name".tr, 
+                  pos.restaurantName.value, 
+                  () => _showEditDialog(context, "restaurant_name".tr, pos.restaurantName, 'restaurant_name', onSave: (val) => pos.updateCafeInfo(name: val))
+                )),
+                Obx(() => _buildSettingsItem(
+                  Icons.location_on, 
+                  "restaurant_address".tr, 
+                  pos.restaurantAddress.value, 
+                  () => _showEditDialog(context, "restaurant_address".tr, pos.restaurantAddress, 'restaurant_address', onSave: (val) => pos.updateCafeInfo(address: val))
+                )),
+                Obx(() => _buildSettingsItem(
+                  Icons.phone, 
+                  "restaurant_phone".tr, 
+                  pos.restaurantPhone.value, 
+                  () => _showEditDialog(context, "restaurant_phone".tr, pos.restaurantPhone, 'restaurant_phone', onSave: (val) => pos.updateCafeInfo(phone: val))
+                )),
+              ],
 
-          if (pos.isAdmin) ...[
-            const SizedBox(height: 24),
-            _buildSectionTitle("service_fee_settings".tr),
-            Obx(() => _buildSettingsItem(
-              Icons.room_service, 
-              "dine_in_service_fee".tr, 
-              "${pos.serviceFeeDineIn.value}%", 
-              () => _showEditDialog(context, "dine_in_service_fee".tr, pos.serviceFeeDineIn.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeDineInVal: double.tryParse(val)))
-            )),
-            Obx(() => _buildSettingsItem(
-              Icons.shopping_bag, 
-              "takeaway_service_fee".tr, 
-              "${pos.serviceFeeTakeaway.value} so'm", 
-              () => _showEditDialog(context, "takeaway_service_fee".tr, pos.serviceFeeTakeaway.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeTakeawayVal: double.tryParse(val)))
-            )),
-            Obx(() => _buildSettingsItem(
-              Icons.delivery_dining, 
-              "delivery_service_fee".tr, 
-              "${pos.serviceFeeDelivery.value} so'm", 
-              () => _showEditDialog(context, "delivery_service_fee".tr, pos.serviceFeeDelivery.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeDeliveryVal: double.tryParse(val)))
-            )),
-          ],
+              if (pos.isAdmin) ...[
+                const SizedBox(height: 24),
+                _buildSectionTitle("service_fee_settings".tr),
+                Obx(() => _buildSettingsItem(
+                  Icons.room_service, 
+                  "dine_in_service_fee".tr, 
+                  "${pos.serviceFeeDineIn.value}%", 
+                  () => _showEditDialog(context, "dine_in_service_fee".tr, pos.serviceFeeDineIn.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeDineInVal: double.tryParse(val)))
+                )),
+                Obx(() => _buildSettingsItem(
+                  Icons.shopping_bag, 
+                  "takeaway_service_fee".tr, 
+                  "${pos.serviceFeeTakeaway.value} so'm", 
+                  () => _showEditDialog(context, "takeaway_service_fee".tr, pos.serviceFeeTakeaway.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeTakeawayVal: double.tryParse(val)))
+                )),
+                Obx(() => _buildSettingsItem(
+                  Icons.delivery_dining, 
+                  "delivery_service_fee".tr, 
+                  "${pos.serviceFeeDelivery.value} so'm", 
+                  () => _showEditDialog(context, "delivery_service_fee".tr, pos.serviceFeeDelivery.value.toString().obs, '', isNumeric: true, onSave: (val) => pos.updateCafeInfo(serviceFeeDeliveryVal: double.tryParse(val)))
+                )),
+              ],
 
-          const SizedBox(height: 24),
-          _buildSectionTitle("system".tr),
-          _buildSettingsItem(Icons.language, "language".tr, Get.locale?.languageCode == 'uz' ? "O'zbekcha" : (Get.locale?.languageCode == 'ru' ? "Русский" : "English"), () => _showLanguageSwitcher(context)),
-          if (pos.isAdmin)
-            _buildSettingsItem(Icons.cleaning_services_outlined, "clear_data".tr, "", () => _confirmClearData(context, pos, storage)),
-          _buildSettingsItem(Icons.info_outline, "app_version".tr, "v1.0.5", () {}),
-          
-          const SizedBox(height: 40),
-          _buildLogoutButton(),
-        ],
+              const SizedBox(height: 24),
+              _buildSectionTitle("system".tr),
+              _buildSettingsItem(Icons.language, "language".tr, Get.locale?.languageCode == 'uz' ? "O'zbekcha" : (Get.locale?.languageCode == 'ru' ? "Русский" : "English"), () => _showLanguageSwitcher(context)),
+              if (pos.isAdmin)
+                _buildSettingsItem(Icons.cleaning_services_outlined, "clear_data".tr, "", () => _confirmClearData(context, pos, storage)),
+              _buildSettingsItem(Icons.info_outline, "app_version".tr, "v1.0.5", () {}),
+              
+              const SizedBox(height: 40),
+              _buildLogoutButton(),
+            ],
+          ),
+        ),
       ),
     );
   }
+
 
   Widget _buildProfileHeader(POSController pos) {
     return Container(

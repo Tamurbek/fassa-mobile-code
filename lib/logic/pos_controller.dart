@@ -54,6 +54,10 @@ class POSController extends GetxController {
   var serviceFeeTakeaway = 0.0.obs;
   var serviceFeeDelivery = 3000.0.obs;
 
+  var tablePositions = <String, Map<String, double>>{}.obs; // "Location-TableId": {"x": 100.0, "y": 200.0}
+  var tableBackendIds = <String, String>{}; // "Location-TableId": "backend_uuid"
+  var isEditMode = false.obs;
+
   // Subscription
   var subscriptionDaysLeft = RxnInt();    // null = VIP (cheksiz)
   var isSubscriptionExpired = false.obs;
@@ -243,6 +247,38 @@ class POSController extends GetxController {
         print("Error loading printed kitchen items: $e");
       }
     }
+
+    var storedTablePositions = _storage.read('table_positions');
+    if (storedTablePositions != null) {
+      try {
+        final Map<String, dynamic> decoded = Map<String, dynamic>.from(storedTablePositions);
+        tablePositions.assignAll(decoded.map(
+          (key, value) => MapEntry(key, Map<String, double>.from(value))
+        ));
+      } catch (e) {
+        print("Error loading table positions: $e");
+      }
+    }
+  }
+
+  void updateTablePosition(String tableId, double x, double y) {
+    tablePositions[tableId] = {"x": x, "y": y};
+    _storage.write('table_positions', Map.from(tablePositions));
+  }
+
+  Future<void> syncTablePositionWithBackend(String tableId) async {
+    final pos = tablePositions[tableId];
+    final backendId = tableBackendIds[tableId];
+    if (pos == null || backendId == null) return;
+
+    try {
+      await _api.updateTablePosition(backendId, {
+        "x": pos['x'],
+        "y": pos['y']
+      });
+    } catch (e) {
+      print("Error syncing table position to backend: $e");
+    }
   }
 
   void setPinCode(String code) {
@@ -382,6 +418,27 @@ class POSController extends GetxController {
       print("Error fetching orders: $e");
     }
 
+    // Fetch Tables & Floor Plan
+    try {
+      final backendTables = await _api.getTables();
+      for (var t in backendTables) {
+        final String loc = t['location'] ?? "Zal";
+        final String num = t['number'] ?? "01";
+        final String tableId = "$loc-$num";
+        tableBackendIds[tableId] = t['id'].toString();
+        
+        if (t['x'] != null && t['y'] != null) {
+          tablePositions[tableId] = {
+            "x": (t['x'] as num).toDouble(),
+            "y": (t['y'] as num).toDouble()
+          };
+        }
+      }
+      _storage.write('table_positions', Map.from(tablePositions));
+    } catch (e) {
+      print("Error fetching tables: $e");
+    }
+
     // Fetch Users (Waiters)
     if (isAdmin) {
       try {
@@ -467,6 +524,10 @@ class POSController extends GetxController {
 
   void setTable(String table) {
     selectedTable.value = table;
+  }
+
+  void toggleEditMode() {
+    isEditMode.value = !isEditMode.value;
   }
 
   void addToCart(FoodItem item) {
