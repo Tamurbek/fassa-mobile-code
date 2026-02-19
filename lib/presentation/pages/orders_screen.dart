@@ -253,9 +253,9 @@ class OrdersScreen extends StatelessWidget {
         isMobile ? 24 : 40, 
         100
       ),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: isMobile ? 2.8 : 2.1,
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 450,
+        mainAxisExtent: isMobile ? 130 : 160,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -403,9 +403,12 @@ class OrdersScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "${'total'.tr}: \$${order['total'].toStringAsFixed(2)}", 
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18, color: AppColors.primary)
+              Expanded(
+                child: Text(
+                  "${'total'.tr}: \$${order['total'].toStringAsFixed(2)}", 
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18, color: AppColors.primary),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               if (!isMobile)
                 Row(
