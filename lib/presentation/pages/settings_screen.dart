@@ -109,7 +109,8 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 24),
           _buildSectionTitle("system".tr),
           _buildSettingsItem(Icons.language, "language".tr, Get.locale?.languageCode == 'uz' ? "O'zbekcha" : (Get.locale?.languageCode == 'ru' ? "Русский" : "English"), () => _showLanguageSwitcher(context)),
-          _buildSettingsItem(Icons.cleaning_services_outlined, "clear_data".tr, "", () => _confirmClearData(context, pos, storage)),
+          if (pos.isAdmin)
+            _buildSettingsItem(Icons.cleaning_services_outlined, "clear_data".tr, "", () => _confirmClearData(context, pos, storage)),
           _buildSettingsItem(Icons.info_outline, "app_version".tr, "v1.0.5", () {}),
           
           const SizedBox(height: 40),
