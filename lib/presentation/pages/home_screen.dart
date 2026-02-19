@@ -76,7 +76,7 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          if (Get.canPop()) ...[
+          if (Navigator.canPop(context)) ...[
             _buildTopIcon(Icons.arrow_back_rounded, onTap: () => Get.back()),
             const SizedBox(width: 16),
           ],
