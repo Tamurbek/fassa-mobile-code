@@ -76,6 +76,10 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (Get.canPop()) ...[
+            _buildTopIcon(Icons.arrow_back_rounded, onTap: () => Get.back()),
+            const SizedBox(width: 16),
+          ],
           if (!isMobile) ...[
             const Text(
               "FAST FOOD PRO",
