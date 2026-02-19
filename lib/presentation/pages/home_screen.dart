@@ -504,7 +504,7 @@ class HomeScreen extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: Responsive.isMobile(context) ? 24 : 40),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: childAspectRatio,
+        childAspectRatio: 1.35,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
