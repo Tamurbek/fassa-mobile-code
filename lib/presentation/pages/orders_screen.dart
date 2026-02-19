@@ -304,6 +304,7 @@ class OrdersScreen extends StatelessWidget {
 
     return Slidable(
       key: ValueKey(order['id']),
+      enabled: Responsive.isMobile(context),
       startActionPane: isActive ? ActionPane(
         motion: const ScrollMotion(),
         children: [

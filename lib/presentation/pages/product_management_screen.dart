@@ -6,6 +6,7 @@ import '../../data/models/food_item.dart';
 import '../../theme/app_colors.dart';
 import 'save_product_screen.dart';
 import '../widgets/common_image.dart';
+import '../../theme/responsive.dart';
 
 class ProductManagementScreen extends StatelessWidget {
   const ProductManagementScreen({super.key});
@@ -62,6 +63,7 @@ class ProductManagementScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: Slidable(
                 key: ValueKey(item.id),
+                enabled: Responsive.isMobile(context),
                 startActionPane: ActionPane(
                   motion: const ScrollMotion(),
                   children: [
@@ -134,6 +136,7 @@ class ProductManagementScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: Slidable(
                 key: ValueKey(category),
+                enabled: Responsive.isMobile(context),
                 startActionPane: ActionPane(
                   motion: const ScrollMotion(),
                   children: [
