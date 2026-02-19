@@ -18,6 +18,7 @@ class OrdersScreen extends StatelessWidget {
     final POSController pos = Get.find<POSController>();
     final List<FoodItem> catalog = pos.products;
     final bool isMobile = Responsive.isMobile(context);
+    final RxString selectedFilter = "All".obs;
 
     return DefaultTabController(
       length: 2,
@@ -47,20 +48,50 @@ class OrdersScreen extends StatelessWidget {
             if (!isMobile) const SizedBox(width: 16),
           ],
         ),
-        body: TabBarView(
+        body: Column(
           children: [
-            Obx(() {
-              final activeOrders = pos.allOrders.where((o) => o['status'] != "Completed").toList();
-              return activeOrders.isEmpty
-                  ? _buildEmptyState("no_active_orders".tr, "start_new_sale".tr)
-                  : _buildOrdersGrid(activeOrders, pos, catalog, context);
-            }),
-            Obx(() {
-              final completedOrders = pos.allOrders.where((o) => o['status'] == "Completed").toList();
-              return completedOrders.isEmpty
-                  ? _buildEmptyState("no_completed_orders".tr, "history_empty".tr)
-                  : _buildOrdersGrid(completedOrders, pos, catalog, context);
-            }),
+            // Filter Bar
+            Container(
+              height: 60,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Obx(() => ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                children: [
+                  _buildFilterChip("All", "all".tr, selectedFilter),
+                  const SizedBox(width: 8),
+                  _buildFilterChip("Dine-in", 'dine_in'.tr, selectedFilter),
+                  const SizedBox(width: 8),
+                  _buildFilterChip("Takeaway", 'takeaway'.tr, selectedFilter),
+                  const SizedBox(width: 8),
+                  _buildFilterChip("Delivery", 'delivery'.tr, selectedFilter),
+                ],
+              )),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  Obx(() {
+                    var filtered = pos.allOrders.where((o) => o['status'] != "Completed").toList();
+                    if (selectedFilter.value != "All") {
+                      filtered = filtered.where((o) => o['mode'] == selectedFilter.value).toList();
+                    }
+                    return filtered.isEmpty
+                        ? _buildEmptyState("no_active_orders".tr, "start_new_sale".tr)
+                        : _buildOrdersGrid(filtered, pos, catalog, context);
+                  }),
+                  Obx(() {
+                    var filtered = pos.allOrders.where((o) => o['status'] == "Completed").toList();
+                    if (selectedFilter.value != "All") {
+                      filtered = filtered.where((o) => o['mode'] == selectedFilter.value).toList();
+                    }
+                    return filtered.isEmpty
+                        ? _buildEmptyState("no_completed_orders".tr, "history_empty".tr)
+                        : _buildOrdersGrid(filtered, pos, catalog, context);
+                  }),
+                ],
+              ),
+            ),
           ],
         ),
         floatingActionButton: FloatingActionButton(
@@ -68,6 +99,27 @@ class OrdersScreen extends StatelessWidget {
           backgroundColor: AppColors.primary,
           child: const Icon(Icons.add, color: Colors.white),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String value, String label, RxString selectedFilter) {
+    final bool isSelected = selectedFilter.value == value;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) selectedFilter.value = value;
+      },
+      selectedColor: AppColors.primary.withOpacity(0.2),
+      labelStyle: TextStyle(
+        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: isSelected ? AppColors.primary : Colors.grey.shade200),
       ),
     );
   }
