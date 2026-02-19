@@ -255,7 +255,7 @@ class OrdersScreen extends StatelessWidget {
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        childAspectRatio: isMobile ? 2.8 : 2.5,
+        childAspectRatio: isMobile ? 2.8 : 2.1,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -409,29 +409,33 @@ class OrdersScreen extends StatelessWidget {
               ),
               if (!isMobile)
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     if (isActive) ...[
-                      IconButton(
+                      _buildCompactIconButton(
                         onPressed: () {
                           pos.printOrder(order, receiptTitle: "HISOB CHEKI");
                           pos.updateOrderStatus(order['id'], "Bill Printed");
                         },
-                        icon: const Icon(Icons.print_rounded, color: Colors.orange, size: 20),
+                        icon: Icons.print_rounded,
+                        color: Colors.orange,
                         tooltip: "print_receipt".tr,
                       ),
-                      IconButton(
+                      _buildCompactIconButton(
                         onPressed: () {
                           pos.loadOrderForEditing(order, catalog);
                           Get.to(() => const HomeScreen());
                         },
-                        icon: const Icon(Icons.edit_rounded, color: Colors.blue, size: 20),
+                        icon: Icons.edit_rounded,
+                        color: Colors.blue,
                         tooltip: "edit".tr,
                       ),
                     ],
                     if (pos.isAdmin)
-                      IconButton(
+                      _buildCompactIconButton(
                         onPressed: () => _confirmDelete(order['id'], pos),
-                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                        icon: Icons.delete_outline_rounded,
+                        color: Colors.red,
                         tooltip: "delete".tr,
                       ),
                   ],
@@ -439,6 +443,29 @@ class OrdersScreen extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCompactIconButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required Color color,
+    required String tooltip,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(left: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, color: color, size: 18),
+        tooltip: tooltip,
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        padding: EdgeInsets.zero,
+        splashRadius: 20,
       ),
     );
   }
