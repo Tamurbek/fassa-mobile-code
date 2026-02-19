@@ -78,7 +78,9 @@ class OrdersScreen extends StatelessWidget {
                     }
                     return filtered.isEmpty
                         ? _buildEmptyState("no_active_orders".tr, "start_new_sale".tr)
-                        : _buildOrdersGrid(filtered, pos, catalog, context);
+                        : (isMobile 
+                            ? _buildOrdersGrid(filtered, pos, catalog, context)
+                            : _buildOrdersTable(filtered, pos, catalog, context));
                   }),
                   Obx(() {
                     var filtered = pos.allOrders.where((o) => o['status'] == "Completed").toList();
@@ -87,7 +89,9 @@ class OrdersScreen extends StatelessWidget {
                     }
                     return filtered.isEmpty
                         ? _buildEmptyState("no_completed_orders".tr, "history_empty".tr)
-                        : _buildOrdersGrid(filtered, pos, catalog, context);
+                        : (isMobile 
+                            ? _buildOrdersGrid(filtered, pos, catalog, context)
+                            : _buildOrdersTable(filtered, pos, catalog, context));
                   }),
                 ],
               ),
@@ -100,6 +104,93 @@ class OrdersScreen extends StatelessWidget {
           child: const Icon(Icons.add, color: Colors.white),
         ),
       ),
+    );
+  }
+
+  Widget _buildOrdersTable(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(40),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+        ),
+        child: DataTable(
+          headingRowColor: MaterialStateProperty.all(AppColors.background),
+          dividerThickness: 1,
+          columns: [
+            DataColumn(label: Text('# ID', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('table'.tr, style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('total'.tr, style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+          ],
+          rows: orders.map((order) {
+            final String status = order['status'] ?? "Pending";
+            final bool isActive = status != "Completed";
+            
+            return DataRow(cells: [
+              DataCell(Text(order['id'].toString().substring(0, 8))),
+              DataCell(Text(order['table'] ?? "—")),
+              DataCell(Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(order['mode'] ?? "Dine-in", style: TextStyle(fontSize: 12, color: AppColors.primary)),
+              )),
+              DataCell(Text("${order['total'].toStringAsFixed(0)} so'm", style: TextStyle(fontWeight: FontWeight.bold))),
+              DataCell(_buildStatusBadge(status)),
+              DataCell(Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () {
+                      if (status != "Bill Printed") {
+                        pos.loadOrderForEditing(order, catalog);
+                        Get.to(() => const HomeScreen());
+                      }
+                    },
+                  ),
+                  if (isActive) 
+                    IconButton(
+                      icon: Icon(Icons.receipt_long, color: Colors.orange),
+                      onPressed: () {
+                        pos.printOrder(order, receiptTitle: "HISOB CHEKI");
+                        pos.updateOrderStatus(order['id'], "Bill Printed");
+                      },
+                    ),
+                  if (pos.isAdmin)
+                    IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _confirmDelete(order['id'], pos),
+                    ),
+                ],
+              )),
+            ]);
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color color = Colors.grey;
+    if (status == "Completed") color = Colors.green;
+    if (status == "Pending") color = Colors.orange;
+    if (status == "Bill Printed") color = Colors.blue;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(status.tr, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 
