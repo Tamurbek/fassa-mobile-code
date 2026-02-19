@@ -407,6 +407,35 @@ class OrdersScreen extends StatelessWidget {
                 "${'total'.tr}: \$${order['total'].toStringAsFixed(2)}", 
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18, color: AppColors.primary)
               ),
+              if (!isMobile)
+                Row(
+                  children: [
+                    if (isActive) ...[
+                      IconButton(
+                        onPressed: () {
+                          pos.printOrder(order, receiptTitle: "HISOB CHEKI");
+                          pos.updateOrderStatus(order['id'], "Bill Printed");
+                        },
+                        icon: const Icon(Icons.print_rounded, color: Colors.orange, size: 20),
+                        tooltip: "print_receipt".tr,
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          pos.loadOrderForEditing(order, catalog);
+                          Get.to(() => const HomeScreen());
+                        },
+                        icon: const Icon(Icons.edit_rounded, color: Colors.blue, size: 20),
+                        tooltip: "edit".tr,
+                      ),
+                    ],
+                    if (pos.isAdmin)
+                      IconButton(
+                        onPressed: () => _confirmDelete(order['id'], pos),
+                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                        tooltip: "delete".tr,
+                      ),
+                  ],
+                ),
             ],
           ),
         ],

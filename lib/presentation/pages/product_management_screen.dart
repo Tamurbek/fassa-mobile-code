@@ -105,6 +105,21 @@ class ProductManagementScreen extends StatelessWidget {
                     ),
                     title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text("${item.category} • \$${item.price.toStringAsFixed(2)}"),
+                    trailing: !Responsive.isMobile(context) 
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () => Get.to(() => SaveProductScreen(item: item)),
+                              icon: const Icon(Icons.edit_rounded, color: Colors.blue, size: 20),
+                            ),
+                            IconButton(
+                              onPressed: () => _confirmDeleteProduct(context, pos, item),
+                              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                            ),
+                          ],
+                        )
+                      : null,
                   ),
                 ),
               ),
@@ -167,6 +182,21 @@ class ProductManagementScreen extends StatelessWidget {
                   color: Colors.white,
                   child: ListTile(
                     title: Text(category),
+                    trailing: !Responsive.isMobile(context)
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: () => _showCategoryDialog(context, pos, category),
+                              icon: const Icon(Icons.edit_rounded, color: Colors.blue, size: 20),
+                            ),
+                            IconButton(
+                              onPressed: () => _confirmDeleteCategory(context, pos, category),
+                              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                            ),
+                          ],
+                        )
+                      : null,
                   ),
                 ),
               ),
