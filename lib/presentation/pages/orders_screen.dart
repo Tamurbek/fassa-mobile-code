@@ -441,9 +441,9 @@ class OrdersScreen extends StatelessWidget {
   Widget _buildActionIcon(dynamic status, Map<String, dynamic> order, POSController pos, List<FoodItem> catalog) {
     if (status == "Bill Printed") {
       return Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(8), // Increased from 4
         decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
-        child: Icon(Icons.lock, size: 16, color: Colors.orange.withOpacity(pos.isAdmin ? 1.0 : 0.5)),
+        child: Icon(Icons.lock, size: 20, color: Colors.orange.withOpacity(pos.isAdmin ? 1.0 : 0.5)), // Increased from 16
       );
     } else {
       return GestureDetector(
@@ -452,9 +452,9 @@ class OrdersScreen extends StatelessWidget {
           Get.to(() => const HomeScreen());
         },
         child: Container(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(8), // Increased from 4
           decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
-          child: const Icon(Icons.add, size: 16, color: AppColors.primary),
+          child: const Icon(Icons.add, size: 20, color: AppColors.primary), // Increased from 16
         ),
       );
     }

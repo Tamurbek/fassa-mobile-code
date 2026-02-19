@@ -140,6 +140,8 @@ class AppTranslations extends Translations {
           'enable_kitchen_print': 'Kitchen Printing',
           'enable_bill_print': 'Bill Printing',
           'enable_payment_print': 'Payment Printing',
+          'quantity': 'Quantity',
+          'ok': 'OK',
         },
         'uz_UZ': {
           'order_management': 'Buyurtmalar boshqaruvi',
@@ -277,6 +279,8 @@ class AppTranslations extends Translations {
           'enable_kitchen_print': 'Oshxonaga chop etish',
           'enable_bill_print': 'Hisob chop etish',
           'enable_payment_print': 'To\'lov chop etish',
+          'quantity': 'Miqdor',
+          'ok': 'OK',
         },
         'ru_RU': {
           'order_management': 'Управление заказами',
@@ -414,6 +418,8 @@ class AppTranslations extends Translations {
           'enable_kitchen_print': 'Печать на кухню',
           'enable_bill_print': 'Печать счета',
           'enable_payment_print': 'Печать оплаты',
+          'quantity': 'Количество',
+          'ok': 'OK',
         }
       };
 }

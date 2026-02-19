@@ -258,14 +258,18 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
-          Row(
+          Column(
             children: [
-              _buildSmallQtyBtn(Icons.remove, () => pos.updateQuantity(index, -1)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(quantity.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              ),
               _buildSmallQtyBtn(Icons.add, () => pos.updateQuantity(index, 1), isPrimary: true),
+              GestureDetector(
+                onTap: () => pos.showQuantityDialog(index),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(quantity.toString(), 
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+              ),
+              _buildSmallQtyBtn(Icons.remove, () => pos.updateQuantity(index, -1)),
             ],
           ),
         ],
@@ -277,13 +281,13 @@ class HomeScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(10), // Increased from 4
         decoration: BoxDecoration(
           color: isPrimary ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(10), // Increased from 6
           border: isPrimary ? null : Border.all(color: Colors.grey.shade300),
         ),
-        child: Icon(icon, size: 14, color: isPrimary ? Colors.white : AppColors.textPrimary),
+        child: Icon(icon, size: 20, color: isPrimary ? Colors.white : AppColors.textPrimary), // Increased from 14
       ),
     );
   }
@@ -358,7 +362,7 @@ class HomeScreen extends StatelessWidget {
             child: GestureDetector(
               onTap: () => pos.setMode(mode),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 14), // Increased from 8
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
@@ -454,7 +458,7 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildCategories(POSController pos, BuildContext context) {
     return SizedBox(
-      height: 50,
+      height: 60, // Increased from 50
       child: Obx(() => ListView.separated(
         padding: EdgeInsets.symmetric(horizontal: Responsive.isMobile(context) ? 24 : 40),
         scrollDirection: Axis.horizontal,
@@ -574,40 +578,43 @@ class HomeScreen extends StatelessWidget {
       final int qty = cartItem != null ? cartItem['quantity'] : 0;
       final int itemIndex = pos.currentOrder.indexWhere((e) => e['item'].id == item.id);
 
-      return Row(
+      return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (qty > 0) ...[
-            GestureDetector(
-              onTap: () => pos.updateQuantity(itemIndex, -1),
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.remove, size: isMobile ? 20 : 22, color: AppColors.textPrimary),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Text(
-                qty.toString(),
-                style: TextStyle(fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
           GestureDetector(
             onTap: () => pos.addToCart(item),
             child: Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 color: AppColors.textPrimary,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.add, size: isMobile ? 20 : 22, color: Colors.white),
+              child: Icon(Icons.add, size: isMobile ? 22 : 26, color: Colors.white),
             ),
           ),
+          if (qty > 0) ...[
+            GestureDetector(
+              onTap: () => pos.showQuantityDialog(itemIndex),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  qty.toString(),
+                  style: TextStyle(fontSize: isMobile ? 18 : 22, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => pos.updateQuantity(itemIndex, -1),
+              child: Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.remove, size: isMobile ? 22 : 26, color: AppColors.textPrimary),
+              ),
+            ),
+          ],
         ],
       );
     });

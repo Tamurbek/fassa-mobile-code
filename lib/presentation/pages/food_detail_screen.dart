@@ -169,11 +169,48 @@ class FoodDetailScreen extends StatelessWidget {
       children: [
         const Text("Quantity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         const SizedBox(height: 16),
-        Row(
+        Column( // Changed from Row to Column
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildQuantityButton(icon: Icons.remove, onTap: () { if (quantity.value > 1) quantity.value--; }),
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Obx(() => Text(quantity.value.toString().padLeft(2, '0'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)))),
             _buildQuantityButton(icon: Icons.add, onTap: () => quantity.value++, isPrimary: true),
+            GestureDetector(
+              onTap: () {
+                final TextEditingController controller = TextEditingController(text: quantity.value.toString());
+                Get.dialog(
+                  AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    title: Text("quantity".tr),
+                    content: TextField(
+                      controller: controller,
+                      keyboardType: TextInputType.number,
+                      autofocus: true,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                      decoration: const InputDecoration(border: OutlineInputBorder()),
+                    ),
+                    actions: [
+                      TextButton(onPressed: () => Get.back(), child: Text("cancel".tr)),
+                      ElevatedButton(
+                        onPressed: () {
+                          final int? val = int.tryParse(controller.text);
+                          if (val != null && val > 0) quantity.value = val;
+                          Get.back();
+                        },
+                        child: Text("ok".tr),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Obx(() => Text(
+                  quantity.value.toString().padLeft(2, '0'), 
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)
+                )),
+              ),
+            ),
+            _buildQuantityButton(icon: Icons.remove, onTap: () { if (quantity.value > 1) quantity.value--; }),
           ],
         ),
       ],
@@ -225,7 +262,15 @@ class FoodDetailScreen extends StatelessWidget {
   Widget _buildQuantityButton({required IconData icon, required VoidCallback onTap, bool isPrimary = false}) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: isPrimary ? AppColors.primary : AppColors.white, borderRadius: BorderRadius.circular(10), border: isPrimary ? null : Border.all(color: Colors.grey.shade300)), child: Icon(icon, color: isPrimary ? AppColors.white : AppColors.textPrimary, size: 20)),
+      child: Container(
+        padding: const EdgeInsets.all(12), // Increased from 8
+        decoration: BoxDecoration(
+          color: isPrimary ? AppColors.primary : AppColors.white, 
+          borderRadius: BorderRadius.circular(12), // Increased from 10
+          border: isPrimary ? null : Border.all(color: Colors.grey.shade300)
+        ), 
+        child: Icon(icon, color: isPrimary ? Colors.white : AppColors.textPrimary, size: 26) // Increased from 20
+      ),
     );
   }
 }

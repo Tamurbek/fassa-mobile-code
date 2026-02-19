@@ -588,6 +588,62 @@ class POSController extends GetxController {
     _checkIfModified();
   }
 
+  void setAbsoluteQuantity(int index, int quantity) {
+    if (quantity <= 0) {
+      currentOrder.removeAt(index);
+    } else {
+      currentOrder[index]['quantity'] = quantity;
+      currentOrder.refresh();
+    }
+    _checkIfModified();
+  }
+
+  void showQuantityDialog(int index) {
+    final int currentQty = currentOrder[index]['quantity'];
+    final TextEditingController controller = TextEditingController(text: currentQty.toString());
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("quantity".tr),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: Text("cancel".tr)),
+          ElevatedButton(
+            onPressed: () {
+              final int? newQty = int.tryParse(controller.text);
+              if (newQty != null) {
+                setAbsoluteQuantity(index, newQty);
+              }
+              Get.back();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text("ok".tr),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _checkIfModified() {
     if (editingOrderId.value == null) {
       isOrderModified.value = currentOrder.isNotEmpty;

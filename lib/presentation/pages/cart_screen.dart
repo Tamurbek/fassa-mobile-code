@@ -133,11 +133,17 @@ class CartScreen extends StatelessWidget {
               ],
             ),
           ),
-          Row(
+          Column( // Changed from Row to Column
             children: [
-              _buildSmallQtyBtn(Icons.remove, () => pos.updateQuantity(index, -1)),
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text(quantity.toString(), style: const TextStyle(fontWeight: FontWeight.bold))),
               _buildSmallQtyBtn(Icons.add, () => pos.updateQuantity(index, 1), isPrimary: true),
+              GestureDetector(
+                onTap: () => pos.showQuantityDialog(index),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8), 
+                  child: Text(quantity.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
+                ),
+              ),
+              _buildSmallQtyBtn(Icons.remove, () => pos.updateQuantity(index, -1)),
             ],
           ),
         ],
@@ -149,9 +155,9 @@ class CartScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(color: isPrimary ? AppColors.primary : Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-        child: Icon(icon, size: 16, color: isPrimary ? Colors.white : AppColors.textPrimary),
+        padding: const EdgeInsets.all(12), // Increased from 4
+        decoration: BoxDecoration(color: isPrimary ? AppColors.primary : Colors.grey.shade100, borderRadius: BorderRadius.circular(12)), // Increased radius
+        child: Icon(icon, size: 24, color: isPrimary ? Colors.white : AppColors.textPrimary), // Increased from 16
       ),
     );
   }
