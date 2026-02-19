@@ -53,6 +53,25 @@ class SettingsScreen extends StatelessWidget {
                 )),
                 _buildSettingsItem(Icons.devices, "printer_management".tr, "", () => Get.to(() => const PrinterManagementScreen())),
                 _buildSettingsItem(Icons.restaurant, "preparation_area_management".tr, "", () => Get.to(() => const PreparationAreaManagementScreen())),
+                const SizedBox(height: 12),
+                Obx(() => _buildSwitchItem(
+                  Icons.restaurant_menu, 
+                  "enable_kitchen_print".tr, 
+                  pos.enableKitchenPrint.value, 
+                  (val) => pos.setEnableKitchenPrint(val)
+                )),
+                Obx(() => _buildSwitchItem(
+                  Icons.receipt_long, 
+                  "enable_bill_print".tr, 
+                  pos.enableBillPrint.value, 
+                  (val) => pos.setEnableBillPrint(val)
+                )),
+                Obx(() => _buildSwitchItem(
+                  Icons.payments_outlined, 
+                  "enable_payment_print".tr, 
+                  pos.enablePaymentPrint.value, 
+                  (val) => pos.setEnablePaymentPrint(val)
+                )),
               ],
 
               if (pos.isAdmin) ...[
