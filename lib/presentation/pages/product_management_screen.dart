@@ -43,6 +43,7 @@ class ProductManagementScreen extends StatelessWidget {
   Widget _buildProductsTab(POSController pos, BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
+        heroTag: 'product_add_fab',
         onPressed: () => Get.to(() => const SaveProductScreen()),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
@@ -115,6 +116,7 @@ class ProductManagementScreen extends StatelessWidget {
   Widget _buildCategoriesTab(POSController pos, BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
+        heroTag: 'category_add_fab',
         onPressed: () => _showCategoryDialog(context, pos, null),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),

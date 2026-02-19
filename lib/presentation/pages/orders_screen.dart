@@ -109,6 +109,7 @@ class OrdersScreen extends StatelessWidget {
           ],
         ),
         floatingActionButton: FloatingActionButton(
+          heroTag: 'orders_fab',
           onPressed: () => _showOrderTypeDialog(context, pos),
           backgroundColor: AppColors.primary,
           child: const Icon(Icons.add, color: Colors.white),
