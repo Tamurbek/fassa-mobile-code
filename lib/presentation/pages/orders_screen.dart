@@ -19,6 +19,7 @@ class OrdersScreen extends StatelessWidget {
     final List<FoodItem> catalog = pos.products;
     final bool isMobile = Responsive.isMobile(context);
     final RxString selectedFilter = "All".obs;
+    final Rxn<Map<String, dynamic>> selectedOrder = Rxn<Map<String, dynamic>>();
 
     return DefaultTabController(
       length: 2,
@@ -56,7 +57,6 @@ class OrdersScreen extends StatelessWidget {
         ),
         body: Column(
           children: [
-            // Filter Bar
             Container(
               height: 60,
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -74,6 +74,9 @@ class OrdersScreen extends StatelessWidget {
                 ],
               )),
             ),
+            // Global Action Bar
+            Obx(() => _buildGlobalToolbar(selectedOrder, pos, catalog, context)),
+            const SizedBox(height: 8),
             Expanded(
               child: TabBarView(
                 children: [
@@ -87,8 +90,8 @@ class OrdersScreen extends StatelessWidget {
                     return filtered.isEmpty
                         ? _buildEmptyState("no_active_orders".tr, "start_new_sale".tr)
                         : (pos.isOrdersTableView.value && !isMobile 
-                            ? _buildOrdersTable(filtered, pos, catalog, context)
-                            : _buildOrdersGrid(filtered, pos, catalog, context));
+                            ? _buildOrdersTable(filtered, pos, catalog, context, selectedOrder)
+                            : _buildOrdersGrid(filtered, pos, catalog, context, selectedOrder));
                   }),
                   Obx(() {
                     var filtered = pos.allOrders.where((o) => o['status'] == "Completed").toList();
@@ -100,8 +103,8 @@ class OrdersScreen extends StatelessWidget {
                     return filtered.isEmpty
                         ? _buildEmptyState("no_completed_orders".tr, "history_empty".tr)
                         : (pos.isOrdersTableView.value && !isMobile 
-                            ? _buildOrdersTable(filtered, pos, catalog, context)
-                            : _buildOrdersGrid(filtered, pos, catalog, context));
+                            ? _buildOrdersTable(filtered, pos, catalog, context, selectedOrder)
+                            : _buildOrdersGrid(filtered, pos, catalog, context, selectedOrder));
                   }),
                 ],
               ),
@@ -134,7 +137,7 @@ class OrdersScreen extends StatelessWidget {
     return sorted;
   }
 
-  Widget _buildOrdersTable(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context) {
+  Widget _buildOrdersTable(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context, Rxn<Map<String, dynamic>> selectedOrder) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(40),
       child: Container(
@@ -143,63 +146,43 @@ class OrdersScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
         ),
-        child: DataTable(
+        child: Obx(() => DataTable(
           headingRowColor: MaterialStateProperty.all(AppColors.background),
           dividerThickness: 1,
+          showCheckboxColumn: false,
           columns: [
-            DataColumn(label: Text('# ID', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('table'.tr, style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('total'.tr, style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('# ID', style: const TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('table'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('Type', style: const TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('total'.tr, style: const TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(label: Text('Status', style: const TextStyle(fontWeight: FontWeight.bold))),
           ],
           rows: orders.map((order) {
-            final String status = order['status'] ?? "Pending";
-            final bool isActive = status != "Completed";
-            
-            return DataRow(cells: [
-              DataCell(Text(order['id'].toString().length > 8 ? order['id'].toString().substring(0, 8) : order['id'].toString())),
-              DataCell(Text(order['table'] ?? "—")),
-              DataCell(Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(order['mode'] ?? "Dine-in", style: TextStyle(fontSize: 12, color: AppColors.primary)),
-              )),
-              DataCell(Text("${order['total'].toStringAsFixed(0)} so'm", style: TextStyle(fontWeight: FontWeight.bold))),
-              DataCell(_buildStatusBadge(status)),
-              DataCell(Row(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () {
-                      if (status != "Bill Printed") {
-                        pos.loadOrderForEditing(order, catalog);
-                        Get.to(() => const HomeScreen());
-                      }
-                    },
+            final isSelected = selectedOrder.value?['id'] == order['id'];
+            return DataRow(
+              selected: isSelected,
+              onSelectChanged: (selected) {
+                if (selected ?? false) {
+                  selectedOrder.value = order;
+                }
+              },
+              cells: [
+                DataCell(Text(order['id'].toString().length > 8 ? order['id'].toString().substring(0, 8) : order['id'].toString())),
+                DataCell(Text(order['table'] ?? "—")),
+                DataCell(Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  if (isActive) 
-                    IconButton(
-                      icon: Icon(Icons.receipt_long, color: Colors.orange),
-                      onPressed: () {
-                        pos.printOrder(order, receiptTitle: "HISOB CHEKI");
-                        pos.updateOrderStatus(order['id'], "Bill Printed");
-                      },
-                    ),
-                  if (pos.isAdmin)
-                    IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _confirmDelete(order['id'], pos),
-                    ),
-                ],
-              )),
-            ]);
+                  child: Text(order['mode'] ?? "Dine-in", style: const TextStyle(fontSize: 12, color: AppColors.primary)),
+                )),
+                DataCell(Text("${order['total'].toStringAsFixed(0)} so'm", style: const TextStyle(fontWeight: FontWeight.bold))),
+                DataCell(_buildStatusBadge(order['status'] ?? "Pending")),
+              ],
+            );
           }).toList(),
-        ),
+        )),
       ),
     );
   }
@@ -242,14 +225,14 @@ class OrdersScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOrdersGrid(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context) {
+  Widget _buildOrdersGrid(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context, Rxn<Map<String, dynamic>> selectedOrder) {
     final int crossAxisCount = Responsive.isMobile(context) ? 1 : (Responsive.isTablet(context) ? 2 : 3);
     final isMobile = Responsive.isMobile(context);
 
     return GridView.builder(
       padding: EdgeInsets.fromLTRB(
         isMobile ? 24 : 40, 
-        12, 
+        10,
         isMobile ? 24 : 40, 
         100
       ),
@@ -260,7 +243,25 @@ class OrdersScreen extends StatelessWidget {
         mainAxisSpacing: 16,
       ),
       itemCount: orders.length,
-      itemBuilder: (context, index) => _buildSlidableOrderCard(orders[index], pos, catalog, context),
+      itemBuilder: (context, index) {
+        final order = orders[index];
+        return Obx(() {
+          final isSelected = selectedOrder.value?['id'] == order['id'];
+          return GestureDetector(
+            onTap: () => selectedOrder.value = order,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: _buildSlidableOrderCard(order, pos, catalog, context, isSelected),
+            ),
+          );
+        });
+      },
     );
   }
 
@@ -299,60 +300,12 @@ class OrdersScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSlidableOrderCard(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog, BuildContext context) {
+  Widget _buildSlidableOrderCard(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog, BuildContext context, bool isSelected) {
     final bool isActive = order['status'] != "Completed";
-
-    return Slidable(
-      key: ValueKey(order['id']),
-      enabled: Responsive.isMobile(context),
-      startActionPane: isActive ? ActionPane(
-        motion: const ScrollMotion(),
-        children: [
-          SlidableAction(
-            onPressed: (context) {
-              pos.printOrder(order, receiptTitle: "HISOB CHEKI");
-              pos.updateOrderStatus(order['id'], "Bill Printed");
-              Get.snackbar("success".tr, "print_receipt".tr, 
-                backgroundColor: Colors.orange, colorText: Colors.white);
-            },
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
-            icon: Icons.receipt_long,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          if (pos.isAdmin || order['status'] == "Bill Printed")
-            SlidableAction(
-              onPressed: (context) {
-                pos.loadOrderForEditing(order, catalog);
-                Get.to(() => const HomeScreen()); // Standard flow to cart
-              },
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              icon: Icons.payments_outlined,
-              label: 'pay'.tr,
-              borderRadius: BorderRadius.circular(20),
-            ),
-        ],
-      ) : null,
-      endActionPane: ActionPane(
-        motion: const ScrollMotion(),
-        children: [
-          if (isActive) _buildEndAction(order['status'], order, pos, catalog),
-          if (pos.isAdmin)
-            SlidableAction(
-              onPressed: (context) => _confirmDelete(order['id'], pos),
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              icon: Icons.delete_outline,
-              borderRadius: BorderRadius.circular(20),
-            ),
-        ],
-      ),
-      child: _buildOrderCardContent(order, pos, catalog, isActive, context),
-    );
+    return _buildOrderCardContent(order, pos, catalog, isActive, context, isSelected);
   }
 
-  Widget _buildOrderCardContent(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog, bool isActive, BuildContext context) {
+  Widget _buildOrderCardContent(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog, bool isActive, BuildContext context, bool isSelected) {
     final status = order['status'];
     final mode = order['mode'] ?? "Dine-in";
     String modeLabel = mode.toString().toLowerCase() == "dine-in" ? 'dine_in'.tr : (mode.toString().toLowerCase() == "takeaway" ? 'takeaway'.tr : 'delivery'.tr);
@@ -411,58 +364,6 @@ class OrdersScreen extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (!isMobile)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isActive) ...[
-                      _buildCompactIconButton(
-                        onPressed: () {
-                          pos.printOrder(order, receiptTitle: "HISOB CHEKI");
-                          pos.updateOrderStatus(order['id'], "Bill Printed");
-                        },
-                        icon: Icons.print_rounded,
-                        color: Colors.orange,
-                        tooltip: "print_receipt".tr,
-                      ),
-                      if (status == "Bill Printed") ...[
-                        _buildCompactIconButton(
-                          onPressed: () {
-                            pos.loadOrderForEditing(order, catalog);
-                            Get.to(() => const HomeScreen());
-                          },
-                          icon: Icons.payments_outlined,
-                          color: Colors.green,
-                          tooltip: "pay".tr,
-                        ),
-                        if (pos.isAdmin)
-                          _buildCompactIconButton(
-                            onPressed: () => _confirmUnlock(order['id'], pos),
-                            icon: Icons.lock_open_rounded,
-                            color: Colors.orange,
-                            tooltip: "unlock".tr,
-                          ),
-                      ] else ...[
-                        _buildCompactIconButton(
-                          onPressed: () {
-                            pos.loadOrderForEditing(order, catalog);
-                            Get.to(() => const HomeScreen());
-                          },
-                          icon: Icons.edit_rounded,
-                          color: Colors.blue,
-                          tooltip: "edit".tr,
-                        ),
-                      ],
-                    ],
-                    if (pos.isAdmin)
-                      _buildCompactIconButton(
-                        onPressed: () => _confirmDelete(order['id'], pos),
-                        icon: Icons.delete_outline_rounded,
-                        color: Colors.red,
-                        tooltip: "delete".tr,
-                      ),
-                  ],
-                ),
             ],
           ),
         ],
@@ -667,6 +568,109 @@ class OrdersScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, color: AppColors.primary, size: 28),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlobalToolbar(Rxn<Map<String, dynamic>> selectedOrder, POSController pos, List<FoodItem> catalog, BuildContext context) {
+    final order = selectedOrder.value;
+    final bool hasSelection = order != null;
+    final bool isActive = hasSelection && order['status'] != "Completed";
+    final String status = hasSelection ? order['status'] : "";
+
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildToolbarButton(
+            onPressed: hasSelection ? () {
+              pos.printOrder(order, receiptTitle: "HISOB CHEKI");
+              pos.updateOrderStatus(order['id'], "Bill Printed");
+              // Update local state to reflect status change immediately
+              selectedOrder.value = {...order, 'status': 'Bill Printed'};
+            } : null,
+            icon: Icons.print_rounded,
+            color: Colors.orange,
+            label: "print_receipt".tr,
+          ),
+          const SizedBox(width: 8),
+          if (status == "Bill Printed") ...[
+            _buildToolbarButton(
+              onPressed: hasSelection ? () {
+                pos.loadOrderForEditing(order, catalog);
+                Get.to(() => const HomeScreen());
+              } : null,
+              icon: Icons.payments_outlined,
+              color: Colors.green,
+              label: "pay".tr,
+            ),
+            if (pos.isAdmin) ...[
+              const SizedBox(width: 8),
+              _buildToolbarButton(
+                onPressed: hasSelection ? () => _confirmUnlock(order['id'], pos) : null,
+                icon: Icons.lock_open_rounded,
+                color: Colors.orange,
+                label: "unlock".tr,
+              ),
+            ],
+          ] else ...[
+            _buildToolbarButton(
+              onPressed: isActive ? () {
+                pos.loadOrderForEditing(order, catalog);
+                Get.to(() => const HomeScreen());
+              } : null,
+              icon: Icons.edit_rounded,
+              color: Colors.blue,
+              label: "edit".tr,
+            ),
+          ],
+          if (pos.isAdmin) ...[
+            const SizedBox(width: 8),
+            _buildToolbarButton(
+              onPressed: hasSelection ? () => _confirmDelete(order['id'], pos) : null,
+              icon: Icons.delete_outline_rounded,
+              color: Colors.red,
+              label: "delete".tr,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToolbarButton({
+    required VoidCallback? onPressed,
+    required IconData icon,
+    required Color color,
+    required String label,
+  }) {
+    final bool isEnabled = onPressed != null;
+    return Opacity(
+      opacity: isEnabled ? 1.0 : 0.4,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.2)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
             ],
           ),
         ),
