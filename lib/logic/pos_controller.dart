@@ -531,6 +531,19 @@ class POSController extends GetxController {
         saveAllOrders();
       }
     });
+
+    _socket.onPrintRequest((data) {
+      // Only Admin or Cashier devices should process print requests from other devices
+      if (deviceRole.value == "ADMIN" || deviceRole.value == "CASHIER" || isAdmin) {
+        print("Remote print request received: ${data['receiptTitle']}");
+        final Map<String, dynamic> order = Map<String, dynamic>.from(data['order']);
+        final bool isKitchenOnly = data['isKitchenOnly'] == true;
+        final String? receiptTitle = data['receiptTitle'];
+        
+        // Print locally on this device
+        _printLocally(order, isKitchenOnly: isKitchenOnly, receiptTitle: receiptTitle);
+      }
+    });
   }
 
   double get subtotal => currentOrder.fold(0, (sum, item) => sum + (item['item'].price * item['quantity']));
@@ -1143,6 +1156,31 @@ class POSController extends GetxController {
   }
 
   Future<void> printOrder(Map<String, dynamic> order, {bool isKitchenOnly = false, String? receiptTitle}) async {
+    // If it's a Waiter device, send the print request to the Admin/Cashier device via Socket
+    if (deviceRole.value == "WAITER" || isWaiter) {
+      print("Sending print request to central printer via Socket...");
+      _socket.emitPrintRequest({
+        'order': order,
+        'isKitchenOnly': isKitchenOnly,
+        'receiptTitle': receiptTitle,
+        'sender': currentUser.value?['name'] ?? "Waiter",
+      });
+      
+      Get.snackbar(
+        "Chop etish yuborildi", 
+        "Buyurtma kassaga chop etish uchun yuborildi",
+        backgroundColor: Colors.blue, 
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM
+      );
+      return;
+    }
+
+    // If it's an Admin/Cashier device, print locally
+    await _printLocally(order, isKitchenOnly: isKitchenOnly, receiptTitle: receiptTitle);
+  }
+
+  Future<void> _printLocally(Map<String, dynamic> order, {bool isKitchenOnly = false, String? receiptTitle}) async {
     isPrinting.value = true;
     List<String> successPrinters = [];
     List<String> failedPrinters = [];

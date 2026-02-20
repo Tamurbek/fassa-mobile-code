@@ -39,6 +39,14 @@ class SocketService {
     socket.on('orderStatusUpdated', (data) => callback(data));
   }
 
+  void emitPrintRequest(Map<String, dynamic> data) {
+    socket.emit('printRequest', data);
+  }
+
+  void onPrintRequest(Function(dynamic) callback) {
+    socket.on('printRequest', (data) => callback(data));
+  }
+
   void disconnect() {
     socket.disconnect();
   }
