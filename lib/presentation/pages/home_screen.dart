@@ -227,54 +227,137 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildFoodCard(FoodItem item, BuildContext context) {
     final POSController pos = Get.find<POSController>();
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              width: double.infinity,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: CommonImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
+    final bool isMobile = Responsive.isMobile(context);
+
+    return GestureDetector(
+      onTap: () => pos.addToCart(item),
+      child: Obx(() {
+        final int qty = pos.currentOrder
+            .where((e) => (e['item'] as FoodItem).id == item.id)
+            .fold(0, (sum, e) => sum + (e['quantity'] as int));
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 15, offset: const Offset(0, 4))],
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      width: double.infinity,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: CommonImage(imageUrl: item.imageUrl, fit: BoxFit.cover),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.name, 
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1A1A1A)), 
+                          maxLines: 1, overflow: TextOverflow.ellipsis
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("${NumberFormat("#,###", "uz_UZ").format(item.price)}", 
+                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFFFF9500))),
+                                  Text("currency".tr, style: const TextStyle(fontSize: 10, color: Color(0xFFFF9500), fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                            if (isMobile && qty > 0)
+                              _buildCounterControl(item, qty, pos)
+                            else
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(10)),
+                                child: const Icon(Icons.add, color: Color(0xFFFF9500), size: 18),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (qty > 0)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF9500),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF9500).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    "$qty",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      }),
+    );
+  }
+
+  Widget _buildCounterControl(FoodItem item, int qty, POSController pos) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => pos.decrementFromCart(item),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+              child: const Icon(Icons.remove, size: 14, color: Color(0xFF1A1A1A)),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1A1A1A))),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("${NumberFormat("#,###", "uz_UZ").format(item.price)}", 
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFFFF9500))),
-                        Text("currency".tr, style: const TextStyle(fontSize: 12, color: Color(0xFFFF9500), fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    GestureDetector(
-                      onTap: () => pos.addToCart(item),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: const Color(0xFFFFF7ED), borderRadius: BorderRadius.circular(12)),
-                        child: const Icon(Icons.add, color: Color(0xFFFF9500), size: 20),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text("$qty", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          ),
+          GestureDetector(
+            onTap: () => pos.addToCart(item),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(8)),
+              child: const Icon(Icons.add, size: 14, color: Colors.white),
             ),
           ),
         ],
@@ -503,11 +586,16 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           _buildSidebarBtn("kitchen_print_sidebar".tr, const Color(0xFF3B82F6), Icons.print, () async {
-            bool success = await pos.submitOrder(isPaid: false);
-            if (success) {
-              Get.offAll(() => const MainNavigationScreen());
-            }
-          }),
+          if (!pos.hasNewItems) {
+            Get.snackbar("Eslatma", "Oshxonaga yuborish uchun yangi mahsulot qo'shilmadi", 
+              backgroundColor: Colors.orange, colorText: Colors.white);
+            return;
+          }
+          bool success = await pos.submitOrder(isPaid: false);
+          if (success) {
+            Get.offAll(() => const MainNavigationScreen());
+          }
+        }),
           const SizedBox(height: 12),
           _buildSidebarBtn("Hisob chekini chiqarish", const Color(0xFF64748B), Icons.receipt_long_rounded, () {
             final tempOrder = {

@@ -264,11 +264,16 @@ class CartScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () async {
-                      bool success = await pos.submitOrder(isPaid: false);
-                      if (success) {
-                        Get.offAll(() => const MainNavigationScreen());
-                      }
-                    },
+                    if (!pos.hasNewItems) {
+                      Get.snackbar("Eslatma", "Oshxonaga yuborish uchun yangi mahsulot qo'shilmadi", 
+                        backgroundColor: Colors.orange, colorText: Colors.white);
+                      return;
+                    }
+                    bool success = await pos.submitOrder(isPaid: false);
+                    if (success) {
+                      Get.offAll(() => const MainNavigationScreen());
+                    }
+                  },
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 75), 
                       padding: const EdgeInsets.symmetric(horizontal: 2),

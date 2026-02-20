@@ -532,6 +532,7 @@ class POSController extends GetxController {
 
   double get subtotal => currentOrder.fold(0, (sum, item) => sum + (item['item'].price * item['quantity']));
   int get totalItems => currentOrder.fold(0, (sum, item) => sum + (item['quantity'] as int));
+  bool get hasNewItems => currentOrder.any((item) => item['isNew'] == true && (item['quantity'] as int) > 0);
 
   // Service fee calculation based on mode
   double get serviceFee {
@@ -580,6 +581,23 @@ class POSController extends GetxController {
     }
     currentOrder.refresh();
     _checkIfModified();
+  }
+
+  void decrementFromCart(FoodItem item) {
+    // Check if we have a 'New' line for this item
+    int index = currentOrder.indexWhere((element) => 
+      element['item'].id == item.id && (element['isNew'] == true)
+    );
+
+    if (index != -1) {
+      if (currentOrder[index]['quantity'] > 1) {
+        currentOrder[index]['quantity']--;
+      } else {
+        currentOrder.removeAt(index);
+      }
+      currentOrder.refresh();
+      _checkIfModified();
+    }
   }
 
   void removeFromCart(int index) {
