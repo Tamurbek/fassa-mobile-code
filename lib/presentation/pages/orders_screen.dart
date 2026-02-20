@@ -580,6 +580,17 @@ class OrdersScreen extends StatelessWidget {
         children: [
           _buildToolbarButton(
             onPressed: hasSelection ? () {
+              pos.printOrder(order, isKitchenOnly: true);
+              Get.snackbar("OK", "reprint_kitchen".tr, 
+                backgroundColor: AppColors.primary, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+            } : null,
+            icon: Icons.restaurant_menu_rounded,
+            color: Colors.blueGrey,
+            label: "reprint_kitchen".tr,
+          ),
+          const SizedBox(width: 8),
+          _buildToolbarButton(
+            onPressed: hasSelection ? () {
               pos.printOrder(order, receiptTitle: "HISOB CHEKI");
               pos.updateOrderStatus(order['id'], "Bill Printed");
               // Update local state to reflect status change immediately

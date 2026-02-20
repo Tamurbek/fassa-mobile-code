@@ -183,6 +183,8 @@ class AppTranslations extends Translations {
           'forgot_pin': 'Forgot your security PIN?',
           'secure_encryption': 'Secure Terminal Encryption Active',
           'all_rights_reserved': 'All rights reserved.',
+          'reprint_order': 'Reprint Order',
+          'reprint_kitchen': 'Reprint Kitchen',
         },
         'uz_UZ': {
           'order_management': 'Buyurtmalar boshqaruvi',
@@ -363,6 +365,8 @@ class AppTranslations extends Translations {
           'forgot_pin': 'Xavfsizlik PIN kodingizni unutdingizmi?',
           'secure_encryption': 'Xavfsiz terminal shifrlash faol',
           'all_rights_reserved': 'Barcha huquqlar himoyalangan.',
+          'reprint_order': 'Qayta chop etish',
+          'reprint_kitchen': 'Oshxonaga qayta yuborish',
         },
         'ru_RU': {
           'order_management': 'Управление заказами',
@@ -543,6 +547,8 @@ class AppTranslations extends Translations {
           'forgot_pin': 'Забыли свой защитный PIN?',
           'secure_encryption': 'Безопасное шифрование терминала активно',
           'all_rights_reserved': 'Все права защищены.',
+          'reprint_order': 'Повторная печать',
+          'reprint_kitchen': 'Повтор на кухню',
         }
       };
 }
