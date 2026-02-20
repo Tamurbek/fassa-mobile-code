@@ -24,6 +24,7 @@ class POSController extends GetxController {
   var pinCode = RxnString();
   var isPinAuthenticated = false.obs;
   var isPrinting = false.obs;
+  var deviceRole = RxnString(); // "ADMIN", "CASHIER", "WAITER"
   var printedKitchenQuantities = <String, Map<String, int>>{}.obs; // "orderId": {"productId": qty}
   
   // Order modes, current selection, table, and editing state
@@ -196,6 +197,8 @@ class POSController extends GetxController {
     if (storedAllOrders != null) {
       allOrders.assignAll(List<Map<String, dynamic>>.from(storedAllOrders));
     }
+
+    deviceRole.value = _storage.read('device_role');
 
     var storedProducts = _storage.read('products');
     if (storedProducts != null) {
@@ -598,6 +601,11 @@ class POSController extends GetxController {
       currentOrder.refresh();
       _checkIfModified();
     }
+  }
+
+  void setDeviceRole(String role) {
+    deviceRole.value = role;
+    _storage.write('device_role', role);
   }
 
   void removeFromCart(int index) {

@@ -9,6 +9,7 @@ import 'presentation/pages/auth/pin_code_screen.dart';
 import 'translations/app_translations.dart';
 import 'presentation/pages/settings_screen.dart';
 import 'presentation/pages/reports_screen.dart';
+import 'presentation/pages/auth/role_selection_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
@@ -52,6 +53,7 @@ class FastFoodApp extends StatelessWidget {
         GetPage(name: '/main', page: () => const MainNavigationScreen()),
         GetPage(name: '/settings', page: () => const SettingsScreen()),
         GetPage(name: '/reports', page: () => const ReportsScreen()),
+        GetPage(name: '/role-selection', page: () => const RoleSelectionScreen()),
       ],
     );
   }
@@ -59,6 +61,11 @@ class FastFoodApp extends StatelessWidget {
   Widget _getInitialScreen() {
     final storage = GetStorage();
     final pos = Get.find<POSController>();
+    
+    // 0. Check if device role is selected
+    if (pos.deviceRole.value == null) {
+      return const RoleSelectionScreen();
+    }
     
     // 1. Check if user is logged in
     var storedUser = storage.read('user');
