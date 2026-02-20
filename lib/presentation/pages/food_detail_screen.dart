@@ -42,7 +42,12 @@ class FoodDetailScreen extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildRoundButton(icon: Icons.arrow_back_ios_new, onTap: () => Get.back()),
+                _buildRoundButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  onTap: () => Get.back(),
+                  backgroundColor: const Color(0xFFFF9500),
+                  iconColor: Colors.white,
+                ),
                 _buildRoundButton(icon: Icons.favorite_border, iconColor: Colors.red, onTap: () {}),
               ],
             ),
@@ -109,7 +114,12 @@ class FoodDetailScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildRoundButton(icon: Icons.arrow_back_ios_new, onTap: () => Get.back()),
+                           _buildRoundButton(
+                  icon: Icons.arrow_back_ios_new_rounded, 
+                  onTap: () => Get.back(),
+                  backgroundColor: const Color(0xFFFF9500),
+                  iconColor: Colors.white,
+                ),
                             _buildRoundButton(icon: Icons.favorite_border, iconColor: Colors.red, onTap: () {}),
                           ],
                         ),
@@ -252,10 +262,24 @@ class FoodDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRoundButton({required IconData icon, Color? iconColor, required VoidCallback onTap}) {
+  Widget _buildRoundButton({required IconData icon, Color? iconColor, Color? backgroundColor, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))]), child: Icon(icon, color: iconColor ?? AppColors.textPrimary, size: 20)),
+      child: Container(
+        padding: const EdgeInsets.all(12), 
+        decoration: BoxDecoration(
+          color: backgroundColor ?? AppColors.white, 
+          borderRadius: BorderRadius.circular(14), 
+          boxShadow: [
+            BoxShadow(
+              color: (backgroundColor ?? Colors.black).withOpacity(0.1), 
+              blurRadius: 10, 
+              offset: const Offset(0, 4)
+            )
+          ]
+        ), 
+        child: Icon(icon, color: iconColor ?? AppColors.textPrimary, size: 20)
+      ),
     );
   }
 

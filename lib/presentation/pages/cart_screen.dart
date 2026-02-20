@@ -19,9 +19,25 @@ class CartScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text("review_bill".tr),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => Get.back(),
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: GestureDetector(
+            onTap: () => Get.back(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF9500),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF9500).withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+            ),
+          ),
         ),
       ),
       body: Obx(() => Column(
@@ -234,7 +250,12 @@ class CartScreen extends StatelessWidget {
         child: Column(
           children: [
             _buildSummaryRow("subtotal".tr, "\$${pos.subtotal.toStringAsFixed(2)}"),
-            _buildSummaryRow("$modeLabel ${'fee'.tr}", "\$${pos.serviceFee.toStringAsFixed(2)}"),
+            _buildSummaryRow(
+              pos.currentMode.value == "Dine-in"
+                ? "$modeLabel ${'fee'.tr} (${pos.serviceFeeDineIn.value.toStringAsFixed(0)}%)"
+                : "$modeLabel ${'fee'.tr}",
+              "\$${pos.serviceFee.toStringAsFixed(2)}"
+            ),
             const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider()),
             _buildSummaryRow("total".tr, "\$${pos.total.toStringAsFixed(2)}", isTotal: true),
             const SizedBox(height: 20),
@@ -276,7 +297,7 @@ class CartScreen extends StatelessWidget {
                     onPressed: () {
                       final tempOrder = {
                         "id": pos.editingOrderId.value ?? "NEW",
-                        "table": pos.selectedTable.value.isNotEmpty ? "Table ${pos.selectedTable.value}" : "-",
+                        "table": pos.selectedTable.value.isNotEmpty ? pos.selectedTable.value : "-",
                         "mode": pos.currentMode.value,
                         "total": pos.total,
                         "details": pos.currentOrder.map((e) => {

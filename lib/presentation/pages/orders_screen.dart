@@ -238,7 +238,7 @@ class OrdersScreen extends StatelessWidget {
       ),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 450,
-        mainAxisExtent: isMobile ? 130 : 160,
+        mainAxisExtent: isMobile ? 150 : 160,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),

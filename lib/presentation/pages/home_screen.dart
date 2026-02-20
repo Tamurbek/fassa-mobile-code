@@ -78,7 +78,37 @@ class HomeScreen extends StatelessWidget {
       child: Row(
         children: [
           if (Navigator.canPop(context)) ...[
-            _buildTopIcon(Icons.arrow_back_rounded, onTap: () => Get.back()),
+            GestureDetector(
+              onTap: () => Get.back(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF9500),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFF9500).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      "Orqaga",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(width: 16),
           ],
           if (!isMobile) ...[
@@ -456,7 +486,12 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         children: [
           _buildSumRow("subtotal_sum".tr, "${NumberFormat("#,###", "uz_UZ").format(pos.subtotal)} ${"currency".tr}"),
-          _buildSumRow("${"service_fee_label".tr} (0%)", "${NumberFormat("#,###", "uz_UZ").format(pos.serviceFee)} ${"currency".tr}"),
+          _buildSumRow(
+          pos.currentMode.value == "Dine-in" 
+            ? "${"service_fee_label".tr} (${pos.serviceFeeDineIn.value.toStringAsFixed(0)}%)"
+            : "service_fee_label".tr, 
+          "${NumberFormat("#,###", "uz_UZ").format(pos.serviceFee)} ${"currency".tr}"
+        ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -472,6 +507,22 @@ class HomeScreen extends StatelessWidget {
             if (success) {
               Get.offAll(() => const MainNavigationScreen());
             }
+          }),
+          const SizedBox(height: 12),
+          _buildSidebarBtn("Hisob chekini chiqarish", const Color(0xFF64748B), Icons.receipt_long_rounded, () {
+            final tempOrder = {
+              "id": pos.editingOrderId.value ?? "NEW",
+              "table": pos.selectedTable.value.isNotEmpty ? pos.selectedTable.value : "-",
+              "mode": pos.currentMode.value,
+              "total": pos.total,
+              "details": pos.currentOrder.map((e) => {
+                "id": (e['item'] as FoodItem).id,
+                "name": (e['item'] as FoodItem).name,
+                "qty": e['quantity'],
+                "price": (e['item'] as FoodItem).price,
+              }).toList(),
+            };
+            pos.printOrder(tempOrder, receiptTitle: "HISOB CHEKI");
           }),
           const SizedBox(height: 12),
           _buildSidebarBtn("pay_finish_sidebar".tr, const Color(0xFFFF9500), Icons.payments, () async {

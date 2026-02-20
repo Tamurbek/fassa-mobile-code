@@ -764,9 +764,9 @@ class POSController extends GetxController {
     currentMode.value = order['mode'] ?? "Dine-in";
     
     // Extract table number if exists
-    String tableLabel = order['table'] ?? "";
-    if (tableLabel.contains("Table ")) {
-      selectedTable.value = tableLabel.replaceFirst("Table ", "");
+    final String tableVal = (order['table'] ?? "").toString();
+    if (tableVal != "-" && tableVal.isNotEmpty) {
+      selectedTable.value = tableVal.replaceFirst("Table ", "");
     } else {
       selectedTable.value = "";
     }
@@ -843,7 +843,7 @@ class POSController extends GetxController {
         allOrders[index]['total'] = total;
         allOrders[index]['status'] = newStatus;
         allOrders[index]['mode'] = currentMode.value;
-        allOrders[index]['table'] = currentMode.value == "Dine-in" ? "Table ${selectedTable.value}" : "-";
+        allOrders[index]['table'] = currentMode.value == "Dine-in" ? selectedTable.value : "-";
         
         // Save aggregated details for receipts and history
         allOrders[index]['details'] = consolidatedList;

@@ -44,6 +44,26 @@ class _TableSelectionScreenState extends State<TableSelectionScreen> with Single
       appBar: AppBar(
         title: Text("select_table".tr),
         centerTitle: true,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: GestureDetector(
+            onTap: () => Get.back(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF9500),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF9500).withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+            ),
+          ),
+        ),
         actions: [
           if (pos.isAdmin)
             Obx(() => IconButton(
