@@ -27,7 +27,7 @@ class MainNavigationScreen extends StatelessWidget {
       {"icon": Icons.settings_rounded, "label": "settings".tr, "page": const SettingsScreen()},
     ];
 
-    final filteredMenu = menuItems.where((item) => item['adminOnly'] != true || pos.isAdmin || pos.isCashier).toList();
+    final filteredMenu = menuItems.where((item) => item['adminOnly'] != true || pos.isAdmin).toList();
 
     return Obx(() => Stack(
       children: [

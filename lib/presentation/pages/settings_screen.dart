@@ -92,7 +92,7 @@ class SettingsScreen extends StatelessWidget {
                 ]),
               ],
 
-              if (pos.isAdmin) ...[
+              if (pos.isAdmin || pos.isCashier) ...[
                 const SizedBox(height: 24),
                 _buildSectionLabel("restaurant_info".tr),
                 _buildSettingsCard([
