@@ -548,7 +548,7 @@ class POSController extends GetxController {
       if (deviceRole.value == "ADMIN" || deviceRole.value == "CASHIER" || isAdmin || isCashier) {
         print("Remote print request received: ${data['receiptTitle']}");
         final Map<String, dynamic> order = Map<String, dynamic>.from(data['order']);
-        final bool isKitchenOnly = data['isKitchenOnly'] == true;
+        final bool isKitchenOnly = (data['isKitchenOnly'] == true || data['isKitchenOnly'].toString() == 'true' || data['isKitchenOnly'] == 1);
         final String? receiptTitle = data['receiptTitle'];
         
         // Print locally on this device

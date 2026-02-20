@@ -178,8 +178,10 @@ class PrinterService {
       bytes += generator.feed(3);
       bytes += generator.cut();
 
+      print('Connecting to printer ${printer.name} at ${printer.ipAddress}:${printer.port}...');
       final socket = await Socket.connect(printer.ipAddress, printer.port,
           timeout: const Duration(seconds: 5));
+      print('Connected to printer ${printer.name}. Sending ${bytes.length} bytes...');
       socket.add(bytes);
       await socket.flush();
       await socket.close();
@@ -238,8 +240,10 @@ class PrinterService {
       bytes += generator.feed(3);
       bytes += generator.cut();
 
+      print('Connecting to printer ${printer.name} at ${printer.ipAddress}:${printer.port}...');
       final socket = await Socket.connect(printer.ipAddress, printer.port,
           timeout: const Duration(seconds: 5));
+      print('Connected to printer ${printer.name}. Sending ${bytes.length} bytes...');
       socket.add(bytes);
       await socket.flush();
       await socket.close();
