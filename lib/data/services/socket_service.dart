@@ -47,6 +47,18 @@ class SocketService {
     socket.on('printRequest', (data) => callback(data));
   }
 
+  void emitTableLock(String tableId, String userName) {
+    socket.emit('tableLock', {'tableId': tableId, 'user': userName});
+  }
+
+  void emitTableUnlock(String tableId) {
+    socket.emit('tableUnlock', {'tableId': tableId});
+  }
+
+  void onTableLockStatus(Function(dynamic) callback) {
+    socket.on('tableLockStatus', (data) => callback(data));
+  }
+
   void disconnect() {
     socket.disconnect();
   }

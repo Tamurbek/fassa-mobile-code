@@ -41,6 +41,7 @@ class POSController extends GetxController {
   var users = <Map<String, dynamic>>[].obs;
 
   var selectedTable = "".obs;
+  var lockedTables = <String, String>{}.obs; // {"tableId": "userName"}
   var editingOrderId = RxnInt(); // Track if we are editing an existing order
   String _originalOrderJson = ""; // To check if any changes were made
   var isOrderModified = false.obs;
@@ -544,6 +545,18 @@ class POSController extends GetxController {
         _printLocally(order, isKitchenOnly: isKitchenOnly, receiptTitle: receiptTitle);
       }
     });
+
+    _socket.onTableLockStatus((data) {
+      final String tableId = data['tableId'].toString();
+      final String? userName = data['user']; // null means unlocked
+      
+      if (userName != null) {
+        lockedTables[tableId] = userName;
+      } else {
+        lockedTables.remove(tableId);
+      }
+      lockedTables.refresh();
+    });
   }
 
   double get subtotal => currentOrder.fold(0, (sum, item) => sum + (item['item'].price * item['quantity']));
@@ -572,7 +585,13 @@ class POSController extends GetxController {
   }
 
   void setTable(String table) {
+    if (selectedTable.value.isNotEmpty) {
+      _socket.emitTableUnlock(selectedTable.value);
+    }
     selectedTable.value = table;
+    if (table.isNotEmpty) {
+      _socket.emitTableLock(table, currentUser.value?['name'] ?? "User");
+    }
   }
 
   void toggleEditMode() {
@@ -806,6 +825,7 @@ class POSController extends GetxController {
     final String tableVal = (order['table'] ?? "").toString();
     if (tableVal != "-" && tableVal.isNotEmpty) {
       selectedTable.value = tableVal.replaceFirst("Table ", "");
+      _socket.emitTableLock(selectedTable.value, currentUser.value?['name'] ?? "User");
     } else {
       selectedTable.value = "";
     }
@@ -932,6 +952,9 @@ class POSController extends GetxController {
   }
 
   void clearCurrentOrder() {
+    if (selectedTable.value.isNotEmpty) {
+      _socket.emitTableUnlock(selectedTable.value);
+    }
     currentOrder.clear();
     selectedTable.value = "";
     editingOrderId.value = null; // Clear editing state

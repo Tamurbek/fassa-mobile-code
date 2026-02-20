@@ -94,6 +94,8 @@ class _TableSelectionScreenState extends State<TableSelectionScreen> with Single
                      _StatusIndicator(color: Colors.green, label: "available".tr),
                      const SizedBox(width: 20),
                      _StatusIndicator(color: Colors.red, label: "occupied".tr),
+                     const SizedBox(width: 20),
+                     _StatusIndicator(color: Colors.orange, label: "Tahrirlanmoqda"),
                   ],
                 ),
               ),
@@ -160,6 +162,10 @@ class _FloorPlanView extends StatelessWidget {
               !["Completed", "Cancelled"].contains(o['status'])
             );
 
+            final String? lockedByUser = pos.lockedTables[tableId];
+            final bool isLockedByMe = lockedByUser != null && lockedByUser == (pos.currentUser.value?['name'] ?? "User");
+            final bool isLockedByOther = lockedByUser != null && !isLockedByMe;
+
             return Positioned(
               left: position['x']!,
               top: position['y']!,
@@ -177,7 +183,12 @@ class _FloorPlanView extends StatelessWidget {
                 onPanEnd: pos.isEditMode.value ? (_) {
                   pos.syncTablePositionWithBackend(tableId);
                 } : null,
-                onTap: pos.isEditMode.value ? null : (isOccupied ? null : () {
+                onTap: pos.isEditMode.value ? null : (isOccupied || isLockedByOther ? () {
+                  if (isLockedByOther) {
+                    Get.snackbar("Xatolik", "Ushbu stolni hozirda $lockedByUser tahrirlamoqda", 
+                      backgroundColor: Colors.orange, colorText: Colors.white);
+                  }
+                } : () {
                   pos.setTable(tableId);
                   Get.to(() => const HomeScreen());
                 }),
@@ -185,6 +196,8 @@ class _FloorPlanView extends StatelessWidget {
                   tableNum: tableNum,
                   isOccupied: isOccupied,
                   isEditMode: pos.isEditMode.value,
+                  lockedByUser: lockedByUser,
+                  isLockedByOther: isLockedByOther,
                 ),
               ),
             );
@@ -207,11 +220,15 @@ class _TableWidget extends StatelessWidget {
   final String tableNum;
   final bool isOccupied;
   final bool isEditMode;
+  final String? lockedByUser;
+  final bool isLockedByOther;
 
   const _TableWidget({
     required this.tableNum,
     required this.isOccupied,
     required this.isEditMode,
+    this.lockedByUser,
+    this.isLockedByOther = false,
   });
 
   @override
@@ -220,11 +237,15 @@ class _TableWidget extends StatelessWidget {
       width: 80,
       height: 80,
       decoration: BoxDecoration(
-        color: isOccupied ? Colors.red.withOpacity(0.1) : (isEditMode ? Colors.blue.withOpacity(0.05) : AppColors.white),
+        color: isLockedByOther 
+            ? Colors.orange.withOpacity(0.1) 
+            : (isOccupied ? Colors.red.withOpacity(0.1) : (isEditMode ? Colors.blue.withOpacity(0.05) : AppColors.white)),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isEditMode ? Colors.blue.withOpacity(0.5) : (isOccupied ? Colors.red.withOpacity(0.3) : Colors.grey.shade200),
-          width: isEditMode ? 2 : 1,
+          color: isEditMode 
+              ? Colors.blue.withOpacity(0.5) 
+              : (isLockedByOther ? Colors.orange.withOpacity(0.5) : (isOccupied ? Colors.red.withOpacity(0.3) : Colors.grey.shade200)),
+          width: (isEditMode || isLockedByOther) ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -238,8 +259,10 @@ class _TableWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            isEditMode ? Icons.drag_indicator : Icons.table_restaurant, 
-            color: isEditMode ? Colors.blue : (isOccupied ? Colors.red : AppColors.primary),
+            isEditMode ? Icons.drag_indicator : (isLockedByOther ? Icons.lock_clock_rounded : Icons.table_restaurant), 
+            color: isEditMode 
+                ? Colors.blue 
+                : (isLockedByOther ? Colors.orange : (isOccupied ? Colors.red : AppColors.primary)),
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -248,10 +271,17 @@ class _TableWidget extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
-              color: isOccupied ? Colors.red : AppColors.textPrimary,
+              color: isLockedByOther ? Colors.orange : (isOccupied ? Colors.red : AppColors.textPrimary),
             ),
           ),
-          if (isOccupied && !isEditMode)
+          if (isLockedByOther)
+            Text(
+              lockedByUser ?? "User",
+              style: const TextStyle(fontSize: 8, color: Colors.orange, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          else if (isOccupied && !isEditMode)
             Text(
               "occupied".tr,
               style: const TextStyle(fontSize: 8, color: Colors.red),

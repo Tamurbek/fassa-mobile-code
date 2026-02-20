@@ -409,10 +409,7 @@ class OrdersScreen extends StatelessWidget {
        return const SizedBox.shrink(); 
     } else {
        return SlidableAction(
-        onPressed: (context) {
-          pos.loadOrderForEditing(order, catalog);
-          Get.to(() => const HomeScreen());
-        },
+        onPressed: (context) => _handleOrderEdit(order, pos, catalog),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         icon: Icons.edit_outlined,
@@ -425,10 +422,7 @@ class OrdersScreen extends StatelessWidget {
   Widget _buildActionIcon(dynamic status, Map<String, dynamic> order, POSController pos, List<FoodItem> catalog) {
     if (status == "Bill Printed") {
       return GestureDetector(
-        onTap: () {
-          pos.loadOrderForEditing(order, catalog);
-          Get.to(() => const HomeScreen());
-        },
+        onTap: () => _handleOrderEdit(order, pos, catalog),
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
@@ -440,10 +434,7 @@ class OrdersScreen extends StatelessWidget {
       );
     } else {
       return GestureDetector(
-        onTap: () {
-          pos.loadOrderForEditing(order, catalog);
-          Get.to(() => const HomeScreen());
-        },
+        onTap: () => _handleOrderEdit(order, pos, catalog),
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
@@ -601,10 +592,7 @@ class OrdersScreen extends StatelessWidget {
           const SizedBox(width: 8),
           if (status == "Bill Printed") ...[
             _buildToolbarButton(
-              onPressed: hasSelection ? () {
-                pos.loadOrderForEditing(order, catalog);
-                Get.to(() => const HomeScreen());
-              } : null,
+              onPressed: hasSelection ? () => _handleOrderEdit(order, pos, catalog) : null,
               icon: Icons.payments_outlined,
               color: Colors.green,
               label: "pay".tr,
@@ -620,10 +608,7 @@ class OrdersScreen extends StatelessWidget {
             ],
           ] else ...[
             _buildToolbarButton(
-              onPressed: isActive ? () {
-                pos.loadOrderForEditing(order, catalog);
-                Get.to(() => const HomeScreen());
-              } : null,
+              onPressed: isActive ? () => _handleOrderEdit(order, pos, catalog) : null,
               icon: Icons.edit_rounded,
               color: Colors.blue,
               label: "edit".tr,
@@ -676,6 +661,20 @@ class OrdersScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _handleOrderEdit(Map<String, dynamic> order, POSController pos, List<FoodItem> catalog) {
+    final String? tableId = order['table'];
+    if (tableId != null && tableId != "-" && pos.lockedTables.containsKey(tableId)) {
+      final String? lockedBy = pos.lockedTables[tableId];
+      if (lockedBy != (pos.currentUser.value?['name'] ?? "User")) {
+        Get.snackbar("Xatolik", "Ushbu stolni hozirda $lockedBy tahrirlamoqda", 
+            backgroundColor: Colors.orange, colorText: Colors.white);
+        return;
+      }
+    }
+    pos.loadOrderForEditing(order, catalog);
+    Get.to(() => const HomeScreen());
   }
 }
 
