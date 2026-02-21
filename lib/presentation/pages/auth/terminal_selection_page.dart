@@ -122,7 +122,7 @@ class _TerminalSelectionPageState extends State<TerminalSelectionPage> {
                   itemBuilder: (context, index) {
                     final terminal = _terminals[index];
                     return Card(
-                      margin: const EdgeInsets.bottom(12),
+                      margin: const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(16),
