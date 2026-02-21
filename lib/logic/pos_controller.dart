@@ -1517,6 +1517,19 @@ class POSController extends GetxController {
   }
 
   Future<void> printOrder(Map<String, dynamic> order, {bool isKitchenOnly = false, String? receiptTitle}) async {
+    // --- Geofencing Check for Printers ---
+    if (!isWithinGeofence.value && currentUser.value?['role'] == "WAITER") {
+      Get.snackbar(
+        "Diqqat", 
+        "Siz ish joyidan tashqaridasiz. Chop etish uchun belgilangan hududga qayting.",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 5)
+      );
+      return;
+    }
+
     if (!order.containsKey('waiter_name')) {
       final name = currentUser.value?['name'];
       if (name != null && name.isNotEmpty) {
