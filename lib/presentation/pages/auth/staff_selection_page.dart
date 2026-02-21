@@ -39,7 +39,7 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
       
       if (mounted) {
         setState(() {
-          _staff = staff;
+          _staff = staff.where((s) => s['role'] != 'CAFE_ADMIN' && s['role'] != 'SYSTEM_ADMIN').toList();
           _isLoading = false;
         });
       }
@@ -54,10 +54,147 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
   }
 
   void _selectStaff(dynamic staffMember) {
-    Get.to(() => PinCodeScreen(
-      selectedUser: staffMember,
-      isFromTerminal: true, // PIN login is the same for both
-    ));
+    String enteredPin = "";
+    
+    Get.dialog(
+      StatefulBuilder(
+        builder: (context, setDialogState) {
+          void onDigitPress(String digit) async {
+            if (enteredPin.length < 4) {
+              setDialogState(() => enteredPin += digit);
+              
+              if (enteredPin.length == 4) {
+                try {
+                  final userId = staffMember['id'].toString();
+                  final response = await ApiService().loginWithPin(userId, enteredPin);
+                  
+                  Get.find<POSController>().setCurrentUser(response['user']);
+                  Get.find<POSController>().authenticatePin(true);
+                  
+                  Get.back(); // Close dialog
+                  Get.offAll(() => const MainNavigationScreen());
+                  
+                  Get.snackbar("Muvaffaqiyatli", "Xush kelibsiz, ${response['user']['name']}!", 
+                    backgroundColor: Colors.green, colorText: Colors.white);
+                } catch (e) {
+                  Get.snackbar("Xato", "PIN kod noto'g'ri", 
+                    backgroundColor: Colors.red, colorText: Colors.white);
+                  setDialogState(() => enteredPin = "");
+                }
+              }
+            }
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            contentPadding: const EdgeInsets.all(24),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.lock_outline, color: Colors.orange, size: 32),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  staffMember['name'],
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const Text(
+                  'PIN kodni kiriting',
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                ),
+                const SizedBox(height: 24),
+                // PIN Indicators
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(4, (index) {
+                    bool isFilled = index < enteredPin.length;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isFilled ? Colors.orange : Colors.transparent,
+                        border: Border.all(color: isFilled ? Colors.orange : Colors.grey.shade300, width: 2),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 32),
+                // Keypad
+                Column(
+                  children: [
+                    for (var row in [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9']])
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            for (var digit in row)
+                              _buildKeypadButton(digit, () => onDigitPress(digit)),
+                          ],
+                        ),
+                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(width: 72),
+                        const SizedBox(width: 12),
+                        _buildKeypadButton('0', () => onDigitPress('0')),
+                        const SizedBox(width: 12),
+                        _buildKeypadButton('⌫', () {
+                          if (enteredPin.isNotEmpty) {
+                            setDialogState(() => enteredPin = enteredPin.substring(0, enteredPin.length - 1));
+                          }
+                        }, isDelete: true),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => Get.back(),
+                  child: const Text('Bekor qilish', style: TextStyle(color: Colors.grey)),
+                ),
+              ],
+            ),
+          );
+        }
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  Widget _buildKeypadButton(String label, VoidCallback onTap, {bool isDelete = false}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      width: 72,
+      height: 72,
+      child: Material(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: isDelete ? 20 : 24,
+                fontWeight: FontWeight.bold,
+                color: isDelete ? Colors.red : Colors.black87,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
