@@ -35,7 +35,7 @@ class SettingsScreen extends StatelessWidget {
               _buildProfileCard(pos),
               const SizedBox(height: 32),
               
-              if (pos.isAdmin || pos.isCashier) ...[
+              if (pos.isAdmin) ...[
                 _buildSectionLabel("printer_settings".tr),
                 _buildSettingsCard([
                   Obx(() => _buildActionItem(
@@ -92,7 +92,7 @@ class SettingsScreen extends StatelessWidget {
                 ]),
               ],
 
-              if (pos.isAdmin || pos.isCashier) ...[
+              if (pos.isAdmin) ...[
                 const SizedBox(height: 24),
                 _buildSectionLabel("restaurant_info".tr),
                 _buildSettingsCard([
