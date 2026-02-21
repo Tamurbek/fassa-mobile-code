@@ -132,6 +132,64 @@ class _FloorPlanView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (pos.isWaiter) {
+      return Obx(() => GridView.builder(
+        padding: const EdgeInsets.all(24),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 100,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: tables.length,
+        itemBuilder: (context, index) {
+          final tableNum = tables[index];
+          final String tableId = "$location-$tableNum";
+
+          final bool isOccupied = pos.allOrders.any((o) => 
+            o['table'] == tableId && 
+            !["Completed", "Cancelled"].contains(o['status'])
+          );
+
+          final String? lockedByUser = pos.lockedTables[tableId];
+          final bool isLockedByMe = lockedByUser != null && lockedByUser == (pos.currentUser.value?['name'] ?? "User");
+          final bool isLockedByOther = lockedByUser != null && !isLockedByMe;
+
+          return GestureDetector(
+            onTap: isLockedByOther ? () {
+              Get.snackbar("Xatolik", "Ushbu stolni hozirda $lockedByUser tahrirlamoqda", 
+                backgroundColor: Colors.orange, colorText: Colors.white);
+            } : () {
+              if (isOccupied) {
+                final order = pos.allOrders.firstWhereOrNull((o) => 
+                  o['table'] == tableId && 
+                  !["Completed", "Cancelled"].contains(o['status'])
+                );
+                if (order != null) {
+                  if (order['status'] == "Bill Printed" && !(pos.isAdmin || pos.isCashier)) {
+                    Get.snackbar("Xatolik", "Ushbu buyurtma cheki chiqarilgan (qulflangan)", 
+                        backgroundColor: Colors.red, colorText: Colors.white);
+                    return;
+                  }
+                  pos.loadOrderForEditing(order, pos.products);
+                  Get.to(() => const HomeScreen());
+                }
+              } else {
+                pos.setTable(tableId);
+                Get.to(() => const HomeScreen());
+              }
+            },
+            child: _TableWidget(
+              tableNum: tableNum,
+              isOccupied: isOccupied,
+              isEditMode: false,
+              lockedByUser: lockedByUser,
+              isLockedByOther: isLockedByOther,
+            ),
+          );
+        },
+      ));
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final double floorWidth = constraints.maxWidth;
