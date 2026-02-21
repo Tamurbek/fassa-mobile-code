@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import '../data/models/food_item.dart';
@@ -140,6 +141,8 @@ class POSController extends GetxController {
   }
 
   void _initLocationTracking() async {
+    if (!(Platform.isAndroid || Platform.isIOS)) return;
+    
     final service = FlutterBackgroundService();
     
     // Check if we should track
@@ -162,7 +165,9 @@ class POSController extends GetxController {
   }
 
   void stopLocationTracking() {
-    FlutterBackgroundService().invoke("stopService");
+    if (Platform.isAndroid || Platform.isIOS) {
+      FlutterBackgroundService().invoke("stopService");
+    }
   }
 
   Future<void> checkSubscription({bool showWarning = true}) async {
