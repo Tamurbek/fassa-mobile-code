@@ -73,7 +73,7 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
                   Get.find<POSController>().authenticatePin(true);
                   
                   Get.back(); // Close dialog
-                  Get.offAll(() => const MainNavigationScreen());
+                  Get.offAllNamed('/main');
                   
                   Get.snackbar("Muvaffaqiyatli", "Xush kelibsiz, ${response['user']['name']}!", 
                     backgroundColor: Colors.green, colorText: Colors.white);
