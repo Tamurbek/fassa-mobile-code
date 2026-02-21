@@ -140,38 +140,35 @@ class POSController extends GetxController {
 
   void _initLocationTracking() {
     _locationTimer?.cancel();
-    _locationTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
+    
+    // Function to perform update
+    Future<void> update() async {
       if (currentUser.value == null) return;
-      
       try {
         final permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-          // No permission, just skip
-          return;
-        }
+        if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
 
         final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.low
+          desiredAccuracy: LocationAccuracy.medium // Medium is better for battery/speed balance
         );
 
         final response = await _api.updateLocation(position.latitude, position.longitude);
         if (response['status'] == 'warning') {
            isWithinGeofence.value = false;
-           Get.snackbar(
-             "Diqqat", 
-             response['message'],
-             backgroundColor: Colors.orange,
-             colorText: Colors.white,
-             snackPosition: SnackPosition.BOTTOM,
-             duration: const Duration(seconds: 10)
-           );
+           // Only show toast if it was true before (to avoid spamming)
         } else {
            isWithinGeofence.value = true;
         }
       } catch (e) {
         print("Location update error: $e");
       }
-    });
+    }
+
+    // Call immediately
+    update();
+    
+    // Then every 30 seconds for more "real-time" experience
+    _locationTimer = Timer.periodic(const Duration(seconds: 30), (timer) => update());
   }
 
   Future<void> checkSubscription({bool showWarning = true}) async {
