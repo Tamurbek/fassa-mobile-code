@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../data/services/api_service.dart';
 import '../../../logic/pos_controller.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/responsive.dart';
@@ -7,7 +8,15 @@ import '../main_navigation_screen.dart';
 
 class PinCodeScreen extends StatefulWidget {
   final bool isSettingNewPin;
-  const PinCodeScreen({super.key, this.isSettingNewPin = false});
+  final dynamic selectedUser;
+  final bool isFromTerminal;
+
+  const PinCodeScreen({
+    super.key, 
+    this.isSettingNewPin = false,
+    this.selectedUser,
+    this.isFromTerminal = false,
+  });
 
   @override
   State<PinCodeScreen> createState() => _PinCodeScreenState();
@@ -40,6 +49,29 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   }
 
   void _handlePinComplete() async {
+    if (widget.isFromTerminal && widget.selectedUser != null) {
+      try {
+        final userId = widget.selectedUser['id'].toString();
+        final response = await ApiService().loginWithPin(userId, _enteredPin);
+        
+        // Save user to controller
+        Get.find<POSController>().setCurrentUser(response['user']);
+        pos.authenticatePin(true);
+        
+        Get.snackbar("Muvaffaqiyatli", "Xush kelibsiz, ${response['user']['name']}!", 
+          backgroundColor: Colors.green, colorText: Colors.white);
+          
+        Get.offAll(() => const MainNavigationScreen());
+      } catch (e) {
+        Get.snackbar("Xato", "PIN kod noto'g'ri", 
+          backgroundColor: Colors.red, colorText: Colors.white);
+        setState(() {
+          _enteredPin = "";
+        });
+      }
+      return;
+    }
+
     if (widget.isSettingNewPin) {
       if (!_isConfirming) {
         setState(() {
@@ -82,6 +114,10 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
       ? (_isConfirming ? "confirm_pin".tr : "set_new_pin".tr) 
       : "enter_pin".tr;
     
+    if (widget.isFromTerminal && widget.selectedUser != null) {
+      titleText = widget.selectedUser['name'];
+    }
+
     String subtitleText = widget.isSettingNewPin
       ? (_isConfirming ? "confirm_pin_msg".tr : "set_pin_msg".tr)
       : "pin_subtitle".tr;
@@ -91,7 +127,6 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // _buildTopBar() was removed as requested
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(vertical: 20),
@@ -180,48 +215,6 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildTopBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(Icons.print_rounded, color: Color(0xFFFF9500), size: 28),
-            const SizedBox(width: 12),
-            const Text(
-              'POS Terminal #04',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-            const Spacer(),
-            _buildTopBarIcon(Icons.settings_outlined),
-            const SizedBox(width: 12),
-            _buildTopBarIcon(Icons.help_outline_rounded),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopBarIcon(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(icon, color: const Color(0xFF4B5563), size: 20),
     );
   }
 
@@ -379,4 +372,3 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
     );
   }
 }
-
