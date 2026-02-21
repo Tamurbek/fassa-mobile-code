@@ -1090,6 +1090,7 @@ class POSController extends GetxController {
           'quantity': d['qty'],
           'sentQty': d['qty'],
           'isNew': false,
+          'createdAt': d['created_at'],
         });
       }
     }

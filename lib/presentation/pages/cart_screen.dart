@@ -40,25 +40,75 @@ class CartScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: Obx(() => Column(
-            children: [
-              _buildModeSelector(pos),
-              Expanded(
-                child: pos.currentOrder.isEmpty
-                    ? _buildEmptyCart()
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                        itemCount: pos.currentOrder.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 16),
-                        itemBuilder: (context, index) {
-                          final cartItem = pos.currentOrder[index];
-                          return _buildCartItem(cartItem, index, pos);
-                        },
-                      ),
-              ),
-              if (pos.currentOrder.isNotEmpty) _buildOrderSummary(pos),
+      body: Obx(() {
+        if (pos.currentOrder.isEmpty) return _buildEmptyCart();
+        
+        // Group items
+        final newItems = [];
+        final sentItems = [];
+        final cancelledItems = [];
+        
+        for (int i = 0; i < pos.currentOrder.length; i++) {
+          final item = pos.currentOrder[i];
+          final bool isNew = item['isNew'] == true;
+          final int quantity = item['quantity'] ?? 0;
+          
+          if (isNew) {
+            newItems.add({'index': i, 'data': item});
+          } else if (quantity > 0) {
+            sentItems.add({'index': i, 'data': item});
+          } else {
+            cancelledItems.add({'index': i, 'data': item});
+          }
+        }
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+          children: [
+            _buildModeSelector(pos),
+            
+            // New Items Section
+            if (newItems.isNotEmpty) ...[
+              _buildSectionHeader("Yangi mahsulotlar", Colors.blue),
+              ...newItems.map((wrapped) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildCartItem(wrapped['data'], wrapped['index'], pos),
+              )),
+              const SizedBox(height: 16),
             ],
-          )),
+            
+            // Sent Items Section (Collapsible)
+            if (sentItems.isNotEmpty) ...[
+              Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  title: _buildSectionHeader("Eski buyurtmalar (Oshxonaga yuborilgan)", Colors.green),
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.zero,
+                  initiallyExpanded: true,
+                  children: sentItems.map((wrapped) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _buildCartItem(wrapped['data'], wrapped['index'], pos),
+                  )).toList(),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // Cancelled Items Section
+            if (cancelledItems.isNotEmpty) ...[
+              _buildSectionHeader("Bekor qilingan mahsulotlar", Colors.red),
+              ...cancelledItems.map((wrapped) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildCartItem(wrapped['data'], wrapped['index'], pos),
+              )),
+              const SizedBox(height: 16),
+            ],
+            
+            _buildOrderSummary(pos),
+          ],
+        );
+      }),
     );
   }
 
@@ -100,6 +150,26 @@ class CartScreen extends StatelessWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 20,
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
+          ),
+        ],
       ),
     );
   }
@@ -196,6 +266,14 @@ class CartScreen extends StatelessWidget {
                   else
                     Text("\$${item.price.toStringAsFixed(2)}", 
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                  if (cartItem['createdAt'] != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        "Vaqti: ${DateTime.parse(cartItem['createdAt']).toLocal().toString().substring(11, 16)}",
+                        style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                      ),
+                    ),
                 ],
               ),
             ),
