@@ -23,7 +23,7 @@ class ApiService {
     _token = _storage.read('access_token');
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
-        if (_token != null) {
+        if (_token != null && !options.headers.containsKey('Authorization')) {
           options.headers['Authorization'] = 'Bearer $_token';
         }
         return handler.next(options);
@@ -118,7 +118,14 @@ class ApiService {
 
   Future<List<dynamic>> getTerminalStaff() async {
     try {
-      final response = await _dio.get('/auth/terminal/staff');
+      // Use terminal token specifically for this request if available
+      String? tToken = _storage.read('terminal_token');
+      Options? options;
+      if (tToken != null) {
+        options = Options(headers: {'Authorization': 'Bearer $tToken'});
+      }
+      
+      final response = await _dio.get('/auth/terminal/staff', options: options);
       return response.data;
     } catch (e) {
       rethrow;
