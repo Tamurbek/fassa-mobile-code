@@ -52,6 +52,8 @@ dependencies:
   http: ^1.6.0
   device_info_plus: ^11.4.0
   geolocator: ^13.0.2
+  flutter_background_service: ^5.0.10
+  flutter_local_notifications: ^17.2.2
 
 dev_dependencies:
   flutter_test:

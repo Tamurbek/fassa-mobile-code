@@ -11,9 +11,11 @@ import 'presentation/pages/settings_screen.dart';
 import 'presentation/pages/reports_screen.dart';
 import 'presentation/pages/auth/role_selection_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'logic/background_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeService();
   await GetStorage.init();
   
   // Initialize locale data

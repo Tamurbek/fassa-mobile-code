@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import '../data/models/food_item.dart';
 import '../data/models/printer_model.dart';
 import '../data/models/preparation_area_model.dart';
@@ -138,37 +139,30 @@ class POSController extends GetxController {
     });
   }
 
-  void _initLocationTracking() {
-    _locationTimer?.cancel();
+  void _initLocationTracking() async {
+    final service = FlutterBackgroundService();
     
-    // Function to perform update
-    Future<void> update() async {
-      if (currentUser.value == null) return;
-      try {
-        final permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
-
-        final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium // Medium is better for battery/speed balance
-        );
-
-        final response = await _api.updateLocation(position.latitude, position.longitude);
-        if (response['status'] == 'warning') {
-           isWithinGeofence.value = false;
-           // Only show toast if it was true before (to avoid spamming)
-        } else {
-           isWithinGeofence.value = true;
-        }
-      } catch (e) {
-        print("Location update error: $e");
+    // Check if we should track
+    if (currentUser.value != null) {
+      // Background location requires explicit permission request on some OS versions
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
       }
+      
+      if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+        final isRunning = await service.isRunning();
+        if (!isRunning) {
+          service.startService();
+        }
+      }
+    } else {
+      service.invoke("stopService");
     }
+  }
 
-    // Call immediately
-    update();
-    
-    // Then every 30 seconds for more "real-time" experience
-    _locationTimer = Timer.periodic(const Duration(seconds: 30), (timer) => update());
+  void stopLocationTracking() {
+    FlutterBackgroundService().invoke("stopService");
   }
 
   Future<void> checkSubscription({bool showWarning = true}) async {
@@ -974,6 +968,7 @@ class POSController extends GetxController {
   }
 
   void logout({bool forced = false}) {
+    stopLocationTracking();
     setCurrentUser(null);
     _api.setToken(null);
     isPinAuthenticated.value = false;
