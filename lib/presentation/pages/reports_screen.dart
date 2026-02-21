@@ -134,10 +134,10 @@ class ReportsScreen extends StatelessWidget {
           spacing: 20,
           runSpacing: 20,
           children: [
-            _buildStatCard("today_revenue".tr, todayRevenue, "currency".tr, 12.5, Colors.orange, cardWidth),
+            _buildStatCard("today_revenue".tr, todayRevenue, Get.find<POSController>().currencySymbol, 12.5, Colors.orange, cardWidth),
             _buildStatCard("order_count".tr, orderCount.toDouble(), "items".tr, 5.2, Colors.blue, cardWidth, isInteger: true),
-            _buildStatCard("average_bill".tr, avgBill, "currency".tr, 2.1, Colors.green, cardWidth),
-            _buildStatCard("total_sales".tr, totalRevenue, "currency".tr, 8.4, Colors.red, cardWidth),
+            _buildStatCard("average_bill".tr, avgBill, Get.find<POSController>().currencySymbol, 2.1, Colors.green, cardWidth),
+            _buildStatCard("total_sales".tr, totalRevenue, Get.find<POSController>().currencySymbol, 8.4, Colors.red, cardWidth),
           ],
         );
       }
@@ -264,7 +264,7 @@ class ReportsScreen extends StatelessWidget {
                     ),
                     Expanded(flex: 2, child: Text(item['category'] as String, style: const TextStyle(color: Color(0xFF6B7280)))),
                     Expanded(flex: 2, child: Text("${item['sales']} ${"piece".tr}", style: const TextStyle(fontWeight: FontWeight.bold))),
-                    Expanded(flex: 2, child: Text("${NumberFormat("#,###", "uz_UZ").format(item['revenue'])} ${"currency".tr}", style: const TextStyle(fontWeight: FontWeight.bold))),
+                    Expanded(flex: 2, child: Text("${NumberFormat("#,###", "uz_UZ").format(item['revenue'])} ${Get.find<POSController>().currencySymbol}", style: const TextStyle(fontWeight: FontWeight.bold))),
                     const SizedBox(
                       width: 40,
                       child: Icon(Icons.trending_up, color: Colors.green, size: 20),
@@ -307,7 +307,7 @@ class ReportsScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text("cash_status_header".tr, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF9CA3AF), letterSpacing: 0.5)),
-              Text("1,840,000 ${"currency".tr} ${"cash_label".tr}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text("1,840,000 ${Get.find<POSController>().currencySymbol} ${"cash_label".tr}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
           const SizedBox(width: 24),

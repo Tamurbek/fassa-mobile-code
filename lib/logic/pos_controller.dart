@@ -56,6 +56,8 @@ class POSController extends GetxController {
   var restaurantAddress = "".obs;
   var restaurantPhone = "".obs;
   var restaurantLogo = "".obs;
+  var currency = "UZS".obs;
+  String get currencySymbol => currency.value == 'USD' ? '\$' : "so'm";
   var serviceFeeDineIn = 10.0.obs;
   var serviceFeeTakeaway = 0.0.obs;
   var serviceFeeDelivery = 3000.0.obs;
@@ -338,6 +340,7 @@ class POSController extends GetxController {
     restaurantAddress.value = _storage.read('restaurant_address') ?? "Tashkent, Uzbekistan";
     restaurantPhone.value = _storage.read('restaurant_phone') ?? "+998 90 123 45 67";
     restaurantLogo.value = _storage.read('restaurant_logo') ?? "";
+    currency.value = _storage.read('currency') ?? "UZS";
     serviceFeeDineIn.value = _storage.read('service_fee_dine_in') ?? 10.0;
     serviceFeeTakeaway.value = _storage.read('service_fee_takeaway') ?? 0.0;
     serviceFeeDelivery.value = _storage.read('service_fee_delivery') ?? 3000.0;
@@ -559,6 +562,7 @@ class POSController extends GetxController {
       restaurantAddress.value = cafe['address'] ?? "";
       restaurantPhone.value = cafe['phone'] ?? "";
       restaurantLogo.value = cafe['logo'] ?? "";
+      currency.value = cafe['currency'] ?? "UZS";
       serviceFeeDineIn.value = (cafe['service_fee_dine_in'] ?? 10.0).toDouble();
       serviceFeeTakeaway.value = (cafe['service_fee_takeaway'] ?? 0.0).toDouble();
       serviceFeeDelivery.value = (cafe['service_fee_delivery'] ?? 3000.0).toDouble();
@@ -578,6 +582,7 @@ class POSController extends GetxController {
       _storage.write('restaurant_address', restaurantAddress.value);
       _storage.write('restaurant_phone', restaurantPhone.value);
       _storage.write('restaurant_logo', restaurantLogo.value);
+      _storage.write('currency', currency.value);
       _storage.write('service_fee_dine_in', serviceFeeDineIn.value);
       _storage.write('service_fee_takeaway', serviceFeeTakeaway.value);
       _storage.write('service_fee_delivery', serviceFeeDelivery.value);
@@ -1273,6 +1278,24 @@ class POSController extends GetxController {
       }
     } catch (e) {
       print("Error updating status: $e");
+    }
+  }
+
+  Future<void> changeOrderTable(int orderId, String newTableId) async {
+    try {
+      await _api.updateOrder(orderId, {"table_number": newTableId});
+      int index = allOrders.indexWhere((o) => o['id'] == orderId);
+      if (index != -1) {
+        allOrders[index]['table'] = newTableId;
+        allOrders.refresh();
+        saveAllOrders();
+      }
+      Get.snackbar("Stol o'zgartirildi", "Buyurtma $newTableId-stolga o'tkazildi", 
+        backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      print("Error updating table: $e");
+      Get.snackbar("Xato", "Stolni o'zgartirishda xatolik yuz berdi", 
+        backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
     }
   }
 

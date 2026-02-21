@@ -625,6 +625,15 @@ class OrdersScreen extends StatelessWidget {
               label: "edit".tr,
             ),
           ],
+          if (isActive && (order?['mode'] == "Dine-in" || order?['mode'] == null)) ...[
+            const SizedBox(width: 8),
+            _buildToolbarButton(
+              onPressed: () => _showChangeTableDialog(context, order, pos),
+              icon: Icons.sync_alt_rounded,
+              color: Colors.purple,
+              label: "Stolni o'zgartirish",
+            ),
+          ],
           if (pos.isAdmin || pos.isCashier) ...[
             const SizedBox(width: 8),
             _buildToolbarButton(
@@ -694,6 +703,59 @@ class OrdersScreen extends StatelessWidget {
     }
     pos.loadOrderForEditing(order, catalog);
     Get.to(() => const HomeScreen());
+  }
+
+  void _showChangeTableDialog(BuildContext context, Map<String, dynamic> order, POSController pos) {
+    if (order['status'] == "Bill Printed" && !(pos.isAdmin || pos.isCashier)) {
+      Get.snackbar("Xatolik", "Cheki chiqarilgan buyurtmani stoli o'zgartirilmaydi", 
+          backgroundColor: Colors.red, colorText: Colors.white);
+      return;
+    }
+
+    final tableIdController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("Stolni o'zgartirish", style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Joriy stol: ${order['table'] ?? '-'}"),
+            const SizedBox(height: 16),
+            TextField(
+              controller: tableIdController,
+              decoration: InputDecoration(
+                labelText: "Yangi stol raqami",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              keyboardType: TextInputType.text,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: Text("cancel".tr)),
+          ElevatedButton(
+            onPressed: () {
+              final newTable = tableIdController.text.trim();
+              if (newTable.isEmpty) {
+                Get.snackbar("Xato", "Yangi stol raqamini kiriting", backgroundColor: Colors.orange, colorText: Colors.white);
+                return;
+              }
+              pos.changeOrderTable(order['id'], newTable);
+              Get.back();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("O'zgartirish", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 }
 

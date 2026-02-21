@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
+import '../../logic/pos_controller.dart';
 
 class LocationChecker extends StatefulWidget {
   final Widget child;
@@ -72,6 +74,13 @@ class _LocationCheckerState extends State<LocationChecker> with WidgetsBindingOb
 
   @override
   Widget build(BuildContext context) {
+    final pos = Get.find<POSController>();
+    
+    // Only enforce location check for Waiters
+    if (pos.deviceRole.value != "WAITER") {
+      return widget.child;
+    }
+
     bool hasIssue = !_isServiceEnabled || _permission == LocationPermission.denied || _permission == LocationPermission.deniedForever;
 
     if (!hasIssue) {

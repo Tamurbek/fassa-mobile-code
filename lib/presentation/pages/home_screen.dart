@@ -285,7 +285,7 @@ class HomeScreen extends StatelessWidget {
                                 children: [
                                   Text("${NumberFormat("#,###", "uz_UZ").format(item.price)}", 
                                     style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Color(0xFFFF9500))),
-                                  Text("currency".tr, style: const TextStyle(fontSize: 10, color: Color(0xFFFF9500), fontWeight: FontWeight.bold)),
+                                  Text(pos.currencySymbol, style: const TextStyle(fontSize: 10, color: Color(0xFFFF9500), fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ),
@@ -526,7 +526,7 @@ class HomeScreen extends StatelessWidget {
                     const Text("Bekor qilingan", 
                       style: TextStyle(color: Colors.red, fontSize: 9, fontWeight: FontWeight.bold))
                   else
-                    Text("${NumberFormat("#,###", "uz_UZ").format(item.price)} ${"currency".tr}", 
+                    Text("${NumberFormat("#,###", "uz_UZ").format(item.price)} ${pos.currencySymbol}", 
                       style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 11, fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -576,19 +576,19 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildSumRow("subtotal_sum".tr, "${NumberFormat("#,###", "uz_UZ").format(pos.subtotal)} ${"currency".tr}"),
+          _buildSumRow("subtotal_sum".tr, "${NumberFormat("#,###", "uz_UZ").format(pos.subtotal)} ${pos.currencySymbol}"),
           _buildSumRow(
           pos.currentMode.value == "Dine-in" 
             ? "${"service_fee_label".tr} (${pos.serviceFeeDineIn.value.toStringAsFixed(0)}%)"
             : "service_fee_label".tr, 
-          "${NumberFormat("#,###", "uz_UZ").format(pos.serviceFee)} ${"currency".tr}"
+          "${NumberFormat("#,###", "uz_UZ").format(pos.serviceFee)} ${pos.currencySymbol}"
         ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("total".tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
-              Text("${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${"currency".tr}", 
+              Text("${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${pos.currencySymbol}", 
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFFF9500))),
             ],
           ),
@@ -700,7 +700,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(width: 12),
             Text("${pos.totalItems} ${'items'.tr}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             const Spacer(),
-            Text("${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${"currency".tr}", 
+            Text("${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${pos.currencySymbol}", 
               style: const TextStyle(color: Color(0xFFFF9500), fontWeight: FontWeight.w900, fontSize: 16)),
           ],
         ),
