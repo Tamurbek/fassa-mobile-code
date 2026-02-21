@@ -1096,12 +1096,7 @@ class POSController extends GetxController {
        users.clear();
        lockedTables.clear();
     }
-  }
 
-  void lockTerminal() {
-    logout(forced: false);
-    Get.offAllNamed('/staff-selection');
-  }
     _storage.remove('products');
     _storage.remove('categories');
     _storage.remove('categories_objects');
@@ -1129,6 +1124,10 @@ class POSController extends GetxController {
          duration: const Duration(seconds: 5)
        );
     }
+  }
+
+  void lockTerminal() {
+    logout(forced: false);
   }
 
   Future<bool> submitOrder({bool isPaid = false}) async {
