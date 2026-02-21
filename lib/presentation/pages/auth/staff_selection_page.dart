@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart';
 import '../../../data/services/api_service.dart';
 import '../../../logic/pos_controller.dart';
 import 'pin_code_screen.dart';
@@ -79,8 +80,8 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
                     backgroundColor: Colors.green, colorText: Colors.white);
                 } catch (e) {
                   String errorMsg = "PIN kod noto'g'ri";
-                  if (e is dynamic && e.response != null && e.response.data != null) {
-                    errorMsg = e.response.data['detail'] ?? errorMsg;
+                  if (e is DioException && e.response != null && e.response?.data != null) {
+                    errorMsg = e.response?.data['detail'] ?? errorMsg;
                   }
                   Get.snackbar("Xato", errorMsg, 
                     backgroundColor: Colors.red, colorText: Colors.white);
