@@ -31,7 +31,9 @@ class _TerminalLoginPageState extends State<TerminalLoginPage> {
         _passwordController.text,
       );
 
-      // Save terminal info if needed
+      // Save terminal info
+      Get.find<POSController>().setCurrentTerminal(response['terminal']);
+      
       Get.snackbar('Muvaffaqiyatli', '${response['terminal']['name']} terminaliga ulandi', backgroundColor: Colors.green, colorText: Colors.white);
 
       Get.offAll(() => const StaffSelectionPage());

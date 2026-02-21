@@ -10,6 +10,8 @@ import 'translations/app_translations.dart';
 import 'presentation/pages/settings_screen.dart';
 import 'presentation/pages/reports_screen.dart';
 import 'presentation/pages/auth/role_selection_screen.dart';
+import 'presentation/pages/auth/staff_selection_page.dart';
+import 'presentation/pages/auth/terminal_login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'logic/background_service.dart';
 import 'presentation/components/location_checker.dart';
@@ -58,6 +60,8 @@ class FastFoodApp extends StatelessWidget {
         GetPage(name: '/settings', page: () => const SettingsScreen()),
         GetPage(name: '/reports', page: () => const ReportsScreen()),
         GetPage(name: '/role-selection', page: () => const RoleSelectionScreen()),
+        GetPage(name: '/staff-selection', page: () => const StaffSelectionPage()),
+        GetPage(name: '/terminal-login', page: () => const TerminalLoginPage()),
       ],
     );
   }
@@ -72,8 +76,11 @@ class FastFoodApp extends StatelessWidget {
     }
     
     // 1. Check if user is logged in
-    var storedUser = storage.read('user');
-    if (storedUser == null) {
+    if (pos.currentUser.value == null) {
+      // 1.5 Check if terminal is logged in
+      if (pos.currentTerminal.value != null) {
+        return const StaffSelectionPage();
+      }
       return const LoginPage();
     }
     

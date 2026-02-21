@@ -4,21 +4,22 @@ import 'package:get/get.dart' as g;
 import '../../logic/pos_controller.dart' as logic;
 
 class ApiService {
-  static final String baseUrl = 'https://cafe-backend-code-production.up.railway.app'; 
-  
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
 
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: baseUrl,
-    connectTimeout: const Duration(seconds: 5),
-    receiveTimeout: const Duration(seconds: 3),
-  ));
-
+  late Dio _dio;
   final GetStorage _storage = GetStorage();
   String? _token;
 
   ApiService._internal() {
+    final String baseUrl = _storage.read('api_url') ?? 'https://cafe-backend-code-production.up.railway.app';
+    
+    _dio = Dio(BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
+    ));
+
     _token = _storage.read('access_token');
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) {
@@ -29,10 +30,8 @@ class ApiService {
       },
       onError: (DioException e, handler) {
         if (e.response?.statusCode == 401) {
-          // Check if it's a device change forced logout
           final detail = e.response?.data?['detail'];
           if (detail == "Qurilma o'zgargani sababli tizimdan chiqdingiz") {
-             // Notify controller to logout
              try {
                 g.Get.find<logic.POSController>().logout(forced: true);
              } catch (_) {}
@@ -43,9 +42,30 @@ class ApiService {
     ));
   }
 
+  void setBaseUrl(String url) {
+    // Basic validation
+    if (!url.startsWith('http')) {
+      url = 'https://$url';
+    }
+    _storage.write('api_url', url);
+    _dio.options.baseUrl = url;
+    print("API Base URL set to: $url");
+  }
+
+  String get currentBaseUrl => _dio.options.baseUrl;
+
   void setToken(String? token) {
     _token = token;
     _storage.write('access_token', token);
+  }
+
+  void restoreTerminalToken() {
+    _token = _storage.read('terminal_token');
+    _storage.write('access_token', _token);
+  }
+
+  void clearTerminalToken() {
+    _storage.remove('terminal_token');
   }
 
   // Auth
@@ -65,6 +85,21 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> loginTerminal(String username, String password) async {
+    try {
+      final response = await _dio.post('/auth/terminal/login', data: {
+        'username': username,
+        'password': password,
+      });
+      _token = response.data['access_token'];
+      _storage.write('access_token', _token);
+      _storage.write('terminal_token', _token); 
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> loginWithPin(String userId, String pinCode, {String? deviceId, String? deviceName}) async {
     try {
       final response = await _dio.post('/auth/login/pin', data: {
@@ -72,20 +107,6 @@ class ApiService {
         'pin_code': pinCode,
         'device_id': deviceId,
         'device_name': deviceName,
-      });
-      _token = response.data['access_token'];
-      _storage.write('access_token', _token);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> loginTerminal(String username, String password) async {
-    try {
-      final response = await _dio.post('/auth/terminal/login', data: {
-        'username': username,
-        'password': password,
       });
       _token = response.data['access_token'];
       _storage.write('access_token', _token);
@@ -116,15 +137,6 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post('/auth/register', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   // Categories
   Future<List<dynamic>> getCategories() async {
     try {
@@ -135,63 +147,11 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> createCategory(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post('/categories/', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> updateCategory(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.put('/categories/$id', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> deleteCategory(String id) async {
-    try {
-      await _dio.delete('/categories/$id');
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   // Products
   Future<List<dynamic>> getProducts() async {
     try {
       final response = await _dio.get('/products');
       return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> createProduct(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post('/products/', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> updateProduct(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.put('/products/$id', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> deleteProduct(String id) async {
-    try {
-      await _dio.delete('/products/$id');
     } catch (e) {
       rethrow;
     }
@@ -234,56 +194,6 @@ class ApiService {
     }
   }
 
-  Future<String> uploadImage(String filePath) async {
-    try {
-      String fileName = filePath.split('/').last;
-      FormData formData = FormData.fromMap({
-        "file": await MultipartFile.fromFile(filePath, filename: fileName),
-      });
-
-      final response = await _dio.post('/uploads/', data: formData);
-      return response.data['url'];
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  // Preparation Areas
-  Future<List<dynamic>> getPreparationAreas() async {
-    try {
-      final response = await _dio.get('/preparation-areas');
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> createPreparationArea(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post('/preparation-areas', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> updatePreparationArea(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.put('/preparation-areas/$id', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> deletePreparationArea(String id) async {
-    try {
-      await _dio.delete('/preparation-areas/$id');
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   // Printers
   Future<List<dynamic>> getPrinters() async {
     try {
@@ -294,44 +204,9 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> createPrinter(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post('/printers', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> updatePrinter(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.put('/printers/$id', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> deletePrinter(String id) async {
-    try {
-      await _dio.delete('/printers/$id');
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   Future<Map<String, dynamic>> getSubscriptionStatus() async {
     try {
       final response = await _dio.get('/cafes/subscription-status');
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> getCafe(String id) async {
-    try {
-      final response = await _dio.get('/cafes/$id');
       return response.data;
     } catch (e) {
       rethrow;
@@ -348,46 +223,9 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> updateTableArea(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.put('/table-areas/$id', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   Future<List<dynamic>> getTables() async {
     try {
       final response = await _dio.get('/tables');
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> updateTablePosition(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.patch('/tables/$id/position', data: data);
-      return response.data;
-    } catch (e) {
-      // If endpoint doesn't exist, we might need a fallback or different approach
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> updateCafe(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.put('/cafes/$id', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> getLatestVersion() async {
-    try {
-      final response = await _dio.get('/system/version');
       return response.data;
     } catch (e) {
       rethrow;
@@ -399,32 +237,6 @@ class ApiService {
     try {
       final response = await _dio.get('/users');
       return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> createUser(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post('/users/', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.put('/users/$id', data: data);
-      return response.data;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> deleteUser(String id) async {
-    try {
-      await _dio.delete('/users/$id');
     } catch (e) {
       rethrow;
     }

@@ -5,6 +5,7 @@ import '../../../logic/pos_controller.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/responsive.dart';
 import '../main_navigation_screen.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class PinCodeScreen extends StatefulWidget {
   final bool isSettingNewPin;
@@ -203,6 +204,21 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
                                 ),
                               ),
                             ),
+                            if (widget.isFromTerminal) ...[
+                              const SizedBox(height: 16),
+                              TextButton.icon(
+                                onPressed: _showQrDialog,
+                                icon: const Icon(Icons.qr_code_2, color: Color(0xFFFF9500), size: 18),
+                                label: const Text(
+                                  'Sozlash uchun QR kod',
+                                  style: TextStyle(
+                                    color: Color(0xFFFF9500),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -214,6 +230,51 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showQrDialog() {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Center(child: Text('Tizim sozlamalari')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Xodimlar ushbu QR kodni skanerlash orqali tizimga avtomatik ulanishlari mumkin',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: QrImageView(
+                data: ApiService().currentBaseUrl,
+                version: QrVersions.auto,
+                size: 200.0,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              ApiService().currentBaseUrl,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Yopish'),
+          ),
+        ],
       ),
     );
   }

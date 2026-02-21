@@ -8,6 +8,7 @@ import '../../../logic/pos_controller.dart';
 import '../../../theme/app_colors.dart';
 import '../main_navigation_screen.dart';
 import 'pin_code_screen.dart';
+import 'qr_scanner_page.dart';
 import 'terminal_login_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -312,6 +313,17 @@ class _LoginPageState extends State<LoginPage> {
                         foregroundColor: const Color(0xFF4B5563),
                         side: const BorderSide(color: Color(0xFFE5E7EB)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => Get.to(() => const QRScannerPage()),
+                      icon: const Icon(Icons.qr_code_scanner, color: Color(0xFFFF9500)),
+                      label: const Text(
+                        'QR kod orqali sozlash',
+                        style: TextStyle(color: Color(0xFFFF9500), fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

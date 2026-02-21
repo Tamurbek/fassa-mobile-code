@@ -24,6 +24,7 @@ class POSController extends GetxController {
   var currentOrder = <Map<String, dynamic>>[].obs;
   var allOrders = <Map<String, dynamic>>[].obs;
   var currentUser = Rxn<Map<String, dynamic>>();
+  var currentTerminal = Rxn<Map<String, dynamic>>();
   var pinCode = RxnString();
   var isPinAuthenticated = false.obs;
   var isPrinting = false.obs;
@@ -309,6 +310,9 @@ class POSController extends GetxController {
     }
 
     deviceRole.value = _storage.read('device_role');
+    currentUser.value = _storage.read('user');
+    currentTerminal.value = _storage.read('terminal');
+    pinCode.value = _storage.read('pin_code');
 
     var storedProducts = _storage.read('products');
     if (storedProducts != null) {
@@ -1040,12 +1044,27 @@ class POSController extends GetxController {
     }
   }
 
+  void setCurrentTerminal(Map<String, dynamic>? terminal) {
+    currentTerminal.value = terminal;
+    if (terminal != null) {
+      _storage.write('terminal', terminal);
+    } else {
+      _storage.remove('terminal');
+    }
+  }
+
   void logout({bool forced = false}) {
     stopLocationTracking();
     setCurrentUser(null);
     pinCode.value = null;
     _storage.remove('pin_code');
-    _api.setToken(null);
+    
+    bool wasTerminal = currentTerminal.value != null;
+    if (wasTerminal) {
+      _api.restoreTerminalToken();
+    } else {
+      _api.setToken(null);
+    }
     isPinAuthenticated.value = false;
     
     currentOrder.clear();
@@ -1074,7 +1093,11 @@ class POSController extends GetxController {
     _storage.remove('table_positions');
     _storage.remove('table_properties');
 
-    Get.offAllNamed('/login');
+    if (wasTerminal) {
+      Get.offAllNamed('/staff-selection');
+    } else {
+      Get.offAllNamed('/login');
+    }
     if (forced) {
        Get.snackbar(
          "Tizimdan chiqildi", 
