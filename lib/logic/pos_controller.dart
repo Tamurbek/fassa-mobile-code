@@ -141,26 +141,55 @@ class POSController extends GetxController {
   }
 
   void _initLocationTracking() async {
-    if (!(Platform.isAndroid || Platform.isIOS)) return;
-    
-    final service = FlutterBackgroundService();
-    
-    // Check if we should track
-    if (currentUser.value != null) {
-      // Background location requires explicit permission request on some OS versions
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
+    if (currentUser.value == null) {
+      if (Platform.isAndroid || Platform.isIOS) {
+        FlutterBackgroundService().invoke("stopService");
       }
-      
-      if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+      _locationTimer?.cancel();
+      return;
+    }
+
+    // Check permissions
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    
+    if (permission == LocationPermission.always || permission == LocationPermission.whileInUse) {
+      // 1. One immediate location update
+      _sendLocationUpdate();
+
+      // 2. Continuous tracking
+      if (Platform.isAndroid || Platform.isIOS) {
+        final service = FlutterBackgroundService();
         final isRunning = await service.isRunning();
         if (!isRunning) {
           service.startService();
         }
+      } else {
+        // macOS/Windows fallback using Timer
+        _locationTimer?.cancel();
+        _locationTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+          _sendLocationUpdate();
+        });
       }
-    } else {
-      service.invoke("stopService");
+    }
+  }
+
+  Future<void> _sendLocationUpdate() async {
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+      );
+      final response = await _api.updateLocation(position.latitude, position.longitude);
+      if (response['status'] == 'warning') {
+        isWithinGeofence.value = false;
+        Get.snackbar("Eslatma", response['message'] ?? 'Hududdan tashqaridasiz.', backgroundColor: Colors.orange, colorText: Colors.white);
+      } else {
+        isWithinGeofence.value = true;
+      }
+    } catch (e) {
+      print("Direct location update error: $e");
     }
   }
 
@@ -168,6 +197,7 @@ class POSController extends GetxController {
     if (Platform.isAndroid || Platform.isIOS) {
       FlutterBackgroundService().invoke("stopService");
     }
+    _locationTimer?.cancel();
   }
 
   Future<void> checkSubscription({bool showWarning = true}) async {
