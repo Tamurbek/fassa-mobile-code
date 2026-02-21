@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import '../../../data/services/api_service.dart';
 import '../../../logic/pos_controller.dart';
 import 'pin_code_screen.dart';
+import '../main_navigation_screen.dart';
 
 class StaffSelectionPage extends StatefulWidget {
   final String? cafeId;
@@ -68,7 +69,13 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
               if (enteredPin.length == 4) {
                 try {
                   final userId = staffMember['id'].toString();
-                  final response = await ApiService().loginWithPin(userId, enteredPin);
+                  // We need to pass device information to avoid backend session errors
+                  final response = await ApiService().loginWithPin(
+                    userId, 
+                    enteredPin,
+                    deviceId: Get.find<POSController>().currentTerminal.value?['id']?.toString() ?? "unknown_device",
+                    deviceName: Get.find<POSController>().currentTerminal.value?['name'] ?? "POS Terminal"
+                  );
                   
                   Get.find<POSController>().setCurrentUser(response['user']);
                   Get.find<POSController>().authenticatePin(true);
@@ -80,8 +87,11 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
                     backgroundColor: Colors.green, colorText: Colors.white);
                 } catch (e) {
                   String errorMsg = "PIN kod noto'g'ri";
-                  if (e is DioException && e.response != null && e.response?.data != null) {
-                    errorMsg = e.response?.data['detail'] ?? errorMsg;
+                  if (e is DioException) {
+                    final dynamic responseData = e.response?.data;
+                    if (responseData != null && responseData is Map && responseData.containsKey('detail')) {
+                      errorMsg = responseData['detail']?.toString() ?? errorMsg;
+                    }
                   }
                   Get.snackbar("Xato", errorMsg, 
                     backgroundColor: Colors.red, colorText: Colors.white);

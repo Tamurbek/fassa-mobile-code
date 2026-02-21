@@ -105,8 +105,8 @@ class ApiService {
       final response = await _dio.post('/auth/login/pin', data: {
         'user_id': userId,
         'pin_code': pinCode,
-        'device_id': deviceId,
-        'device_name': deviceName,
+        'device_id': deviceId ?? 'pos_terminal_default',
+        'device_name': deviceName ?? 'POS Device',
       });
       _token = response.data['access_token'];
       _storage.write('access_token', _token);
