@@ -78,7 +78,11 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
                   Get.snackbar("Muvaffaqiyatli", "Xush kelibsiz, ${response['user']['name']}!", 
                     backgroundColor: Colors.green, colorText: Colors.white);
                 } catch (e) {
-                  Get.snackbar("Xato", "PIN kod noto'g'ri", 
+                  String errorMsg = "PIN kod noto'g'ri";
+                  if (e is dynamic && e.response != null && e.response.data != null) {
+                    errorMsg = e.response.data['detail'] ?? errorMsg;
+                  }
+                  Get.snackbar("Xato", errorMsg, 
                     backgroundColor: Colors.red, colorText: Colors.white);
                   setDialogState(() => enteredPin = "");
                 }
