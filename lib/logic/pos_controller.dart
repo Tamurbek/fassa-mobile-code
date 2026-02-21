@@ -29,6 +29,7 @@ class POSController extends GetxController {
   var isPinAuthenticated = false.obs;
   var isPrinting = false.obs;
   var deviceRole = RxnString(); // "ADMIN", "CASHIER", "WAITER"
+  var waiterCafeId = RxnString(); // Used only for WAITER role
   var printedKitchenQuantities = <String, Map<String, int>>{}.obs; // "orderId": {"productId": qty}
   
   // Order modes, current selection, table, and editing state
@@ -310,6 +311,7 @@ class POSController extends GetxController {
     }
 
     deviceRole.value = _storage.read('device_role');
+    waiterCafeId.value = _storage.read('waiter_cafe_id');
     currentUser.value = _storage.read('user');
     currentTerminal.value = _storage.read('terminal');
     pinCode.value = _storage.read('pin_code');
@@ -928,9 +930,22 @@ class POSController extends GetxController {
     }
   }
 
-  void setDeviceRole(String role) {
+  void setDeviceRole(String? role) {
     deviceRole.value = role;
-    _storage.write('device_role', role);
+    if (role == null) {
+      _storage.remove('device_role');
+    } else {
+      _storage.write('device_role', role);
+    }
+  }
+
+  void setWaiterCafeId(String? cafeId) {
+    waiterCafeId.value = cafeId;
+    if (cafeId == null) {
+      _storage.remove('waiter_cafe_id');
+    } else {
+      _storage.write('waiter_cafe_id', cafeId);
+    }
   }
 
   void removeFromCart(int index) {

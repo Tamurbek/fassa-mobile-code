@@ -70,7 +70,13 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
                  ApiService().clearTerminalToken();
               }
               ApiService().setToken(null);
-              Get.offAllNamed('/login');
+              
+              final pos = Get.find<POSController>();
+              pos.setDeviceRole(null);
+              pos.setWaiterCafeId(null);
+              pos.logout(forced: true);
+              
+              Get.offAllNamed('/');
             },
           ),
         ],

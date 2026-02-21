@@ -100,6 +100,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
     );
 
     if (cafeId != null && cafeId.isNotEmpty) {
+      Get.find<POSController>().setWaiterCafeId(cafeId);
       Get.off(() => StaffSelectionPage(cafeId: cafeId, isFromTerminal: false));
     } else {
       Get.back();

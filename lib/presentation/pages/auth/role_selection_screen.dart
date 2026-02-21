@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../logic/pos_controller.dart';
 import 'login_page.dart';
+import 'qr_scanner_page.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -31,7 +32,7 @@ class RoleSelectionScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                "Iltimos, ish rejimini tanlang",
+                "Qurilmani qanday ishlatmoqchisiz?",
                 style: TextStyle(
                   fontSize: 18,
                   color: Color(0xFF6B7280),
@@ -45,33 +46,23 @@ class RoleSelectionScreen extends StatelessWidget {
                 alignment: WrapAlignment.center,
                 children: [
                   _buildRoleCard(
-                    title: "Administrator",
-                    subtitle: "Barcha sozlamalar va hisobotlar",
-                    icon: Icons.admin_panel_settings_rounded,
-                    color: const Color(0xFF3B82F6),
-                    onTap: () {
-                      pos.setDeviceRole("ADMIN");
-                      Get.to(() => const LoginPage());
-                    },
-                  ),
-                  _buildRoleCard(
-                    title: "Kassir",
-                    subtitle: "Sotuv va buyurtmalar boshqaruvi",
+                    title: "Kassa Terminali",
+                    subtitle: "Asosiy kompyuter yoki planshet (Admin parqi) orqali terminalni sozlash",
                     icon: Icons.point_of_sale_rounded,
-                    color: const Color(0xFFFF9500),
+                    color: const Color(0xFF3B82F6),
                     onTap: () {
                       pos.setDeviceRole("CASHIER");
                       Get.to(() => const LoginPage());
                     },
                   ),
                   _buildRoleCard(
-                    title: "Afitsiant",
-                    subtitle: "Stollar va buyurtmalarni qabul qilish",
-                    icon: Icons.restaurant_menu_rounded,
+                    title: "Ofitsiant / Telefon",
+                    subtitle: "Qurilmani QR-kod yordamida cafega ulab, shaxsiy pin kod bilan kirish",
+                    icon: Icons.qr_code_scanner_rounded,
                     color: const Color(0xFF10B981),
                     onTap: () {
                       pos.setDeviceRole("WAITER");
-                      Get.to(() => const LoginPage());
+                      Get.to(() => const QRScannerPage());
                     },
                   ),
                 ],
@@ -93,7 +84,8 @@ class RoleSelectionScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 280,
+        width: 300,
+        height: 240,
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -110,7 +102,7 @@ class RoleSelectionScreen extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 shape: BoxShape.circle,
@@ -143,3 +135,4 @@ class RoleSelectionScreen extends StatelessWidget {
     );
   }
 }
+

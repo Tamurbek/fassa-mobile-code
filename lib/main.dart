@@ -12,6 +12,7 @@ import 'presentation/pages/reports_screen.dart';
 import 'presentation/pages/auth/role_selection_screen.dart';
 import 'presentation/pages/auth/staff_selection_page.dart';
 import 'presentation/pages/auth/terminal_login_page.dart';
+import 'presentation/pages/auth/qr_scanner_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'logic/background_service.dart';
 import 'presentation/components/location_checker.dart';
@@ -67,7 +68,6 @@ class FastFoodApp extends StatelessWidget {
   }
 
   Widget _getInitialScreen() {
-    final storage = GetStorage();
     final pos = Get.find<POSController>();
     
     // 0. Check if device role is selected
@@ -77,17 +77,24 @@ class FastFoodApp extends StatelessWidget {
     
     // 1. Check if user is logged in
     if (pos.currentUser.value == null) {
-      // 1.5 Check if terminal is logged in
-      if (pos.currentTerminal.value != null) {
+      // 1.5 Check if terminal is logged in (CASHIER MODE)
+      if (pos.currentTerminal.value != null && pos.deviceRole.value == "CASHIER") {
         return const StaffSelectionPage();
       }
+      
+      // 1.6 Check if we are in WAITER MODE and have a scanned cafeId
+      if (pos.deviceRole.value == "WAITER") {
+        if (pos.waiterCafeId.value != null) {
+          return StaffSelectionPage(cafeId: pos.waiterCafeId.value, isFromTerminal: false);
+        } else {
+          return const QRScannerPage();
+        }
+      }
+      
       return const LoginPage();
     }
     
-    // 2. Refresh initial user data in controller if needed
-    // (This is already handled in POSController.onInit)
-
-    // 3. User is logged in, check PIN
+    // 2. User is logged in, check PIN
     if (pos.pinCode.value == null) {
       return const PinCodeScreen(isSettingNewPin: true);
     } else {
