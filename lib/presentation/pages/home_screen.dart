@@ -19,8 +19,13 @@ class HomeScreen extends StatelessWidget {
     final POSController pos = Get.find<POSController>();
     final bool isMobile = Responsive.isMobile(context);
 
-    return Obx(() => Stack(
-      children: [
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (didPop) pos.clearCurrentOrder();
+      },
+      child: Obx(() => Stack(
+        children: [
         Scaffold(
           backgroundColor: const Color(0xFFF8F9FB),
           body: Row(
@@ -63,7 +68,7 @@ class HomeScreen extends StatelessWidget {
         ),
         if (pos.isPrinting.value) const PrintingOverlay(),
       ],
-    ));
+    )));
   }
 
   Widget _buildTopBar(POSController pos, BuildContext context) {
@@ -79,7 +84,10 @@ class HomeScreen extends StatelessWidget {
         children: [
           if (Navigator.canPop(context)) ...[
             GestureDetector(
-              onTap: () => Get.back(),
+              onTap: () {
+                pos.clearCurrentOrder();
+                Get.back();
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
