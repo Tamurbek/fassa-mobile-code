@@ -271,6 +271,15 @@ class ApiService {
   }
 
   // Tables & Floor Plan
+  Future<List<dynamic>> getTableAreas() async {
+    try {
+      final response = await _dio.get('/table-areas');
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<dynamic>> getTables() async {
     try {
       final response = await _dio.get('/tables');

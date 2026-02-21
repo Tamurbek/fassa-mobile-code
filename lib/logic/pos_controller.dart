@@ -76,6 +76,13 @@ class POSController extends GetxController {
 
   var isOrdersTableView = false.obs;
 
+  var tableAreas = <String>["Zal", "Hovli", "Navis"].obs;
+  var tablesByArea = <String, List<String>>{
+    "Zal": List.generate(12, (index) => (index + 1).toString().padLeft(2, '0')),
+    "Hovli": List.generate(8, (index) => (index + 21).toString().padLeft(2, '0')),
+    "Navis": List.generate(6, (index) => (index + 41).toString().padLeft(2, '0')),
+  }.obs;
+
   var tablePositions = <String, Map<String, double>>{}.obs; // "Location-TableId": {"x": 100.0, "y": 200.0}
   var tableBackendIds = <String, String>{}; // "Location-TableId": "backend_uuid"
   var isEditMode = false.obs;
@@ -553,21 +560,57 @@ class POSController extends GetxController {
 
     // Fetch Tables & Floor Plan
     try {
-      final backendTables = await _api.getTables();
-      for (var t in backendTables) {
-        final String loc = t['location'] ?? "Zal";
-        final String tableNum = t['number'] ?? "01";
-        final String tableId = "$loc-$tableNum";
-        tableBackendIds[tableId] = t['id'].toString();
-        
-        if (t['x'] != null && t['y'] != null) {
-          tablePositions[tableId] = {
-            "x": (t['x'] as num).toDouble(),
-            "y": (t['y'] as num).toDouble()
-          };
-        }
+      final backendAreas = await _api.getTableAreas();
+      if (backendAreas.isNotEmpty) {
+        tableAreas.assignAll(backendAreas.map((a) => a['name'].toString()).toList());
       }
-      _storage.write('table_positions', Map.from(tablePositions));
+
+      final backendTables = await _api.getTables();
+      if (backendTables.isNotEmpty || backendAreas.isNotEmpty) {
+        Map<String, List<String>> tba = {};
+        for (var area in tableAreas) {
+           tba[area] = [];
+        }
+
+        for (var t in backendTables) {
+          final String loc = t['area'] ?? t['location'] ?? "Zal"; 
+          final String tableNum = t['number'] != null ? t['number'].toString() : "01";
+          final String tableId = "$loc-$tableNum";
+
+          if (!tba.containsKey(loc)) {
+            tba[loc] = [];
+            if (!tableAreas.contains(loc)) tableAreas.add(loc);
+          }
+          tba[loc]!.add(tableNum);
+          
+          tableBackendIds[tableId] = t['id'].toString();
+          
+          if (t['x'] != null && t['y'] != null) {
+            tablePositions[tableId] = {
+              "x": (t['x'] as num).toDouble(),
+              "y": (t['y'] as num).toDouble()
+            };
+          }
+        }
+        
+        // Ensure all areas are present in tba
+        for (var a in tableAreas) {
+            if (!tba.containsKey(a)) tba[a] = [];
+        }
+
+        // Sort table numbers if they represent numbers natively
+        tba.forEach((key, value) {
+          value.sort((a, b) {
+             int numA = int.tryParse(a) ?? 0;
+             int numB = int.tryParse(b) ?? 0;
+             if (numA != 0 && numB != 0) return numA.compareTo(numB);
+             return a.compareTo(b);
+          });
+        });
+
+        tablesByArea.assignAll(tba);
+        _storage.write('table_positions', Map.from(tablePositions));
+      }
     } catch (e) {
       print("Error fetching tables: $e");
     }
