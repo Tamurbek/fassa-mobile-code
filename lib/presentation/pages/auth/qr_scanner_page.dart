@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:get/get.dart';
 import '../../../data/services/api_service.dart';
+import 'staff_selection_page.dart';
 
 class QRScannerPage extends StatefulWidget {
   const QRScannerPage({super.key});
@@ -31,10 +32,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
               final List<Barcode> barcodes = capture.barcodes;
               for (final barcode in barcodes) {
                 final String? code = barcode.rawValue;
-                if (code != null && code.startsWith('http')) {
-                  _isScanned = true;
-                  _handleScannedUrl(code);
-                  break;
+                if (code != null) {
+                   _isScanned = true;
+                   _handleScannedData(code);
+                   break;
                 }
               }
             },
@@ -72,15 +73,36 @@ class _QRScannerPageState extends State<QRScannerPage> {
     );
   }
 
-  void _handleScannedUrl(String url) {
-    // Expected format: https://domain.com
+  void _handleScannedData(String data) {
+    // Format: URL|CAFE_ID or just URL
+    String url = data;
+    String? cafeId;
+    
+    if (data.contains('|')) {
+      final parts = data.split('|');
+      url = parts[0];
+      cafeId = parts[1];
+    }
+
+    if (!url.startsWith('http')) {
+      Get.snackbar('Xato', 'Noto\'g\'ri QR kod formatini', backgroundColor: Colors.red, colorText: Colors.white);
+      _isScanned = false;
+      return;
+    }
+
     ApiService().setBaseUrl(url);
-    Get.back();
+    
     Get.snackbar(
       'Muvaffaqiyatli',
       'Tizimga ulanish o\'rnatildi',
       backgroundColor: Colors.green,
       colorText: Colors.white,
     );
+
+    if (cafeId != null && cafeId.isNotEmpty) {
+      Get.off(() => StaffSelectionPage(cafeId: cafeId, isFromTerminal: false));
+    } else {
+      Get.back();
+    }
   }
 }

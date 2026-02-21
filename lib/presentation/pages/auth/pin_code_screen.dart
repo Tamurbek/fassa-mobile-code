@@ -256,7 +256,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
                 border: Border.all(color: Colors.grey.shade200),
               ),
               child: QrImageView(
-                data: ApiService().currentBaseUrl,
+                data: "${ApiService().currentBaseUrl}|${pos.currentTerminal.value?['cafe_id'] ?? ''}",
                 version: QrVersions.auto,
                 size: 200.0,
               ),

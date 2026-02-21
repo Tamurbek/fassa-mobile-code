@@ -5,7 +5,14 @@ import '../../../logic/pos_controller.dart';
 import 'pin_code_screen.dart';
 
 class StaffSelectionPage extends StatefulWidget {
-  const StaffSelectionPage({super.key});
+  final String? cafeId;
+  final bool isFromTerminal;
+  
+  const StaffSelectionPage({
+    super.key, 
+    this.cafeId,
+    this.isFromTerminal = true,
+  });
 
   @override
   State<StaffSelectionPage> createState() => _StaffSelectionPageState();
@@ -23,7 +30,13 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
 
   Future<void> _fetchStaff() async {
     try {
-      final staff = await ApiService().getTerminalStaff();
+      final List<dynamic> staff;
+      if (widget.cafeId != null) {
+        staff = await ApiService().getStaffPublic(widget.cafeId!);
+      } else {
+        staff = await ApiService().getTerminalStaff();
+      }
+      
       setState(() {
         _staff = staff;
         _isLoading = false;
@@ -35,10 +48,9 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
   }
 
   void _selectStaff(dynamic staffMember) {
-    // Show PIN screen for the selected staff member
     Get.to(() => PinCodeScreen(
       selectedUser: staffMember,
-      isFromTerminal: true,
+      isFromTerminal: true, // PIN login is the same for both
     ));
   }
 
@@ -54,8 +66,11 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.red),
             onPressed: () {
+              if (widget.isFromTerminal) {
+                 ApiService().clearTerminalToken();
+              }
               ApiService().setToken(null);
-              Get.offAllNamed('/login'); // Assuming route exists
+              Get.offAllNamed('/login');
             },
           ),
         ],
@@ -138,7 +153,7 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
             ),
             const SizedBox(height: 4),
             Text(
-              role,
+              role.toString(),
               style: TextStyle(fontSize: 13, color: roleColor, fontWeight: FontWeight.w600),
             ),
           ],

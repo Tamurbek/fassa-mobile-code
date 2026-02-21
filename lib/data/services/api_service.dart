@@ -125,6 +125,15 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getStaffPublic(String cafeId) async {
+    try {
+      final response = await _dio.get('/auth/staff-public/$cafeId');
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> updateLocation(double lat, double lng) async {
     try {
       final response = await _dio.post('/auth/location', data: {
