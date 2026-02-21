@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'dart:async';
+import 'package:geolocator/geolocator.dart';
 import '../data/models/food_item.dart';
 import '../data/models/printer_model.dart';
 import '../data/models/preparation_area_model.dart';
@@ -98,6 +99,8 @@ class POSController extends GetxController {
   var isVip = false.obs;
   var subscriptionEndDate = RxnString();  // ISO string or null
   Timer? _subscriptionTimer;
+  Timer? _locationTimer;
+  var isWithinGeofence = true.obs;
 
   // Role helpers
   bool get isAdmin => currentUser.value?['role'] == "CAFE_ADMIN" || currentUser.value?['role'] == "SYSTEM_ADMIN";
@@ -114,11 +117,13 @@ class POSController extends GetxController {
     _setupSocketListeners();
     _update.checkForUpdate();
     _startSubscriptionCheck();
+    _initLocationTracking();
   }
 
   @override
   void onClose() {
     _subscriptionTimer?.cancel();
+    _locationTimer?.cancel();
     super.onClose();
   }
 
@@ -129,6 +134,42 @@ class POSController extends GetxController {
     _subscriptionTimer = Timer.periodic(const Duration(minutes: 30), (_) {
       if (currentUser.value != null) {
         checkSubscription(showWarning: false);
+      }
+    });
+  }
+
+  void _initLocationTracking() {
+    _locationTimer?.cancel();
+    _locationTimer = Timer.periodic(const Duration(minutes: 2), (timer) async {
+      if (currentUser.value == null) return;
+      
+      try {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+          // No permission, just skip
+          return;
+        }
+
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.low
+        );
+
+        final response = await _api.updateLocation(position.latitude, position.longitude);
+        if (response['status'] == 'warning') {
+           isWithinGeofence.value = false;
+           Get.snackbar(
+             "Diqqat", 
+             response['message'],
+             backgroundColor: Colors.orange,
+             colorText: Colors.white,
+             snackPosition: SnackPosition.BOTTOM,
+             duration: const Duration(seconds: 10)
+           );
+        } else {
+           isWithinGeofence.value = true;
+        }
+      } catch (e) {
+        print("Location update error: $e");
       }
     });
   }
@@ -935,15 +976,38 @@ class POSController extends GetxController {
     }
   }
 
-  void logout() {
+  void logout({bool forced = false}) {
     setCurrentUser(null);
     _api.setToken(null);
     isPinAuthenticated.value = false;
     Get.offAllNamed('/login');
+    if (forced) {
+       Get.snackbar(
+         "Tizimdan chiqildi", 
+         "Hisobingizga boshqa qurilmadan kirildi",
+         backgroundColor: Colors.red,
+         colorText: Colors.white,
+         snackPosition: SnackPosition.TOP,
+         duration: const Duration(seconds: 5)
+       );
+    }
   }
 
   Future<bool> submitOrder({bool isPaid = false}) async {
     if (currentOrder.isEmpty) return false;
+
+    // --- Geofencing Check ---
+    if (!isWithinGeofence.value && currentUser.value?['role'] == "WAITER") {
+      Get.snackbar(
+        "Diqqat", 
+        "Siz ish joyidan tashqaridasiz. Buyurtma olish uchun belgilangan hududga qayting.",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 5)
+      );
+      return false;
+    }
 
     if (editingOrderId.value != null) {
       return await updateExistingOrder(isPaid: isPaid);
@@ -1040,6 +1104,19 @@ class POSController extends GetxController {
 
   Future<bool> updateExistingOrder({bool isPaid = false}) async {
     if (editingOrderId.value == null) return false;
+
+    // --- Geofencing Check ---
+    if (!isWithinGeofence.value && currentUser.value?['role'] == "WAITER") {
+      Get.snackbar(
+        "Diqqat", 
+        "Siz ish joyidan tashqaridasiz. Buyurtmani tahrirlash uchun belgilangan hududga qayting.",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 5)
+      );
+      return false;
+    }
     
     try {
       // 1. Update status and items on backend

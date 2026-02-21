@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:get/get.dart' as g;
+import '../../logic/pos_controller.dart' as logic;
 
 class ApiService {
   static final String baseUrl = 'https://cafe-backend-code-production.up.railway.app'; 
@@ -25,6 +27,19 @@ class ApiService {
         }
         return handler.next(options);
       },
+      onError: (DioException e, handler) {
+        if (e.response?.statusCode == 401) {
+          // Check if it's a device change forced logout
+          final detail = e.response?.data?['detail'];
+          if (detail == "Qurilma o'zgargani sababli tizimdan chiqdingiz") {
+             // Notify controller to logout
+             try {
+                g.Get.find<logic.POSController>().logout(forced: true);
+             } catch (_) {}
+          }
+        }
+        return handler.next(e);
+      }
     ));
   }
 
@@ -34,14 +49,28 @@ class ApiService {
   }
 
   // Auth
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password, {String? deviceId, String? deviceName}) async {
     try {
       final response = await _dio.post('/auth/login', data: {
         'email': email,
         'password': password,
+        'device_id': deviceId,
+        'device_name': deviceName,
       });
       _token = response.data['access_token'];
       _storage.write('access_token', _token);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateLocation(double lat, double lng) async {
+    try {
+      final response = await _dio.post('/auth/location', data: {
+        'lat': lat,
+        'lng': lng,
+      });
       return response.data;
     } catch (e) {
       rethrow;

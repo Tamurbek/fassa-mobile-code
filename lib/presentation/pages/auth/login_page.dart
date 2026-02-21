@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../data/services/api_service.dart';
 import '../../../logic/pos_controller.dart';
 import '../../../theme/app_colors.dart';
@@ -31,11 +34,35 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     setState(() => _isLoading = true);
+    
+    String deviceId = "unknown_device";
+    String deviceName = "Unknown Device";
+    
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      if (kIsWeb) {
+        final webInfo = await deviceInfo.webBrowserInfo;
+        deviceId = webInfo.userAgent ?? "web_browser";
+        deviceName = webInfo.browserName.name;
+      } else if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        deviceId = androidInfo.id;
+        deviceName = "${androidInfo.brand} ${androidInfo.model}";
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceId = iosInfo.identifierForVendor ?? "ios_device";
+        deviceName = iosInfo.name;
+      }
+    } catch (e) {
+      print("Error getting device info: $e");
+    }
 
     try {
       final response = await ApiService().login(
         _emailController.text.trim(),
         _passwordController.text,
+        deviceId: deviceId,
+        deviceName: deviceName,
       );
 
       // Save user to controller
