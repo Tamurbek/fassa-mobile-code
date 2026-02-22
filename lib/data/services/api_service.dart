@@ -116,6 +116,30 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getQRToken(String userId) async {
+    try {
+      final response = await _dio.get('/auth/qr-token/$userId');
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> loginWithQR(String qrToken, {String? deviceId, String? deviceName}) async {
+    try {
+      final response = await _dio.post('/auth/login/qr', data: {
+        'token': qrToken,
+        'device_id': deviceId,
+        'device_name': deviceName,
+      });
+      _token = response.data['access_token'];
+      _storage.write('access_token', _token);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<dynamic>> getTerminalStaff() async {
     try {
       // Use terminal token specifically for this request if available

@@ -576,6 +576,37 @@ class POSController extends GetxController {
     }
   }
 
+  Future<String?> getStaffQRToken(String userId) async {
+    try {
+      final data = await _api.getQRToken(userId);
+      return data['qr_token'];
+    } catch (e) {
+      print("Error getting QR token: $e");
+      return null;
+    }
+  }
+
+  Future<bool> loginWithQR(String qrToken) async {
+    try {
+      String deviceId = "mobile_${DateTime.now().millisecondsSinceEpoch}";
+      if (Platform.isAndroid || Platform.isIOS) {
+         // Optionally get real device id
+      }
+      
+      final data = await _api.loginWithQR(qrToken, deviceId: deviceId, deviceName: Platform.operatingSystem);
+      currentUser.value = data['user'];
+      _storage.write('user', data['user']);
+      _storage.write('access_token', data['access_token']);
+      
+      _socket.setCafeId(cafeId);
+      await _fetchBackendData();
+      return true;
+    } catch (e) {
+      print("QR Login Error: $e");
+      return false;
+    }
+  }
+
   Future<void> _fetchBackendData() async {
     if (currentUser.value == null) return;
     

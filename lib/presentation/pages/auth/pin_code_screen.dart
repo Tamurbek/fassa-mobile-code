@@ -28,6 +28,18 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
   String _enteredPin = "";
   String _firstPin = ""; 
   bool _isConfirming = false;
+  late bool isSettingNewPin;
+
+  @override
+  void initState() {
+    super.initState();
+    isSettingNewPin = widget.isSettingNewPin;
+    if (Get.arguments != null && Get.arguments is Map) {
+      if (Get.arguments['isSettingNewPin'] != null) {
+        isSettingNewPin = Get.arguments['isSettingNewPin'];
+      }
+    }
+  }
 
   void _onDigitPress(String digit) {
     if (_enteredPin.length < 4) {
@@ -73,7 +85,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
       return;
     }
 
-    if (widget.isSettingNewPin) {
+    if (isSettingNewPin) {
       if (!_isConfirming) {
         setState(() {
           _firstPin = _enteredPin;
@@ -111,7 +123,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String titleText = widget.isSettingNewPin 
+    String titleText = isSettingNewPin 
       ? (_isConfirming ? "confirm_pin".tr : "set_new_pin".tr) 
       : "enter_pin".tr;
     
@@ -119,7 +131,7 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
       titleText = widget.selectedUser['name'];
     }
 
-    String subtitleText = widget.isSettingNewPin
+    String subtitleText = isSettingNewPin
       ? (_isConfirming ? "confirm_pin_msg".tr : "set_pin_msg".tr)
       : "pin_subtitle".tr;
 

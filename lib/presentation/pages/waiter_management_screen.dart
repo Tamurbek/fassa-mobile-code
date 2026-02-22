@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import '../../data/services/api_service.dart';
 import '../../theme/app_colors.dart';
 import '../../logic/pos_controller.dart';
 
@@ -60,6 +62,12 @@ class StaffManagementScreen extends StatelessWidget {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (member['role'] == "WAITER")
+                      IconButton(
+                        icon: const Icon(Icons.qr_code_2_rounded, color: AppColors.primary, size: 24),
+                        onPressed: () => _showQRDialog(context, pos, member),
+                        tooltip: "QR kod orqali telefonni ulash",
+                      ),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, color: Colors.blue, size: 20),
                       onPressed: () => _showStaffDialog(context, pos, member: member),
@@ -79,6 +87,64 @@ class StaffManagementScreen extends StatelessWidget {
         onPressed: () => _showStaffDialog(context, pos),
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  void _showQRDialog(BuildContext context, POSController pos, Map<String, dynamic> member) async {
+    Get.dialog(
+      const Center(child: CircularProgressIndicator()),
+      barrierDismissible: false,
+    );
+
+    final token = await pos.getStaffQRToken(member['id']);
+    Get.back(); // Close loading
+
+    if (token == null) {
+      Get.snackbar("Xato", "QR kod yaratib bo'lmadi", backgroundColor: Colors.red, colorText: Colors.white);
+      return;
+    }
+
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(member['name'], textAlign: TextAlign.center, 
+          style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Telefoningizdan ushbu QR kodni skanerlang", 
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+              ),
+              child: QrImageView(
+                data: "${ApiService().currentBaseUrl}|$token",
+                version: QrVersions.auto,
+                size: 200.0,
+                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.circle, color: Colors.black),
+                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.circle, color: Colors.black),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text("Bu kod 5 daqiqa davomida amal qiladi", 
+              style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.w500)),
+          ],
+        ),
+        actions: [
+          Center(
+            child: TextButton(
+              onPressed: () => Get.back(), 
+              child: const Text("Yopish", style: TextStyle(fontWeight: FontWeight.bold))
+            ),
+          )
+        ],
       ),
     );
   }

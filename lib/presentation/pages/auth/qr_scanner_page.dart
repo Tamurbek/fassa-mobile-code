@@ -74,8 +74,50 @@ class _QRScannerPageState extends State<QRScannerPage> {
     );
   }
 
-  void _handleScannedData(String data) {
-    // Format: URL|CAFE_ID or just URL
+  void _handleScannedData(String data) async {
+    String? token;
+    String? overrideUrl;
+
+    if (data.contains('|')) {
+      final parts = data.split('|');
+      if (parts.length >= 2) {
+        overrideUrl = parts[0];
+        final secondPart = parts[1];
+        if (secondPart.contains('.')) {
+          token = secondPart;
+        }
+      }
+    } else if (data.contains('.')) {
+      token = data;
+    }
+
+    // 1. If it's a QR Login Token
+    if (token != null) {
+       Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
+       
+       if (overrideUrl != null && overrideUrl.startsWith('http')) {
+         ApiService().setBaseUrl(overrideUrl);
+       }
+
+       final success = await Get.find<POSController>().loginWithQR(token);
+       Get.back(); // Close loading
+
+       if (success) {
+         Get.snackbar('Muvaffaqiyatli', 'Tizimga kirdingiz', backgroundColor: Colors.green, colorText: Colors.white);
+         final pos = Get.find<POSController>();
+         if (pos.pinCode.value == null) {
+           Get.offAllNamed('/pin', arguments: {'isSettingNewPin': true});
+         } else {
+           Get.offAllNamed('/main');
+         }
+       } else {
+         Get.snackbar('Xato', 'QR kod yaroqsiz yoki muddati o\'tgan', backgroundColor: Colors.red, colorText: Colors.white);
+         _isScanned = false;
+       }
+       return;
+    }
+
+    // 2. Terminal connection logic (Original)
     String url = data;
     String? cafeId;
     
@@ -86,7 +128,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
     }
 
     if (!url.startsWith('http')) {
-      Get.snackbar('Xato', 'Noto\'g\'ri QR kod formatini', backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar('Xato', 'Noto\'g\'ri QR kod formati', backgroundColor: Colors.red, colorText: Colors.white);
       _isScanned = false;
       return;
     }
