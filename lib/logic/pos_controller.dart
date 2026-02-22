@@ -1139,7 +1139,7 @@ class POSController extends GetxController {
     _storage.remove('table_properties');
 
     if (deviceRole.value == null) {
-      Get.offAllNamed('/');
+      Get.offAllNamed('/role-selection');
     } else if (wasTerminal) {
       Get.offAllNamed('/staff-selection');
     } else {

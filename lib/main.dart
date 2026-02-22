@@ -55,6 +55,7 @@ class FastFoodApp extends StatelessWidget {
       builder: (context, child) => LocationChecker(child: child!),
       home: _getInitialScreen(),
       getPages: [
+        GetPage(name: '/', page: () => const RoleSelectionScreen()),
         GetPage(name: '/login', page: () => const LoginPage()),
         GetPage(name: '/pin', page: () => const PinCodeScreen()),
         GetPage(name: '/main', page: () => const MainNavigationScreen()),

@@ -47,9 +47,17 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
         });
       }
     } catch (e) {
+      // Don't show error if we are logging out or unbinding
+      if (e is DioException && e.response?.statusCode == 401) {
+        print("Unauthorized to fetch staff (expected if logging out)");
+        return;
+      }
+      
       print("Error fetching staff: $e");
-      Get.snackbar('Xatolik', 'Xodimlarni yuklab bo\'lmadi: $e', 
-        backgroundColor: Colors.red, colorText: Colors.white);
+      if (mounted && Get.currentRoute == '/staff-selection') {
+        Get.snackbar('Xatolik', 'Xodimlarni yuklab bo\'lmadi: $e', 
+          backgroundColor: Colors.red, colorText: Colors.white);
+      }
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -225,16 +233,16 @@ class _StaffSelectionPageState extends State<StaffSelectionPage> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.red),
             onPressed: () {
+              final pos = Get.find<POSController>();
+              
               if (widget.isFromTerminal) {
                  ApiService().clearTerminalToken();
               }
-              ApiService().setToken(null);
               
-              final pos = Get.find<POSController>();
               pos.setDeviceRole(null);
               pos.setWaiterCafeId(null);
               pos.setCurrentTerminal(null);
-              pos.logout(forced: false);
+              pos.logout();
             },
           ),
         ],
