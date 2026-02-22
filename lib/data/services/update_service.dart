@@ -1,19 +1,22 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide Response;
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import '../services/api_service.dart';
 import '../../theme/app_colors.dart';
 
 class UpdateService {
   final ApiService _api = ApiService();
+  final Dio _dio = Dio();
 
   Future<void> checkForUpdate() async {
     try {
       final updateInfo = await _api.getLatestVersion();
       final packageInfo = await PackageInfo.fromPlatform();
       
-      final currentVersion = packageInfo.version;
       final currentBuild = int.parse(packageInfo.buildNumber);
       
       final latestVersion = updateInfo['latest_version'] ?? "1.0.0";
@@ -22,8 +25,8 @@ class UpdateService {
       if (latestBuild > currentBuild) {
         _showUpdateDialog(
           version: latestVersion,
-          notes: updateInfo['release_notes'],
-          url: updateInfo['url'],
+          notes: updateInfo['release_notes'] ?? "",
+          url: updateInfo['url'] ?? "",
           critical: updateInfo['critical'] ?? false,
         );
       }
@@ -72,7 +75,10 @@ class UpdateService {
                 child: const Text("Keyinroq", style: TextStyle(color: Colors.grey)),
               ),
             ElevatedButton(
-              onPressed: () => _launchURL(url),
+              onPressed: () {
+                Get.back();
+                _downloadAndInstall(url, version);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -86,13 +92,56 @@ class UpdateService {
     );
   }
 
-  Future<void> _launchURL(String url) async {
+  Future<void> _downloadAndInstall(String url, String version) async {
     String absoluteUrl = url.startsWith('http') 
         ? url 
         : "${ApiService.baseUrl}$url";
-        
-    final Uri uri = Uri.parse(absoluteUrl);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+
+    try {
+      final Directory tempDir = await getTemporaryDirectory();
+      final String savePath = "${tempDir.path}/FastSalePOS_v$version.apk";
+
+      var progress = 0.0.obs;
+
+      Get.dialog(
+        Obx(() => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text("Yangilanish yuklanmoqda..."),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LinearProgressIndicator(
+                value: progress.value,
+                backgroundColor: Colors.grey[200],
+                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              ),
+              const SizedBox(height: 16),
+              Text("${(progress.value * 100).toStringAsFixed(0)}%"),
+            ],
+          ),
+        )),
+        barrierDismissible: false,
+      );
+
+      await _dio.download(
+        absoluteUrl,
+        savePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            progress.value = received / total;
+          }
+        },
+      );
+
+      Get.back(); // Close progress dialog
+
+      final result = await OpenFilex.open(savePath);
+      if (result.type != ResultType.done) {
+        Get.snackbar("Xato", "APK faylni ochib bo'lmadi: ${result.message}");
+      }
+    } catch (e) {
+      Get.back(); // Close progress dialog
+      print("Download error: $e");
       Get.snackbar("Xato", "Yangilanishni yuklab bo'lmadi");
     }
   }
