@@ -611,6 +611,24 @@ class POSController extends GetxController {
     }
   }
 
+  Future<void> refreshData({bool showMessage = true}) async {
+    try {
+      await _fetchBackendData();
+      if (showMessage) {
+        Get.snackbar(
+          "Yangilandi", 
+          "Ma'lumotlar muvaffaqiyatli yangilandi",
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+      }
+    } catch (e) {
+      print("Refresh error: $e");
+    }
+  }
+
   Future<void> _fetchBackendData() async {
     if (currentUser.value == null) return;
     
