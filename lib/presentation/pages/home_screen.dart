@@ -417,14 +417,40 @@ class HomeScreen extends StatelessWidget {
             child: Icon(Icons.person, color: Color(0xFFFF9500)),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("operator".tr, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12, fontWeight: FontWeight.bold)),
-              Text((pos.currentUser.value?['name'] as String?) ?? "Unknown", 
-                style: const TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.w800, fontSize: 16)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("operator".tr, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12, fontWeight: FontWeight.bold)),
+                Text((pos.currentUser.value?['name'] as String?) ?? "Unknown", 
+                  style: const TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.w800, fontSize: 16)),
+              ],
+            ),
           ),
+          if (pos.isAdmin || pos.isCashier)
+            IconButton(
+              icon: const Icon(Icons.delete_forever_rounded, color: Color(0xFFEF4444), size: 24),
+              onPressed: () {
+                Get.dialog(
+                  AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    title: Text("cancel_order_confirm_title".tr),
+                    content: Text("cancel_order_confirm_msg".tr),
+                    actions: [
+                      TextButton(onPressed: () => Get.back(), child: Text("back".tr)),
+                      TextButton(
+                        onPressed: () {
+                          pos.clearCurrentOrder();
+                          Get.back();
+                        }, 
+                        child: Text("yes_cancel".tr, style: const TextStyle(color: Colors.red))
+                      ),
+                    ],
+                  )
+                );
+              },
+              tooltip: "Bekor",
+            ),
         ],
       ),
     );
@@ -606,9 +632,9 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 24),
           Row(
             children: [
-              // Kitchen Print
+              // Kitchen Print (Always visible)
               Expanded(
-                child: _buildActionBtn(Icons.soup_kitchen_rounded, const Color(0xFF3B82F6), () async {
+                child: _buildActionBtn(Icons.soup_kitchen_rounded, "Oshxona", const Color(0xFF3B82F6), () async {
                   if (!pos.hasNewItems) {
                     Get.snackbar("Eslatma", "Oshxonaga yuborish uchun yangi mahsulot qo'shilmadi", 
                       backgroundColor: Colors.orange, colorText: Colors.white);
@@ -621,9 +647,9 @@ class HomeScreen extends StatelessWidget {
                 }, tooltip: "kitchen_print_sidebar".tr),
               ),
               const SizedBox(width: 8),
-              // Receipt Print
+              // Receipt Print (Always visible)
               Expanded(
-                child: _buildActionBtn(Icons.receipt_long_rounded, const Color(0xFF64748B), () {
+                child: _buildActionBtn(Icons.receipt_long_rounded, "Hisob", const Color(0xFF64748B), () {
                   final tempOrder = {
                     "id": pos.editingOrderId.value ?? "NEW",
                     "table": pos.selectedTable.value.isNotEmpty ? pos.selectedTable.value : "-",
@@ -639,39 +665,18 @@ class HomeScreen extends StatelessWidget {
                   pos.printOrder(tempOrder, receiptTitle: "HISOB CHEKI");
                 }, tooltip: "Hisob chekini chiqarish"),
               ),
-              const SizedBox(width: 8),
-              // Pay & Finish
-              Expanded(
-                child: _buildActionBtn(Icons.payments_rounded, const Color(0xFFFF9500), () async {
-                  bool success = await pos.submitOrder(isPaid: true);
-                  if (success) {
-                    Get.offAll(() => const MainNavigationScreen());
-                  }
-                }, tooltip: "pay_finish_sidebar".tr),
-              ),
-              const SizedBox(width: 8),
-              // Cancel
-              Expanded(
-                child: _buildActionBtn(Icons.delete_forever_rounded, const Color(0xFFEF4444), () {
-                  Get.dialog(
-                    AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      title: Text("cancel_order_confirm_title".tr),
-                      content: Text("cancel_order_confirm_msg".tr),
-                      actions: [
-                        TextButton(onPressed: () => Get.back(), child: Text("back".tr)),
-                        TextButton(
-                          onPressed: () {
-                            pos.clearCurrentOrder();
-                            Get.back();
-                          }, 
-                          child: Text("yes_cancel".tr, style: const TextStyle(color: Colors.red))
-                        ),
-                      ],
-                    )
-                  );
-                }, tooltip: "cancel_order".tr),
-              ),
+              // Pay & Finish (Admin/Cashier only)
+              if (pos.isAdmin || pos.isCashier) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildActionBtn(Icons.payments_rounded, "To`lov", const Color(0xFFFF9500), () async {
+                    bool success = await pos.submitOrder(isPaid: true);
+                    if (success) {
+                      Get.offAll(() => const MainNavigationScreen());
+                    }
+                  }, tooltip: "pay_finish_sidebar".tr),
+                ),
+              ],
             ],
           ),
         ],
@@ -679,26 +684,38 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionBtn(IconData icon, Color color, VoidCallback onTap, {String? tooltip}) {
-    return Tooltip(
-      message: tooltip ?? "",
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Center(
-              child: Icon(icon, color: Colors.white, size: 24),
+  Widget _buildActionBtn(IconData icon, String label, Color color, VoidCallback onTap, {String? tooltip}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Tooltip(
+          message: tooltip ?? label,
+          child: Container(
+            height: 56,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(16),
+                child: Center(
+                  child: Icon(icon, color: Colors.white, size: 24),
+                ),
+              ),
             ),
           ),
         ),
-      ),
+        const SizedBox(height: 6),
+        Text(
+          label, 
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6B7280)),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
