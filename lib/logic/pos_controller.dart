@@ -905,6 +905,11 @@ class POSController extends GetxController {
       }
       lockedTables.refresh();
     });
+
+    _socket.onDataUpdated((data) {
+      print("Socket: Data update notification received: $data");
+      refreshData(showMessage: false); // Silent refresh
+    });
   }
 
   double get subtotal => currentOrder.fold(0, (sum, item) => sum + (item['item'].price * item['quantity']));

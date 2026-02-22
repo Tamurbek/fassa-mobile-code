@@ -52,6 +52,10 @@ class SocketService {
     socket.on('orderStatusUpdated', (data) => callback(data));
   }
 
+  void onDataUpdated(Function(dynamic) callback) {
+    socket.on('dataUpdated', (data) => callback(data));
+  }
+
   void emitPrintRequest(Map<String, dynamic> data) {
     if (_cafeId != null) {
       data['cafe_id'] = _cafeId;
