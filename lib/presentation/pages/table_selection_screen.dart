@@ -20,7 +20,7 @@ class _TableSelectionScreenState extends State<TableSelectionScreen> {
     final bool isMobile = Responsive.isMobile(context);
 
     return Obx(() {
-      final List<String> locations = pos.tableAreas.isEmpty ? ["Zal"] : pos.tableAreas.toList();
+      final List<String> locations = pos.tableAreas.toList();
       
       return DefaultTabController(
         length: locations.length,

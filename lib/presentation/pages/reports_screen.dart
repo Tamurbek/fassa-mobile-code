@@ -134,10 +134,10 @@ class ReportsScreen extends StatelessWidget {
           spacing: 20,
           runSpacing: 20,
           children: [
-            _buildStatCard("today_revenue".tr, todayRevenue, Get.find<POSController>().currencySymbol, 12.5, Colors.orange, cardWidth),
-            _buildStatCard("order_count".tr, orderCount.toDouble(), "items".tr, 5.2, Colors.blue, cardWidth, isInteger: true),
-            _buildStatCard("average_bill".tr, avgBill, Get.find<POSController>().currencySymbol, 2.1, Colors.green, cardWidth),
-            _buildStatCard("total_sales".tr, totalRevenue, Get.find<POSController>().currencySymbol, 8.4, Colors.red, cardWidth),
+            _buildStatCard("today_revenue".tr, todayRevenue, Get.find<POSController>().currencySymbol, 0.0, Colors.orange, cardWidth),
+            _buildStatCard("order_count".tr, orderCount.toDouble(), "items".tr, 0.0, Colors.blue, cardWidth, isInteger: true),
+            _buildStatCard("average_bill".tr, avgBill, Get.find<POSController>().currencySymbol, 0.0, Colors.green, cardWidth),
+            _buildStatCard("total_sales".tr, totalRevenue, Get.find<POSController>().currencySymbol, 0.0, Colors.red, cardWidth),
           ],
         );
       }
@@ -167,8 +167,8 @@ class ReportsScreen extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.trending_up, size: 14, color: color),
-                    const SizedBox(width: 4),
+                    if (percent > 0) Icon(Icons.trending_up, size: 14, color: color),
+                    if (percent > 0) const SizedBox(width: 4),
                     Text("$percent%", style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
                   ],
                 ),
@@ -298,7 +298,7 @@ class ReportsScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text("active_session_header".tr, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF9CA3AF), letterSpacing: 0.5)),
-              Text("${"last_update".tr}: 08:00 (6s 30m)", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text("${"last_update".tr}: ${DateFormat('HH:mm').format(DateTime.now())}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
           const Spacer(),
@@ -307,7 +307,7 @@ class ReportsScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text("cash_status_header".tr, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF9CA3AF), letterSpacing: 0.5)),
-              Text("1,840,000 ${Get.find<POSController>().currencySymbol} ${"cash_label".tr}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text("${NumberFormat("#,###", "uz_UZ").format(todayRevenue)} ${Get.find<POSController>().currencySymbol} ${"cash_label".tr}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
           const SizedBox(width: 24),

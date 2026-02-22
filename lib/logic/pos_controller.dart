@@ -84,12 +84,8 @@ class POSController extends GetxController {
 
   var isOrdersTableView = false.obs;
 
-  var tableAreas = <String>["Zal", "Hovli", "Navis"].obs;
-  var tablesByArea = <String, List<String>>{
-    "Zal": List.generate(12, (index) => (index + 1).toString().padLeft(2, '0')),
-    "Hovli": List.generate(8, (index) => (index + 21).toString().padLeft(2, '0')),
-    "Navis": List.generate(6, (index) => (index + 41).toString().padLeft(2, '0')),
-  }.obs;
+  var tableAreas = <String>[].obs;
+  var tablesByArea = <String, List<String>>{}.obs;
 
   var tableAreaBackendIds = <String, String>{}; // "Zal": "area_uuid"
   var tableAreaDetails = <String, Map<String, dynamic>>{}.obs; // "Zal": {"width_m": 12.0, "height_m": 8.0}
@@ -351,14 +347,14 @@ class POSController extends GetxController {
 
     printerPaperSize.value = _storage.read('printer_paper_size') ?? "80mm";
     autoPrintReceipt.value = _storage.read('auto_print_receipt') ?? false;
-    restaurantName.value = _storage.read('restaurant_name') ?? "Fast Food Pro";
-    restaurantAddress.value = _storage.read('restaurant_address') ?? "Tashkent, Uzbekistan";
-    restaurantPhone.value = _storage.read('restaurant_phone') ?? "+998 90 123 45 67";
+    restaurantName.value = _storage.read('restaurant_name') ?? "";
+    restaurantAddress.value = _storage.read('restaurant_address') ?? "";
+    restaurantPhone.value = _storage.read('restaurant_phone') ?? "";
     restaurantLogo.value = _storage.read('restaurant_logo') ?? "";
     currency.value = _storage.read('currency') ?? "UZS";
-    serviceFeeDineIn.value = _storage.read('service_fee_dine_in') ?? 10.0;
+    serviceFeeDineIn.value = _storage.read('service_fee_dine_in') ?? 0.0;
     serviceFeeTakeaway.value = _storage.read('service_fee_takeaway') ?? 0.0;
-    serviceFeeDelivery.value = _storage.read('service_fee_delivery') ?? 3000.0;
+    serviceFeeDelivery.value = _storage.read('service_fee_delivery') ?? 0.0;
     
     receiptStyle.value = _storage.read('receipt_style') ?? "STANDARD";
     receiptHeader.value = _storage.read('receipt_header') ?? "";

@@ -120,10 +120,10 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(width: 16),
           ],
           if (!isMobile) ...[
-            const Text(
-              "FAST FOOD PRO",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFFFF9500), letterSpacing: -0.5),
-            ),
+            Obx(() => Text(
+              pos.restaurantName.value.isEmpty ? "FAST FOOD PRO" : pos.restaurantName.value.toUpperCase(),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFFF9500), letterSpacing: -0.5),
+            )),
             const SizedBox(width: 40),
           ],
           Expanded(
@@ -169,13 +169,22 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildCategories(POSController pos, BuildContext context) {
-    final List<Map<String, dynamic>> catItems = [
-      {"name": "All", "label": "all".tr, "icon": Icons.grid_view_rounded},
-      {"name": "Lavash", "label": "Lavash", "icon": Icons.local_fire_department_rounded},
-      {"name": "Burger", "label": "burger".tr, "icon": Icons.lunch_dining_rounded},
-      {"name": "Ichimliklar", "label": "drinks".tr, "icon": Icons.local_drink_rounded},
-      {"name": "Gazaklar", "label": "Gazaklar", "icon": Icons.bakery_dining_rounded},
-    ];
+    final List<Map<String, dynamic>> catItems = pos.categories.map((cat) {
+      IconData icon = Icons.grid_view_rounded;
+      final name = cat.toLowerCase();
+      if (name.contains('burger')) icon = Icons.lunch_dining_rounded;
+      if (name.contains('drink') || name.contains('ichimlik')) icon = Icons.local_drink_rounded;
+      if (name.contains('pizza') || name.contains('pitsa')) icon = Icons.local_pizza_rounded;
+      if (name.contains('lavash')) icon = Icons.local_fire_department_rounded;
+      if (name.contains('salat') || name.contains('salad')) icon = Icons.eco_rounded;
+      if (name.contains('desert') || name.contains('dessert')) icon = Icons.cake_rounded;
+      
+      return {
+        "name": cat,
+        "label": cat == "All" ? "all".tr : cat,
+        "icon": icon
+      };
+    }).toList();
 
     return Container(
       height: 56,
