@@ -80,7 +80,21 @@ class POSController extends POSControllerState with
 
     var storedLocs = storage.read('table_positions');
     if (storedLocs != null) {
-      tablePositions.assignAll(Map<String, Map<String, double>>.from(storedLocs));
+      try {
+        Map<String, Map<String, double>> parsedLocs = {};
+        (storedLocs as Map).forEach((key, value) {
+          if (value is Map) {
+            Map<String, double> coords = {};
+            value.forEach((k, v) {
+              coords[k.toString()] = (v as num).toDouble();
+            });
+            parsedLocs[key.toString()] = coords;
+          }
+        });
+        tablePositions.assignAll(parsedLocs);
+      } catch (e) {
+        print("Error parsing table_positions: $e");
+      }
     }
 
     if (currentUser.value != null) {
