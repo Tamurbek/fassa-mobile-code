@@ -100,9 +100,8 @@ class StaffManagementScreen extends StatelessWidget {
   }
 
   void _showGeneralQRDialog(BuildContext context, POSController pos) {
-    print("Opening general QR dialog for cafe: ${pos.cafeId}");
     if (pos.cafeId.isEmpty) {
-      Get.snackbar("Xato", "Kafe ID topilmadi. Iltimos, qayta kiring.", backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar("Xato", "Kafe ID topilmadi", backgroundColor: Colors.red, colorText: Colors.white);
       return;
     }
 
@@ -152,8 +151,6 @@ class StaffManagementScreen extends StatelessWidget {
 
   void _showQRDialog(BuildContext context, POSController pos, Map<String, dynamic> member) async {
     final String userId = member['id']?.toString() ?? "";
-    print("Requesting QR token for user: $userId");
-
     if (userId.isEmpty) {
       Get.snackbar("Xato", "Xodim ID topilmadi", backgroundColor: Colors.red, colorText: Colors.white);
       return;
@@ -166,8 +163,7 @@ class StaffManagementScreen extends StatelessWidget {
 
     try {
       final token = await pos.getStaffQRToken(userId);
-      
-      if (Get.isDialogOpen ?? false) Get.back(); // Close loading
+      if (Get.isDialogOpen ?? false) Get.back();
 
       if (token == null) {
         Get.snackbar("Xato", "QR kod yaratib bo'lmadi", backgroundColor: Colors.red, colorText: Colors.white);
@@ -218,12 +214,9 @@ class StaffManagementScreen extends StatelessWidget {
       );
     } catch (e) {
       if (Get.isDialogOpen ?? false) Get.back();
-      print("Error in _showQRDialog: $e");
       Get.snackbar("Xato", "Xatolik yuz berdi: $e", backgroundColor: Colors.red, colorText: Colors.white);
     }
   }
-
-
 
   void _showStaffDialog(BuildContext context, POSController pos, {Map<String, dynamic>? member}) {
     final isEditing = member != null;
