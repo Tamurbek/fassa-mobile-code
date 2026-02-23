@@ -230,7 +230,24 @@ mixin UserAuthMixin on POSControllerState {
 
   void lockTerminal() {
     authenticatePin(false);
-    Get.offAll(() => const PinCodeScreen());
+    
+    bool isTerminal = currentTerminal.value != null;
+    bool isWaiterShared = deviceRole.value == "WAITER" && waiterCafeId.value != null;
+
+    if (isTerminal || isWaiterShared) {
+      // Clear current user but keep terminal/cafe context
+      setCurrentUser(null);
+      pinCode.value = null;
+      storage.remove('pin_code');
+
+      if (isTerminal) {
+        Get.offAll(() => const StaffSelectionPage());
+      } else {
+        Get.offAll(() => StaffSelectionPage(cafeId: waiterCafeId.value, isFromTerminal: false));
+      }
+    } else {
+      Get.offAll(() => const PinCodeScreen());
+    }
   }
 
   void setPinCode(String code) {
