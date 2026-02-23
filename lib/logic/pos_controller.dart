@@ -147,7 +147,8 @@ class POSController extends POSControllerState with
 
   Future<bool> submitOrder({bool isPaid = false}) async {
     if (currentOrder.isEmpty) return false;
-    if (!isWithinGeofence.value && isWaiter) return false;
+    bool isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+    if (!isWithinGeofence.value && isWaiter && !isDesktop) return false;
 
     if (editingOrderId.value != null) return await updateExistingOrder(isPaid: isPaid);
 
@@ -182,7 +183,8 @@ class POSController extends POSControllerState with
 
   Future<bool> updateExistingOrder({bool isPaid = false}) async {
     if (editingOrderId.value == null) return false;
-    if (!isWithinGeofence.value && isWaiter) return false;
+    bool isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+    if (!isWithinGeofence.value && isWaiter && !isDesktop) return false;
     
     try {
       final newStatus = isPaid ? "Completed" : "Preparing";

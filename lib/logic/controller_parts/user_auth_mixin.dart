@@ -22,11 +22,12 @@ mixin UserAuthMixin on POSControllerState {
   }
 
   void initLocationTracking() async {
-    if (currentUser.value == null) {
+    if (currentUser.value == null || Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
       if (Platform.isAndroid || Platform.isIOS) {
         FlutterBackgroundService().invoke("stopService");
       }
       locationTimer?.cancel();
+      isWithinGeofence.value = true; // Ensure it's true for desktop
       return;
     }
 

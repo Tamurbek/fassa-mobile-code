@@ -77,7 +77,8 @@ class _LocationCheckerState extends State<LocationChecker> with WidgetsBindingOb
     final pos = Get.find<POSController>();
     
     // Only enforce location check for Waiters
-    if (pos.deviceRole.value != "WAITER") {
+    bool isDesktop = Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+    if (pos.deviceRole.value != "WAITER" || isDesktop) {
       return widget.child;
     }
 
