@@ -23,12 +23,17 @@ class UpdateService {
       final latestBuild = int.tryParse(updateInfo['build_number']?.toString() ?? "0") ?? 0;
       
       if (latestBuild > currentBuild) {
-        _showUpdateDialog(
-          version: latestVersion,
-          notes: updateInfo['release_notes'] ?? "",
-          url: updateInfo['url'] ?? "",
-          critical: updateInfo['critical'] ?? false,
-        );
+        // Hozirda faqat Android uchun avtomatik yangilanish mavjud
+        if (Platform.isAndroid) {
+          _showUpdateDialog(
+            version: latestVersion,
+            notes: updateInfo['release_notes'] ?? "",
+            url: updateInfo['url'] ?? "",
+            critical: updateInfo['critical'] ?? false,
+          );
+        } else {
+          print("Yangi versiya mavjud (v$latestVersion), lekin avtomatik yangilanish faqat Android uchun.");
+        }
       }
     } catch (e) {
       print("Update check failed: $e");
@@ -135,9 +140,19 @@ class UpdateService {
 
       Get.back(); // Close progress dialog
 
-      final result = await OpenFilex.open(savePath);
-      if (result.type != ResultType.done) {
-        Get.snackbar("Xato", "APK faylni ochib bo'lmadi: ${result.message}");
+      if (Platform.isAndroid) {
+        final result = await OpenFilex.open(savePath);
+        if (result.type != ResultType.done) {
+          Get.snackbar("Xato", "APK faylni ochib bo'lmadi: ${result.message}");
+        }
+      } else {
+        Get.snackbar(
+          "Muvaffaqiyatli", 
+          "Yangilanish yuklandi. Desktop versiya uchun ilovani qayta o'rnating yoki dasturchiga murojaat qiling.",
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
       }
     } catch (e) {
       Get.back(); // Close progress dialog
