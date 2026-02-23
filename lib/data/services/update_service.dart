@@ -5,6 +5,7 @@ import 'package:get/get.dart' hide Response;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../../theme/app_colors.dart';
 
@@ -23,16 +24,25 @@ class UpdateService {
       final latestBuild = int.tryParse(updateInfo['build_number']?.toString() ?? "0") ?? 0;
       
       if (latestBuild > currentBuild) {
-        // Hozirda faqat Android uchun avtomatik yangilanish mavjud
-        if (Platform.isAndroid) {
+        final platforms = updateInfo['platforms'] as Map<String, dynamic>? ?? {};
+        String platformKey = Platform.operatingSystem.toLowerCase();
+        
+        // Map common flutter platforms to backend keys
+        if (Platform.isIOS) platformKey = "ios";
+        if (Platform.isAndroid) platformKey = "android";
+        if (Platform.isMacOS) platformKey = "macos";
+        if (Platform.isWindows) platformKey = "windows";
+        if (Platform.isLinux) platformKey = "linux";
+
+        final String? updateUrl = platforms[platformKey] ?? updateInfo['url'];
+
+        if (updateUrl != null) {
           _showUpdateDialog(
             version: latestVersion,
             notes: updateInfo['release_notes'] ?? "",
-            url: updateInfo['url'] ?? "",
+            url: updateUrl,
             critical: updateInfo['critical'] ?? false,
           );
-        } else {
-          print("Yangi versiya mavjud (v$latestVersion), lekin avtomatik yangilanish faqat Android uchun.");
         }
       }
     } catch (e) {
@@ -82,7 +92,11 @@ class UpdateService {
             ElevatedButton(
               onPressed: () {
                 Get.back();
-                _downloadAndInstall(url, version);
+                if (Platform.isAndroid && url.contains('.apk')) {
+                  _downloadAndInstall(url, version);
+                } else {
+                  _launchUpdateUrl(url);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -158,6 +172,19 @@ class UpdateService {
       Get.back(); // Close progress dialog
       print("Download error: $e");
       Get.snackbar("Xato", "Yangilanishni yuklab bo'lmadi");
+    }
+  }
+
+  Future<void> _launchUpdateUrl(String url) async {
+    String absoluteUrl = url.startsWith('http') 
+        ? url 
+        : "${ApiService.baseUrl}$url";
+        
+    final Uri uri = Uri.parse(absoluteUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      Get.snackbar("Xato", "Yangilanish sahifasini ochib bo'lmadi: $absoluteUrl");
     }
   }
 }
