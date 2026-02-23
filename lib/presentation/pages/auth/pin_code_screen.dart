@@ -129,6 +129,8 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
     
     if (widget.isFromTerminal && widget.selectedUser != null) {
       titleText = widget.selectedUser['name'];
+    } else if (!isSettingNewPin && pos.currentUser.value != null) {
+      titleText = pos.currentUser.value?['name'] ?? "enter_pin".tr;
     }
 
     String subtitleText = isSettingNewPin

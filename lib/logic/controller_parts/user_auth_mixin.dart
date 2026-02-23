@@ -178,6 +178,12 @@ mixin UserAuthMixin on POSControllerState {
       if (user['role'] != null) {
         deviceRole.value = user['role'].toString().toUpperCase();
         storage.write('device_role', deviceRole.value);
+        
+        // Save cafe_id for waiters so they can re-login via PIN from staff selection instead of scanning QR
+        if (deviceRole.value == "WAITER" && user['cafe_id'] != null) {
+          waiterCafeId.value = user['cafe_id'].toString();
+          storage.write('waiter_cafe_id', waiterCafeId.value);
+        }
       }
       socket.setCafeId(cafeId);
       fetchBackendData(); // Sync data immediately after login
@@ -214,13 +220,16 @@ mixin UserAuthMixin on POSControllerState {
       Get.offAllNamed('/role-selection');
     } else if (wasTerminal) {
       Get.offAll(() => const StaffSelectionPage());
+    } else if (deviceRole.value == "WAITER" && waiterCafeId.value != null) {
+      Get.offAll(() => StaffSelectionPage(cafeId: waiterCafeId.value, isFromTerminal: false));
     } else {
       Get.offAllNamed('/login');
     }
   }
 
   void lockTerminal() {
-    logout(forced: false);
+    authenticatePin(false);
+    Get.offAll(() => const PinCodeScreen());
   }
 
   void setPinCode(String code) {
