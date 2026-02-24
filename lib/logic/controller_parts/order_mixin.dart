@@ -27,7 +27,12 @@ mixin OrderMixin on POSControllerState {
     if (index != -1) {
       currentOrder[index]['quantity']++;
     } else {
-      currentOrder.add({'item': item, 'quantity': 1, 'isNew': true});
+      currentOrder.add({
+        'item': item, 
+        'quantity': 1, 
+        'isNew': true,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
     }
     currentOrder.refresh();
     checkIfModified();
@@ -230,6 +235,7 @@ mixin OrderMixin on POSControllerState {
           'quantity': d['qty'],
           'sentQty': d['qty'],
           'isNew': false,
+          'timestamp': d['timestamp'] ?? order['timestamp'],
         });
       }
     }
