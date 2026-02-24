@@ -224,38 +224,21 @@ mixin UserAuthMixin on POSControllerState {
 
     if (deviceRole.value == null) {
       Get.offAllNamed('/login');
-    } else if (wasTerminal) {
-      Get.offAll(() => const StaffSelectionPage());
-    } else if (deviceRole.value == "WAITER" && waiterCafeId.value != null) {
-      Get.offAll(() => StaffSelectionPage(cafeId: waiterCafeId.value, isFromTerminal: false));
+    } else if (forced) {
+       Get.offAllNamed('/login');
     } else {
-      Get.offAllNamed('/login');
+      // In terminal app, logout means unlinking terminal
+      currentTerminal.value = null;
+      storage.remove('terminal');
+      storage.remove('terminal_token');
+      Get.offAll(() => const QRScannerPage()); 
     }
   }
 
   void lockTerminal() {
     authenticatePin(false);
-    
-    bool isTerminal = currentTerminal.value != null;
-    
-    // For personal devices (not in terminal mode), simply lock the current user session
-    if (!isTerminal && currentUser.value != null) {
-      Get.offAll(() => const PinCodeScreen());
-      return;
-    }
-
-    // In terminal mode or shared waiter mode without a current user, go to selection screen
-    setCurrentUser(null);
-    pinCode.value = null;
-    storage.remove('pin_code');
-
-    if (isTerminal) {
-      Get.offAll(() => const StaffSelectionPage());
-    } else if (waiterCafeId.value != null) {
-      Get.offAll(() => StaffSelectionPage(cafeId: waiterCafeId.value, isFromTerminal: false));
-    } else {
-      Get.offAll(() => const PinCodeScreen());
-    }
+    // Always go to PIN screen to lock the current session
+    Get.offAll(() => const PinCodeScreen());
   }
 
   void setPinCode(String code) {
