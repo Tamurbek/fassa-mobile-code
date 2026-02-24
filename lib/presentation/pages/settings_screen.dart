@@ -308,7 +308,7 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildFooter() {
     return const Center(
       child: Text(
-        "© 2024 Fast Food Pro Cloud Services",
+        "© 2024 Fayz Cloud Services",
         style: TextStyle(color: Color(0xFFD1D5DB), fontSize: 11, fontWeight: FontWeight.w500),
       ),
     );

@@ -41,7 +41,7 @@ class FastFoodApp extends StatelessWidget {
     // Get stored locale or default to uz_UZ
     final storage = GetStorage();
     final pos = Get.find<POSController>();
-    pos.restaurantName.value = storage.read('restaurant_name') ?? "Fayz POS";
+    pos.restaurantName.value = storage.read('restaurant_name') ?? "Fayz";
     String? storedLang = storage.read('lang');
     Locale initialLocale = storedLang != null 
         ? Locale(storedLang.split('_')[0], storedLang.split('_')[1])
