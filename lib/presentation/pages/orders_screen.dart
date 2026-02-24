@@ -96,7 +96,9 @@ class OrdersScreen extends StatelessWidget {
                         ? _buildEmptyState("no_active_orders".tr, "start_new_sale".tr)
                         : (pos.isOrdersTableView.value && !isMobile 
                             ? _buildOrdersTable(filtered, pos, catalog, context, selectedOrder)
-                            : _buildOrdersGrid(filtered, pos, catalog, context, selectedOrder));
+                            : (selectedFilter.value == "All" 
+                                ? _buildGroupedOrders(filtered, pos, catalog, context, selectedOrder)
+                                : _buildOrdersGrid(filtered, pos, catalog, context, selectedOrder)));
                   }),
                   Obx(() {
                     var filtered = pos.allOrders.where((o) => o['status'] == "Completed").toList();
@@ -109,7 +111,9 @@ class OrdersScreen extends StatelessWidget {
                         ? _buildEmptyState("no_completed_orders".tr, "history_empty".tr)
                         : (pos.isOrdersTableView.value && !isMobile 
                             ? _buildOrdersTable(filtered, pos, catalog, context, selectedOrder)
-                            : _buildOrdersGrid(filtered, pos, catalog, context, selectedOrder));
+                            : (selectedFilter.value == "All" 
+                                ? _buildGroupedOrders(filtered, pos, catalog, context, selectedOrder)
+                                : _buildOrdersGrid(filtered, pos, catalog, context, selectedOrder)));
                   }),
                 ],
               ),
@@ -246,6 +250,95 @@ class OrdersScreen extends StatelessWidget {
         isMobile ? 24 : 40, 
         100
       ),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 450,
+        mainAxisExtent: isMobile ? 150 : 160,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: orders.length,
+      itemBuilder: (context, index) {
+        final order = orders[index];
+        return Obx(() {
+          final isSelected = selectedOrder.value?['id'] == order['id'];
+          return GestureDetector(
+            onTap: () => selectedOrder.value = order,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: _buildSlidableOrderCard(order, pos, catalog, context, isSelected),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  Widget _buildGroupedOrders(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context, Rxn<Map<String, dynamic>> selectedOrder) {
+    final dineIn = orders.where((o) => o['mode'] == "Dine-in" || o['mode'] == null).toList();
+    final takeaway = orders.where((o) => o['mode'] == "Takeaway").toList();
+    final delivery = orders.where((o) => o['mode'] == "Delivery").toList();
+    final isMobile = Responsive.isMobile(context);
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 24 : 40, 
+        10,
+        isMobile ? 24 : 40, 
+        100
+      ),
+      children: [
+        if (dineIn.isNotEmpty) ...[
+          _buildMiniSectionHeader('dine_in'.tr, Colors.blue),
+          _buildMiniGrid(dineIn, pos, catalog, context, selectedOrder),
+          const SizedBox(height: 32),
+        ],
+        if (takeaway.isNotEmpty) ...[
+          _buildMiniSectionHeader('takeaway'.tr, Colors.orange),
+          _buildMiniGrid(takeaway, pos, catalog, context, selectedOrder),
+          const SizedBox(height: 32),
+        ],
+        if (delivery.isNotEmpty) ...[
+          _buildMiniSectionHeader('delivery'.tr, Colors.purple),
+          _buildMiniGrid(delivery, pos, catalog, context, selectedOrder),
+          const SizedBox(height: 32),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildMiniSectionHeader(String title, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+          ),
+          const SizedBox(width: 16),
+          Expanded(child: Divider(color: color.withOpacity(0.2), thickness: 1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniGrid(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context, Rxn<Map<String, dynamic>> selectedOrder) {
+    final isMobile = Responsive.isMobile(context);
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 450,
         mainAxisExtent: isMobile ? 150 : 160,
