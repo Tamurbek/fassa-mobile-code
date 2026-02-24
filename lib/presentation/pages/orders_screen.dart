@@ -285,86 +285,106 @@ class OrdersScreen extends StatelessWidget {
     final delivery = orders.where((o) => o['mode'] == "Delivery").toList();
     final isMobile = Responsive.isMobile(context);
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        isMobile ? 24 : 40, 
-        10,
-        isMobile ? 24 : 40, 
-        100
+    if (isMobile) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(24, 10, 24, 100),
+        children: [
+          if (dineIn.isNotEmpty) ...[
+            _buildMiniSectionHeader('dine_in'.tr, Colors.blue),
+            _buildMiniGrid(dineIn, pos, catalog, context, selectedOrder),
+            const SizedBox(height: 24),
+          ],
+          if (takeaway.isNotEmpty) ...[
+            _buildMiniSectionHeader('takeaway'.tr, Colors.orange),
+            _buildMiniGrid(takeaway, pos, catalog, context, selectedOrder),
+            const SizedBox(height: 24),
+          ],
+          if (delivery.isNotEmpty) ...[
+            _buildMiniSectionHeader('delivery'.tr, Colors.purple),
+            _buildMiniGrid(delivery, pos, catalog, context, selectedOrder),
+            const SizedBox(height: 24),
+          ],
+        ],
+      );
+    }
+
+    // Side-by-side columns for Desktop/Tablet
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildOrderColumn('dine_in'.tr, dineIn, Colors.blue, pos, catalog, context, selectedOrder)),
+          const SizedBox(width: 16),
+          Expanded(child: _buildOrderColumn('takeaway'.tr, takeaway, Colors.orange, pos, catalog, context, selectedOrder)),
+          const SizedBox(width: 16),
+          Expanded(child: _buildOrderColumn('delivery'.tr, delivery, Colors.purple, pos, catalog, context, selectedOrder)),
+        ],
       ),
-      children: [
-        if (dineIn.isNotEmpty) ...[
-          _buildMiniSectionHeader('dine_in'.tr, Colors.blue),
-          _buildMiniGrid(dineIn, pos, catalog, context, selectedOrder),
-          const SizedBox(height: 32),
-        ],
-        if (takeaway.isNotEmpty) ...[
-          _buildMiniSectionHeader('takeaway'.tr, Colors.orange),
-          _buildMiniGrid(takeaway, pos, catalog, context, selectedOrder),
-          const SizedBox(height: 32),
-        ],
-        if (delivery.isNotEmpty) ...[
-          _buildMiniSectionHeader('delivery'.tr, Colors.purple),
-          _buildMiniGrid(delivery, pos, catalog, context, selectedOrder),
-          const SizedBox(height: 32),
-        ],
-      ],
     );
   }
 
-  Widget _buildMiniSectionHeader(String title, Color color) {
+  Widget _buildOrderColumn(String title, List<Map<String, dynamic>> orders, Color color, POSController pos, List<FoodItem> catalog, BuildContext context, Rxn<Map<String, dynamic>> selectedOrder) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.1)),
+      ),
+      child: Column(
         children: [
           Container(
-            width: 4,
-            height: 24,
-            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.circle, size: 12, color: color),
+                const SizedBox(width: 8),
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
+                  child: Text(orders.length.toString(), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+          Expanded(
+            child: orders.isEmpty 
+              ? Center(child: Text("no_orders".tr, style: TextStyle(color: Colors.grey.shade400, fontSize: 13)))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = orders[index];
+                    return Obx(() {
+                      final isSelected = selectedOrder.value?['id'] == order['id'];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: GestureDetector(
+                          onTap: () => selectedOrder.value = order,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected ? AppColors.primary : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: _buildSlidableOrderCard(order, pos, catalog, context, isSelected),
+                          ),
+                        ),
+                      );
+                    });
+                  },
+                ),
           ),
-          const SizedBox(width: 16),
-          Expanded(child: Divider(color: color.withOpacity(0.2), thickness: 1)),
         ],
       ),
-    );
-  }
-
-  Widget _buildMiniGrid(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context, Rxn<Map<String, dynamic>> selectedOrder) {
-    final isMobile = Responsive.isMobile(context);
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 450,
-        mainAxisExtent: isMobile ? 150 : 160,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: orders.length,
-      itemBuilder: (context, index) {
-        final order = orders[index];
-        return Obx(() {
-          final isSelected = selectedOrder.value?['id'] == order['id'];
-          return GestureDetector(
-            onTap: () => selectedOrder.value = order,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: _buildSlidableOrderCard(order, pos, catalog, context, isSelected),
-            ),
-          );
-        });
-      },
     );
   }
 
