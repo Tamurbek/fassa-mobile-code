@@ -388,6 +388,62 @@ class OrdersScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildMiniSectionHeader(String title, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+          ),
+          const SizedBox(width: 16),
+          Expanded(child: Divider(color: color.withOpacity(0.2), thickness: 1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniGrid(List<Map<String, dynamic>> orders, POSController pos, List<FoodItem> catalog, BuildContext context, Rxn<Map<String, dynamic>> selectedOrder) {
+    final isMobile = Responsive.isMobile(context);
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 450,
+        mainAxisExtent: isMobile ? 150 : 160,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: orders.length,
+      itemBuilder: (context, index) {
+        final order = orders[index];
+        return Obx(() {
+          final isSelected = selectedOrder.value?['id'] == order['id'];
+          return GestureDetector(
+            onTap: () => selectedOrder.value = order,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: _buildSlidableOrderCard(order, pos, catalog, context, isSelected),
+            ),
+          );
+        });
+      },
+    );
+  }
+
   void _showLanguageSwitcher(BuildContext context) {
     showModalBottomSheet(
       context: context,
