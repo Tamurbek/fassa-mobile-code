@@ -29,7 +29,14 @@ class MainNavigationScreen extends StatelessWidget {
       {"icon": Icons.settings_rounded, "label": "settings".tr, "page": const SettingsScreen()},
     ];
 
-    final filteredMenu = menuItems.where((item) => item['adminOnly'] != true || pos.isAdmin || pos.isCashier).toList();
+    final filteredMenu = menuItems.where((item) {
+      if (item['adminOnly'] == true) {
+        // Cashiers can see Staff, but not Menu or Reports
+        if (item['label'] == "staff".tr) return pos.isAdmin || pos.isCashier;
+        return pos.isAdmin;
+      }
+      return true;
+    }).toList();
 
     return Obx(() => Stack(
       children: [
