@@ -206,11 +206,14 @@ class _FloorPlanView extends StatelessWidget {
       );
     }
 
-    // Show custom floor plan for Terminal/Desktop/Tablet
     return LayoutBuilder(
       builder: (context, constraints) {
-        double maxTableX = constraints.maxWidth;
-        double maxTableY = constraints.maxHeight;
+        // Ensure minimum canvas size to avoid "jumping"
+        double minWidth = constraints.maxWidth > 2000 ? constraints.maxWidth : 2000;
+        double minHeight = constraints.maxHeight > 2000 ? constraints.maxHeight : 2000;
+        
+        double maxTableX = minWidth;
+        double maxTableY = minHeight;
         
         for (var tableNum in tables) {
           final String tableId = "$location-$tableNum";
@@ -230,10 +233,11 @@ class _FloorPlanView extends StatelessWidget {
             : "";
 
         return Obx(() => InteractiveViewer(
-          boundaryMargin: const EdgeInsets.all(1000),
+          boundaryMargin: const EdgeInsets.all(50),
           minScale: 0.1,
           maxScale: 2.5,
           panEnabled: !pos.isEditMode.value, 
+          alignment: Alignment.center,
           child: Container(
             width: maxTableX,
             height: maxTableY,

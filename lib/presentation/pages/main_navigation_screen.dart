@@ -99,14 +99,14 @@ class MainNavigationScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.fastfood, color: Colors.white, size: 24),
+                  child: Image.asset('assets/images/app_icon.png', width: 24, height: 24, errorBuilder: (c,e,s) => const Icon(Icons.fastfood, color: Colors.white, size: 24)),
                 ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Obx(() => Text(
-                      pos.restaurantName.value.isEmpty ? "Fast Food Pro" : pos.restaurantName.value, 
+                      pos.restaurantName.value.isEmpty ? "Fayz" : pos.restaurantName.value, 
                       style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF1A1A1A))
                     )),
                     Text("admin_panel".tr, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12, fontWeight: FontWeight.bold)),
