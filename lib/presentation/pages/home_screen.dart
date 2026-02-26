@@ -811,10 +811,31 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _buildActionBtn(Icons.payments_rounded, "To`lov", const Color(0xFFFF9500), () async {
-                    bool success = await pos.submitOrder(isPaid: true);
-                    if (success) {
-                      Get.offAll(() => const MainNavigationScreen());
-                    }
+                    Get.dialog(
+                      AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        title: const Text("To'lovni tasdiqlash", style: TextStyle(fontWeight: FontWeight.bold)),
+                        content: Text("Jami: ${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${pos.currencySymbol}\n\nTo'lov qabul qilindi va buyurtma yakunlansinmi?"),
+                        actions: [
+                          TextButton(onPressed: () => Get.back(), child: const Text("Yo'q, bekor qilish")),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF9500),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () async {
+                              Get.back(); // Close dialog
+                              bool success = await pos.submitOrder(isPaid: true);
+                              if (success) {
+                                Get.offAll(() => MainNavigationScreen());
+                              }
+                            },
+                            child: const Text("Ha, tasdiqlayman"),
+                          ),
+                        ],
+                      ),
+                    );
                   }, tooltip: "pay_finish_sidebar".tr),
                 ),
               ],
