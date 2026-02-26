@@ -237,7 +237,6 @@ mixin OrderMixin on POSControllerState {
         actions: [
           TextButton(
             onPressed: () {
-              focusNode.dispose();
               Get.back();
             }, 
             child: const Text("Bekor qilish")
@@ -252,7 +251,6 @@ mixin OrderMixin on POSControllerState {
               int? val = int.tryParse(controller.text);
               if (val != null) {
                 setAbsoluteQuantity(index, val);
-                focusNode.dispose();
                 Get.back();
               }
             },
