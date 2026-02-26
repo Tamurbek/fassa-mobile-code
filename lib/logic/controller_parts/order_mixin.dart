@@ -194,22 +194,64 @@ mixin OrderMixin on POSControllerState {
     final TextEditingController controller = TextEditingController(
       text: currentOrder[index]['quantity'].toString()
     );
+    final focusNode = FocusNode();
+
     Get.dialog(
       AlertDialog(
-        title: Text(currentOrder[index]['item'].name),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: "Miqdori"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(currentOrder[index]['item'].name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              focusNode: focusNode,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              readOnly: showKeyboard.value,
+              showCursor: true,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                labelText: "Miqdori",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            if (showKeyboard.value) ...[
+              const SizedBox(height: 20),
+              VirtualKeyboard(
+                controller: controller,
+                type: VirtualKeyboardType.numeric,
+                onEnter: () {
+                  int? val = int.tryParse(controller.text);
+                  if (val != null) {
+                    setAbsoluteQuantity(index, val);
+                    Get.back();
+                  }
+                },
+              ),
+            ],
+          ],
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text("Bekor qilish")),
+          TextButton(
+            onPressed: () {
+              focusNode.dispose();
+              Get.back();
+            }, 
+            child: const Text("Bekor qilish")
+          ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF9500),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
             onPressed: () {
               int? val = int.tryParse(controller.text);
               if (val != null) {
                 setAbsoluteQuantity(index, val);
+                focusNode.dispose();
                 Get.back();
               }
             },
@@ -217,7 +259,7 @@ mixin OrderMixin on POSControllerState {
           ),
         ],
       ),
-    );
+    ).then((_) => focusNode.dispose());
   }
 
   void clearCurrentOrder() {

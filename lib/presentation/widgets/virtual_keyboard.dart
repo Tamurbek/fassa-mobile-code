@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 
+enum VirtualKeyboardType { alphanumeric, numeric }
+
 class VirtualKeyboard extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onEnter;
+  final VirtualKeyboardType type;
 
   const VirtualKeyboard({
     super.key,
     required this.controller,
     required this.onEnter,
+    this.type = VirtualKeyboardType.alphanumeric,
   });
 
   @override
@@ -18,38 +22,67 @@ class VirtualKeyboard extends StatelessWidget {
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(16),
       ),
+      child: type == VirtualKeyboardType.alphanumeric ? _buildAlphanumeric() : _buildNumeric(),
+    );
+  }
+
+  Widget _buildAlphanumeric() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildRow(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']),
+        const SizedBox(height: 4),
+        _buildRow(['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P']),
+        const SizedBox(height: 4),
+        _buildRow(['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L']),
+        const SizedBox(height: 4),
+        _buildRow(['Z', 'X', 'C', 'V', 'B', 'N', 'M', '.', '_', '-']),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: _buildKey('SHIFT', () {}, color: Colors.grey.shade400),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              flex: 5,
+              child: _buildKey('SPACE', () => _input(' ')),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              flex: 2,
+              child: _buildKey('⌫', _backspace, color: Colors.red.shade100, textColor: Colors.red),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              flex: 2,
+              child: _buildKey('OK', onEnter, color: Colors.green.shade400, textColor: Colors.white),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNumeric() {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 400),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildRow(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']),
-          const SizedBox(height: 4),
-          _buildRow(['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P']),
-          const SizedBox(height: 4),
-          _buildRow(['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L']),
-          const SizedBox(height: 4),
-          _buildRow(['Z', 'X', 'C', 'V', 'B', 'N', 'M', '.', '_', '-']),
-          const SizedBox(height: 4),
+          _buildRow(['1', '2', '3']),
+          const SizedBox(height: 8),
+          _buildRow(['4', '5', '6']),
+          const SizedBox(height: 8),
+          _buildRow(['7', '8', '9']),
+          const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(
-                flex: 2,
-                child: _buildKey('SHIFT', () {}, color: Colors.grey.shade400),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                flex: 5,
-                child: _buildKey('SPACE', () => _input(' ')),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                flex: 2,
-                child: _buildKey('⌫', _backspace, color: Colors.red.shade100, textColor: Colors.red),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                flex: 2,
-                child: _buildKey('OK', onEnter, color: Colors.green.shade400, textColor: Colors.white),
-              ),
+              Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: _buildKey('.', () => _input('.')))),
+              Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: _buildKey('0', () => _input('0')))),
+              Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: _buildKey('⌫', _backspace, color: Colors.red.shade100, textColor: Colors.red))),
+              Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: _buildKey('OK', onEnter, color: Colors.green.shade400, textColor: Colors.white))),
             ],
           ),
         ],
