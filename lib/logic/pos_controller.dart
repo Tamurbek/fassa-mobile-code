@@ -120,6 +120,25 @@ class POSController extends POSControllerState with
       } catch (e) { print("Error parsing printed_kitchen_items: $e"); }
     }
 
+    // Load Printer Settings
+    printerPaperSize.value = storage.read('printer_paper_size') ?? "80mm";
+    autoPrintReceipt.value = storage.read('auto_print_receipt') ?? false;
+    enableKitchenPrint.value = storage.read('enable_kitchen_print') ?? true;
+    enableBillPrint.value = storage.read('enable_bill_print') ?? true;
+    enablePaymentPrint.value = storage.read('enable_payment_print') ?? true;
+
+    // Load Cafe Settings (Offline/First-load)
+    restaurantName.value = storage.read('restaurant_name') ?? "";
+    restaurantAddress.value = storage.read('restaurant_address') ?? "";
+    restaurantPhone.value = storage.read('restaurant_phone') ?? "";
+    currency.value = storage.read('currency') ?? "UZS";
+    serviceFeeDineIn.value = (storage.read('service_fee_dine_in') as num?)?.toDouble() ?? 10.0;
+    serviceFeeTakeaway.value = (storage.read('service_fee_takeaway') as num?)?.toDouble() ?? 0.0;
+    serviceFeeDelivery.value = (storage.read('service_fee_delivery') as num?)?.toDouble() ?? 3000.0;
+    receiptHeader.value = storage.read('receipt_header') ?? "";
+    receiptFooter.value = storage.read('receipt_footer') ?? "Xaridingiz uchun rahmat!";
+    showLogo.value = storage.read('show_logo') ?? true;
+
     if (currentUser.value != null) {
       socket.setCafeId(cafeId);
     }
