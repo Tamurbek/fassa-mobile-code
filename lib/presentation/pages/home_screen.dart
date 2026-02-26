@@ -48,11 +48,18 @@ class HomeScreen extends StatelessWidget {
                     _buildTopBar(pos, context),
                     _buildCategories(pos, context),
                     Expanded(
-                      child: Builder(builder: (context) {
+                      child: Obx(() {
                         final cat = pos.selectedCategory.value;
-                        final items = cat == "All" 
-                          ? pos.products 
-                          : pos.products.where((p) => p.category == cat).toList();
+                        final query = pos.searchQuery.value.toLowerCase();
+                        
+                        final items = pos.products.where((p) {
+                          final bool matchCat = cat == "All" || p.category == cat;
+                          final bool matchQuery = query.isEmpty || 
+                            p.name.toLowerCase().contains(query) ||
+                            p.description.toLowerCase().contains(query);
+                          return matchCat && matchQuery;
+                        }).toList();
+                        
                         return _buildItemsGrid(items, context);
                       }),
                     ),
@@ -134,12 +141,21 @@ class HomeScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextField(
+                controller: pos.searchController,
+                onChanged: (v) => pos.searchQuery.value = v,
                 decoration: InputDecoration(
                   hintText: 'search_hint'.tr,
                   hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
                   prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  suffixIcon: pos.searchQuery.value.isNotEmpty ? IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: () {
+                      pos.searchController.clear();
+                      pos.searchQuery.value = "";
+                    },
+                  ) : null,
                 ),
               ),
             ),
@@ -753,19 +769,7 @@ class HomeScreen extends StatelessWidget {
               // Receipt Print (Always visible)
               Expanded(
                 child: _buildActionBtn(Icons.receipt_long_rounded, "Hisob", const Color(0xFF64748B), () {
-                  final tempOrder = {
-                    "id": pos.editingOrderId.value ?? "NEW",
-                    "table": pos.selectedTable.value.isNotEmpty ? pos.selectedTable.value : "-",
-                    "mode": pos.currentMode.value,
-                    "total": pos.total,
-                    "details": pos.currentOrder.map((e) => {
-                      "id": (e['item'] as FoodItem).id,
-                      "name": (e['item'] as FoodItem).name,
-                      "qty": e['quantity'],
-                      "price": (e['item'] as FoodItem).price,
-                    }).toList(),
-                  };
-                  pos.printOrder(tempOrder, receiptTitle: "HISOB CHEKI");
+                  pos.printBillAndExit();
                 }, tooltip: "Hisob chekini chiqarish"),
               ),
               // Pay & Finish (Admin/Cashier only)

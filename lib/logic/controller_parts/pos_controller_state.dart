@@ -40,6 +40,8 @@ abstract class POSControllerState extends GetxController {
   var preparationAreas = <PreparationAreaModel>[].obs;
   var printers = <PrinterModel>[].obs;
   var selectedCategory = "All".obs;
+  var searchQuery = "".obs;
+  final searchController = TextEditingController();
   var users = <Map<String, dynamic>>[].obs;
 
   var selectedTable = "".obs;

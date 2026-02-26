@@ -40,6 +40,7 @@ class POSController extends POSControllerState with
 
   @override
   void onClose() {
+    searchController.dispose();
     subscriptionTimer?.cancel();
     locationTimer?.cancel();
     super.onClose();
@@ -372,6 +373,63 @@ class POSController extends POSControllerState with
       }
       return false;
     } catch (e) { return false; }
+  }
+
+  Future<void> printBillAndExit() async {
+    if (editingOrderId.value == null) {
+      Get.snackbar("Eslatma", "Siz hali buyurtmani saqlamadingiz. Avval 'Saqlash' tugmasini bosing.", 
+          backgroundColor: Colors.orange, colorText: Colors.white);
+      return;
+    }
+
+    if (isOrderModified.value) {
+      Get.snackbar("Eslatma", "Buyurtmada o'zgarishlar bor. Avval 'Saqlash' tugmasini bosing.", 
+          backgroundColor: Colors.orange, colorText: Colors.white);
+      return;
+    }
+
+    try {
+      // 1. Update status to BILL_PRINTED
+      await api.updateOrderStatus(editingOrderId.value!, "BILL_PRINTED");
+      
+      // 2. Prepare order data
+      final index = allOrders.indexWhere((o) => o['id'] == editingOrderId.value);
+      Map<String, dynamic> orderToPrint;
+      
+      if (index != -1) {
+        orderToPrint = Map<String, dynamic>.from(allOrders[index]);
+        orderToPrint['status'] = "Bill Printed";
+        allOrders[index] = orderToPrint;
+        allOrders.refresh();
+        saveAllOrders();
+      } else {
+        orderToPrint = {
+          "id": editingOrderId.value,
+          "table": selectedTable.value.isNotEmpty ? selectedTable.value : "-",
+          "mode": currentMode.value,
+          "total": total,
+          "waiter_name": currentUser.value?['name'],
+          "details": currentOrder.map((e) => {
+            "id": (e['item'] as FoodItem).id,
+            "name": (e['item'] as FoodItem).name,
+            "qty": e['quantity'],
+            "price": (e['item'] as FoodItem).price,
+          }).toList(),
+        };
+      }
+
+      // 3. Print
+      await printOrder(orderToPrint, receiptTitle: "HISOB CHEKI");
+
+      // 4. Exit if waiter
+      if (isWaiter) {
+        clearCurrentOrder(); // Clear local state
+        Get.offAll(() => const MainNavigationScreen());
+      }
+    } catch (e) {
+      Get.snackbar("Xatolik", "Hisob chiqarishda xato: $e", 
+          backgroundColor: Colors.red, colorText: Colors.white);
+    }
   }
 
   void setMode(String mode) => currentMode.value = mode;

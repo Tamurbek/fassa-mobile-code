@@ -86,6 +86,12 @@ class _TableSelectionScreenState extends State<TableSelectionScreen> {
                          const SizedBox(width: 24),
                          _StatusIndicator(color: Colors.red, label: "occupied".tr),
                          const SizedBox(width: 24),
+                         if (pos.isWaiter) ...[
+                           _StatusIndicator(color: Colors.blueGrey, label: "Boshqa ofitsiant"),
+                           const SizedBox(width: 24),
+                           _StatusIndicator(color: Colors.indigo.shade300, label: "Hisob chiqarilgan"),
+                           const SizedBox(width: 24),
+                         ],
                          _StatusIndicator(color: Colors.orange, label: "editing_status".tr),
                       ],
                     ),
@@ -204,17 +210,26 @@ class _FloorPlanView extends StatelessWidget {
                 }
               },
               child: () {
-                final order = pos.allOrders.firstWhereOrNull((o) => 
+                final activeOrder = pos.allOrders.firstWhereOrNull((o) => 
                   o['table'] == tableId && 
                   !["Completed", "Cancelled"].contains(o['status'])
                 );
+                final bool isServedByOther = pos.isWaiter && 
+                  activeOrder != null && 
+                  activeOrder['waiter_name'] != null && 
+                  activeOrder['waiter_name'] != (pos.currentUser.value?['name'] ?? "");
+
+                final bool isBilled = activeOrder != null && activeOrder['status'] == 'Bill Printed';
+
                 return _TableWidget(
                   tableNum: tableNum,
                   isOccupied: isOccupied,
                   isEditMode: false,
                   lockedByUser: lockedByUser,
                   isLockedByOther: isLockedByOther,
-                  waiterName: order?['waiter_name'],
+                  waiterName: activeOrder?['waiter_name'],
+                  isServedByOther: isServedByOther,
+                  isBilled: isBilled,
                 );
               }(),
             );
@@ -365,10 +380,17 @@ class _FloorPlanView extends StatelessWidget {
                         }
                       }),
                       child: () {
-                        final order = pos.allOrders.firstWhereOrNull((o) => 
+                        final activeOrder = pos.allOrders.firstWhereOrNull((o) => 
                           o['table'] == tableId && 
                           !["Completed", "Cancelled"].contains(o['status'])
                         );
+                        final bool isServedByOther = pos.isWaiter && 
+                          activeOrder != null && 
+                          activeOrder['waiter_name'] != null && 
+                          activeOrder['waiter_name'] != (pos.currentUser.value?['name'] ?? "");
+
+                        final bool isBilled = activeOrder != null && activeOrder['status'] == 'Bill Printed';
+
                         return _TableWidget(
                           tableNum: tableNum,
                           isOccupied: isOccupied,
@@ -378,7 +400,9 @@ class _FloorPlanView extends StatelessWidget {
                           width: tableWidth,
                           height: tableHeight,
                           shape: tableShape,
-                          waiterName: order?['waiter_name'],
+                          waiterName: activeOrder?['waiter_name'],
+                          isServedByOther: isServedByOther,
+                          isBilled: isBilled,
                         );
                       }(),
                     ),
@@ -456,6 +480,8 @@ class _TableWidget extends StatelessWidget {
   final double height;
   final String shape;
   final String? waiterName;
+  final bool isServedByOther;
+  final bool isBilled;
 
   const _TableWidget({
     required this.tableNum,
@@ -467,6 +493,8 @@ class _TableWidget extends StatelessWidget {
     this.height = 80.0,
     this.shape = "square",
     this.waiterName,
+    this.isServedByOther = false,
+    this.isBilled = false,
   });
 
   @override
@@ -475,16 +503,28 @@ class _TableWidget extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: isLockedByOther 
-            ? Colors.orange.withOpacity(0.1) 
-            : (isOccupied ? Colors.red.withOpacity(0.1) : (isEditMode ? Colors.blue.withOpacity(0.05) : AppColors.white)),
+        color: isEditMode 
+            ? Colors.blue.withOpacity(0.05)
+            : (isLockedByOther 
+                ? Colors.orange.withOpacity(0.1) 
+                : (isBilled 
+                    ? Colors.indigo.withOpacity(0.1)
+                    : (isServedByOther 
+                        ? Colors.blueGrey.withOpacity(0.2) 
+                        : (isOccupied ? Colors.red.withOpacity(0.1) : AppColors.white)))),
         shape: shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: shape == 'circle' ? null : BorderRadius.circular(20),
         border: Border.all(
           color: isEditMode 
               ? Colors.blue.withOpacity(0.5) 
-              : (isLockedByOther ? Colors.orange.withOpacity(0.5) : (isOccupied ? Colors.red.withOpacity(0.3) : Colors.grey.shade200)),
-          width: (isEditMode || isLockedByOther) ? 2 : 1,
+              : (isLockedByOther 
+                  ? Colors.orange.withOpacity(0.5) 
+                  : (isBilled 
+                      ? Colors.indigo.withOpacity(0.4)
+                      : (isServedByOther 
+                          ? Colors.blueGrey.withOpacity(0.4) 
+                          : (isOccupied ? Colors.red.withOpacity(0.3) : Colors.grey.shade200))),
+          width: (isEditMode || isLockedByOther || isServedByOther || isBilled) ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -498,10 +538,20 @@ class _TableWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            isEditMode ? Icons.drag_indicator : (isLockedByOther ? Icons.lock_clock_rounded : Icons.table_restaurant), 
+            isEditMode 
+                ? Icons.drag_indicator 
+                : (isLockedByOther 
+                    ? Icons.lock_clock_rounded 
+                    : (isBilled 
+                        ? Icons.lock_person_rounded
+                        : (isServedByOther ? Icons.person_off_rounded : Icons.table_restaurant))), 
             color: isEditMode 
                 ? Colors.blue 
-                : (isLockedByOther ? Colors.orange : (isOccupied ? Colors.red : AppColors.primary)),
+                : (isLockedByOther 
+                    ? Colors.orange 
+                    : (isBilled 
+                        ? Colors.indigo.shade400
+                        : (isServedByOther ? Colors.blueGrey : (isOccupied ? Colors.red : AppColors.primary)))),
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -510,7 +560,13 @@ class _TableWidget extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
-              color: isLockedByOther ? Colors.orange : (isOccupied ? Colors.red : AppColors.textPrimary),
+              color: isEditMode 
+                  ? Colors.blue 
+                  : (isLockedByOther 
+                      ? Colors.orange 
+                      : (isBilled 
+                          ? Colors.indigo.shade400
+                          : (isServedByOther ? Colors.blueGrey : (isOccupied ? Colors.red : AppColors.textPrimary)))),
             ),
           ),
           if (isLockedByOther)
@@ -525,7 +581,13 @@ class _TableWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Text(
                 waiterName ?? "occupied".tr,
-                style: const TextStyle(fontSize: 10, color: Colors.red, fontWeight: FontWeight.w900),
+                style: TextStyle(
+                  fontSize: 10, 
+                  color: isBilled 
+                      ? Colors.indigo.shade300 
+                      : (isServedByOther ? Colors.blueGrey : Colors.red), 
+                  fontWeight: FontWeight.w900
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
