@@ -11,6 +11,8 @@ import '../../data/services/socket_service.dart';
 import '../../data/services/printer_service.dart';
 import '../../data/services/update_service.dart';
 
+import '../../presentation/widgets/virtual_keyboard.dart';
+
 abstract class POSControllerState extends GetxController {
   final storage = GetStorage();
   final api = ApiService();
@@ -42,7 +44,9 @@ abstract class POSControllerState extends GetxController {
   var printers = <PrinterModel>[].obs;
   var selectedCategory = "All".obs;
   var searchQuery = "".obs;
+  var showKeyboard = false.obs;
   final searchController = TextEditingController();
+  final searchFocusNode = FocusNode();
   var users = <Map<String, dynamic>>[].obs;
 
   var selectedTable = "".obs;

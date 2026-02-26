@@ -42,6 +42,7 @@ class POSController extends POSControllerState with
   @override
   void onClose() {
     searchController.dispose();
+    searchFocusNode.dispose();
     subscriptionTimer?.cancel();
     locationTimer?.cancel();
     super.onClose();

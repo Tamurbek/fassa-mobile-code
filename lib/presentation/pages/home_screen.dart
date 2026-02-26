@@ -60,7 +60,16 @@ class HomeScreen extends StatelessWidget {
                           return matchCat && matchQuery;
                         }).toList();
                         
-                        return _buildItemsGrid(items, context);
+                        return Column(
+                          children: [
+                            Expanded(child: _buildItemsGrid(items, context)),
+                            if (pos.showKeyboard.value)
+                              VirtualKeyboard(
+                                controller: pos.searchController,
+                                onEnter: () => pos.showKeyboard.value = false,
+                              ),
+                          ],
+                        );
                       }),
                     ),
                   ],
@@ -140,24 +149,48 @@ class HomeScreen extends StatelessWidget {
                 color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: TextField(
+              child: Obx(() => TextField(
                 controller: pos.searchController,
+                focusNode: pos.searchFocusNode, // Added FocusNode
                 onChanged: (v) => pos.searchQuery.value = v,
+                readOnly: pos.showKeyboard.value, // Added readOnly
+                showCursor: true, // Added showCursor
                 decoration: InputDecoration(
                   hintText: 'search_hint'.tr,
                   hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
                   prefixIcon: const Icon(Icons.search, color: Color(0xFF9CA3AF)),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  suffixIcon: pos.searchQuery.value.isNotEmpty ? IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
-                    onPressed: () {
-                      pos.searchController.clear();
-                      pos.searchQuery.value = "";
-                    },
-                  ) : null,
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (pos.searchQuery.value.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            pos.searchController.clear();
+                            pos.searchQuery.value = "";
+                          },
+                        ),
+                      IconButton(
+                        icon: Icon(
+                          pos.showKeyboard.value ? Icons.keyboard_hide_rounded : Icons.keyboard_rounded,
+                          size: 20,
+                          color: pos.showKeyboard.value ? const Color(0xFFFF9500) : const Color(0xFF9CA3AF),
+                        ),
+                        onPressed: () {
+                          pos.showKeyboard.value = !pos.showKeyboard.value;
+                          if (pos.showKeyboard.value) {
+                            pos.searchFocusNode.requestFocus(); // Request focus when keyboard is shown
+                          } else {
+                            pos.searchFocusNode.unfocus(); // Unfocus when keyboard is hidden
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              )),
             ),
           ),
           const SizedBox(width: 16),
