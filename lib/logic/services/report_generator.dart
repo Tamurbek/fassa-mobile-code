@@ -596,4 +596,119 @@ class ReportGenerator {
   static Future<void> printPdf(pw.Document pdf) async {
     await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
   }
+
+  // ════════════════════════════════════════════════════════════════════════
+  //  WAITER PERFORMANCE REPORT
+  // ════════════════════════════════════════════════════════════════════════
+  static Future<pw.Document> generateWaiterPerformanceReport({
+    required List<Map<String, dynamic>> orders,
+    required String cafeName,
+    required String currency,
+    required String period,
+  }) async {
+    final pdf = pw.Document();
+
+    // Build per-waiter stats
+    final Map<String, Map<String, dynamic>> map = {};
+    for (var o in orders) {
+      final name = (o['waiter_name'] ?? "Noma'lum").toString();
+      final total = (o['total'] as num? ?? 0).toDouble();
+      if (!map.containsKey(name)) {
+        map[name] = {'name': name, 'orders': 0, 'revenue': 0.0};
+      }
+      map[name]!['orders'] = (map[name]!['orders'] as int) + 1;
+      map[name]!['revenue'] = (map[name]!['revenue'] as double) + total;
+    }
+
+    final stats = map.values.map((w) {
+      final int cnt = w['orders'] as int;
+      final double rev = w['revenue'] as double;
+      return {...w, 'avg_bill': cnt > 0 ? rev / cnt : 0.0};
+    }).toList()
+      ..sort((a, b) => (b['revenue'] as double).compareTo(a['revenue'] as double));
+
+    final double totalRevenue = stats.fold(0.0, (s, w) => s + (w['revenue'] as double));
+    final int totalOrders = orders.length;
+    final double avgBill = stats.isEmpty ? 0 : totalRevenue / stats.length;
+
+    pdf.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+      footer: _buildFooter,
+      build: (context) => [
+        _buildHeader(
+          cafeName: cafeName,
+          reportTitle: 'OFITSIANTLAR UNUMDORLIGI',
+          reportSubtitle: 'Davr: $period',
+          accentColor: PdfColor.fromInt(0xFF2D3748),
+        ),
+        pw.SizedBox(height: 20),
+        pw.Row(
+          children: [
+            _buildKpiCard('Ofitsiantlar', '${stats.length} ta', _primary),
+            _buildKpiCard('Jami buyurtmalar', '$totalOrders ta', _accent),
+            _buildKpiCard('Jami savdo', '${_formatter.format(totalRevenue)} $currency', _success),
+            _buildKpiCard("O'rtacha / ofitsiant", '${_formatter.format(avgBill)} $currency', _warning),
+          ],
+        ),
+        _buildSectionTitle("Reyting jadvali"),
+        pw.Table(
+          border: pw.TableBorder.all(color: _border),
+          columnWidths: {
+            0: const pw.FixedColumnWidth(28),
+            1: const pw.FlexColumnWidth(4),
+            2: const pw.FlexColumnWidth(2),
+            3: const pw.FlexColumnWidth(3),
+            4: const pw.FlexColumnWidth(3),
+            5: const pw.FlexColumnWidth(2),
+          },
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: _bg),
+              children: [
+                _tableCell('#', bold: true, align: pw.TextAlign.center),
+                _tableCell('Ofitsiant', bold: true),
+                _tableCell('Buyurtmalar', bold: true, align: pw.TextAlign.center),
+                _tableCell('Jami savdo', bold: true, align: pw.TextAlign.right),
+                _tableCell("O'rtacha chek", bold: true, align: pw.TextAlign.right),
+                _tableCell('Ulush', bold: true, align: pw.TextAlign.right),
+              ],
+            ),
+            ...stats.asMap().entries.map((e) {
+              final w = e.value;
+              final revenue = w['revenue'] as double;
+              final pct = totalRevenue > 0 ? (revenue / totalRevenue * 100).toStringAsFixed(1) : '0.0';
+              final medal = e.key == 0 ? '🥇 ' : e.key == 1 ? '🥈 ' : e.key == 2 ? '🥉 ' : '';
+              return pw.TableRow(
+                decoration: e.key % 2 == 1 ? const pw.BoxDecoration(color: _bg) : null,
+                children: [
+                  _tableCell('${e.key + 1}', align: pw.TextAlign.center),
+                  _tableCell('$medal${w['name']}'),
+                  _tableCell('${w['orders']}', align: pw.TextAlign.center),
+                  _tableCell('${_formatter.format(revenue)} $currency', align: pw.TextAlign.right),
+                  _tableCell('${_formatter.format(w['avg_bill'])} $currency', align: pw.TextAlign.right),
+                  _tableCell('$pct%', align: pw.TextAlign.right),
+                ],
+              );
+            }),
+          ],
+        ),
+        // Total row
+        pw.Container(
+          decoration: const pw.BoxDecoration(color: _bg),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              _tableCell('JAMI', bold: true),
+              pw.Spacer(),
+              _tableCell('$totalOrders buyurtma  |  ${_formatter.format(totalRevenue)} $currency', bold: true, align: pw.TextAlign.right),
+            ],
+          ),
+        ),
+      ],
+    ));
+
+    return pdf;
+  }
 }

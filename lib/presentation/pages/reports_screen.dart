@@ -6,6 +6,7 @@ import '../../logic/pos_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../logic/services/report_generator.dart';
+import 'waiter_performance_page.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
@@ -303,6 +304,29 @@ class ReportsScreen extends StatelessWidget {
           _buildReportButton(context, "z_report".tr, Icons.summarize_outlined, Colors.orange, todayOrders, "Z-Report (Kun yakuniy)"),
           _buildReportButton(context, "sales_report".tr, Icons.receipt_long_outlined, Colors.green, todayOrders, "Savdo hisoboti"),
           _buildReportButton(context, "category_report".tr, Icons.category_outlined, Colors.purple, todayOrders, "Category savdosi"),
+          // Waiter Performance — opens a full page
+          InkWell(
+            onTap: () => Get.to(() => const WaiterPerformancePage()),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: 180,
+              height: 100,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE0E5ED)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.leaderboard_rounded, color: Color(0xFF2D3748), size: 28),
+                  const SizedBox(height: 10),
+                  Text("waiter_performance".tr, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                ],
+              ),
+            ),
+          ),
         ],
       );
     });

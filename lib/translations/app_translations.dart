@@ -475,6 +475,7 @@ class AppTranslations extends Translations {
           'z_report': 'Z-Hisobot (Kunlik)',
           'sales_report': 'Sotuvlar hisoboti',
           'category_report': 'Kategoriya bo\'yicha',
+          'waiter_performance': 'Ofitsiantlar unumdorligi',
           'payment_method_report': 'To\'lov turi bo\'yicha',
           'share': 'Ulashish',
           'save_as_pdf': 'PDF yaratish',
