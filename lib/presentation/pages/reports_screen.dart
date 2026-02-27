@@ -55,12 +55,20 @@ class ReportsScreen extends StatelessWidget {
       ),
       body: Obx(() {
         final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        final todayOrders = pos.allOrders.where((o) => (o['timestamp'] ?? '').startsWith(today)).toList();
+        
+        // Filter orders for the current waiter if not Admin/Cashier
+        var ordersForReport = pos.allOrders.toList();
+        if (pos.isWaiter) {
+          final currentWaiterName = pos.currentUser.value?['name'];
+          ordersForReport = ordersForReport.where((o) => o['waiter_name'] == currentWaiterName).toList();
+        }
+
+        final todayOrders = ordersForReport.where((o) => (o['timestamp'] ?? '').startsWith(today)).toList();
         
         double todayRevenue = todayOrders.fold(0, (sum, o) => sum + (o['total'] as double));
         int orderCount = todayOrders.length;
         double avgBill = orderCount > 0 ? todayRevenue / orderCount : 0.0;
-        double totalRevenue = pos.allOrders.fold(0, (sum, o) => sum + (o['total'] as double));
+        double totalRevenue = ordersForReport.fold(0, (sum, o) => sum + (o['total'] as double));
 
         Map<String, Map<String, dynamic>> itemStats = {};
         
@@ -425,9 +433,9 @@ class ReportsScreen extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: () => _showCloseRegisterConfirm(context, todayOrders, todayRevenue),
             icon: const Icon(Icons.logout_rounded),
-            label: Text("close_register".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
+            label: Text(pos.isWaiter ? "logout".tr : "close_register".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF9500),
+              backgroundColor: pos.isWaiter ? Colors.red : const Color(0xFFFF9500),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
