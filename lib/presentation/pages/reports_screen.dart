@@ -423,7 +423,7 @@ class ReportsScreen extends StatelessWidget {
           ),
           const SizedBox(width: 24),
           ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () => _showCloseRegisterConfirm(context, todayOrders, todayRevenue),
             icon: const Icon(Icons.logout_rounded),
             label: Text("close_register".tr, style: const TextStyle(fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
@@ -433,6 +433,41 @@ class ReportsScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCloseRegisterConfirm(BuildContext context, List<Map<String, dynamic>> orders, double revenue) {
+    final POSController pos = Get.find<POSController>();
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("close_register".tr),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("${"unsaved_changes".tr}\n"),
+            Text("${"today_revenue".tr}: ${NumberFormat("#,###", "uz_UZ").format(revenue)} ${pos.currencySymbol}"),
+            Text("${"order_count".tr}: ${orders.length}"),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: Text("cancel".tr)),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              // 1. Generate and print Z-Report automatically
+              final pdf = await ReportGenerator.generateSalesReport("Z-Report (Kun Yopilishi)", orders, pos.restaurantName.value ?? "Cafe", pos.currencySymbol);
+              await ReportGenerator.printPdf(pdf);
+              
+              // 2. Lock terminal (staff selection)
+              pos.lockTerminal();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            child: Text("confirm_pin".tr), // Using 'confirm' translation
           ),
         ],
       ),
