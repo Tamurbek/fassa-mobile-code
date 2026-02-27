@@ -157,7 +157,7 @@ class POSController extends POSControllerState with
         allOrders.refresh();
         saveAllOrders();
 
-        if (isAdmin || isCashier) {
+        if (isAdmin || isCashier || currentTerminal.value != null) {
           final orderId = data['id']?.toString();
           if (orderId != null) {
             final now = DateTime.now();
@@ -173,7 +173,7 @@ class POSController extends POSControllerState with
     });
 
     socket.onPrintRequest((data) async {
-      if (isAdmin || isCashier) {
+      if (isAdmin || isCashier || currentTerminal.value != null) {
         final orderId = data['order']?['id']?.toString();
         if (orderId != null) {
           final now = DateTime.now();

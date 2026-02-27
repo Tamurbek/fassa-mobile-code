@@ -17,7 +17,7 @@ mixin PrinterMixin on POSControllerState {
       if (name != null) order['waiter_name'] = name;
     }
 
-    if (deviceRole.value == "WAITER" || isWaiter) {
+    if ((deviceRole.value == "WAITER" || isWaiter) && currentTerminal.value == null) {
       socket.emitPrintRequest({
         'order': order,
         'isKitchenOnly': isKitchenOnly,
@@ -33,6 +33,17 @@ mixin PrinterMixin on POSControllerState {
         margin: const EdgeInsets.all(10),
       );
       return;
+    }
+
+    // Still emit for other terminals/waiters, but proceed to print locally
+    if (currentTerminal.value != null && (deviceRole.value == "WAITER" || isWaiter)) {
+      socket.emitPrintRequest({
+        'order': order,
+        'isKitchenOnly': isKitchenOnly,
+        'receiptTitle': receiptTitle,
+        'skipCancellation': skipCancellation,
+        'sender': currentUser.value?['name'] ?? "Waiter",
+      });
     }
 
     await printLocally(order, isKitchenOnly: isKitchenOnly, receiptTitle: receiptTitle, skipCancellation: skipCancellation);
