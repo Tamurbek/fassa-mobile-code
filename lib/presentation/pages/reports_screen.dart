@@ -5,6 +5,7 @@ import '../../theme/responsive.dart';
 import '../../logic/pos_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../logic/services/report_generator.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
@@ -111,6 +112,10 @@ class ReportsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     _buildStatsRow(todayRevenue, orderCount, avgBill, totalRevenue, context),
+                    const SizedBox(height: 40),
+                    Text("reports".tr, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                    const SizedBox(height: 16),
+                    _buildReportsMenu(context, todayOrders),
                     const SizedBox(height: 40),
                     Text("top_selling".tr, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
                     const SizedBox(height: 16),
@@ -274,6 +279,112 @@ class ReportsScreen extends StatelessWidget {
               );
             },
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportsMenu(BuildContext context, List<Map<String, dynamic>> todayOrders) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final double buttonWidth = (constraints.maxWidth - (3 * 16)) / 4;
+      return Wrap(
+        spacing: 16,
+        runSpacing: 16,
+        children: [
+          _buildReportButton(context, "x_report".tr, Icons.assessment_outlined, Colors.blue, todayOrders, "X-Report (Shift)"),
+          _buildReportButton(context, "z_report".tr, Icons.summarize_outlined, Colors.orange, todayOrders, "Z-Report (Daily)"),
+          _buildReportButton(context, "sales_report".tr, Icons.receipt_long_outlined, Colors.green, todayOrders, "Daily Sales"),
+          _buildReportButton(context, "category_report".tr, Icons.category_outlined, Colors.purple, todayOrders, "Sales By Category"),
+        ],
+      );
+    });
+  }
+
+  Widget _buildReportButton(BuildContext context, String name, IconData icon, Color color, List<Map<String, dynamic>> orders, String title) {
+    return InkWell(
+      onTap: () => _showReportActions(context, name, orders, title),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 180,
+        height: 100,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE0E5ED)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 10),
+            Text(name, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showReportActions(BuildContext context, String name, List<Map<String, dynamic>> orders, String title) {
+    final POSController pos = Get.find<POSController>();
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildActionButton(context, "share".tr, Icons.share_rounded, Colors.blue, () async {
+                  final pdf = await _generateReport(orders, title, pos);
+                  await ReportGenerator.sharePdf(pdf, title.replaceAll(" ", "_"));
+                }),
+                _buildActionButton(context, "save_as_pdf".tr, Icons.picture_as_pdf_rounded, Colors.red, () async {
+                  final pdf = await _generateReport(orders, title, pos);
+                  await ReportGenerator.printPdf(pdf);
+                }),
+                _buildActionButton(context, "print".tr, Icons.print_rounded, Colors.black87, () async {
+                   final pdf = await _generateReport(orders, title, pos);
+                   await ReportGenerator.printPdf(pdf);
+                }),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<dynamic> _generateReport(List<Map<String, dynamic>> orders, String title, POSController pos) async {
+    if (title.contains("Category")) {
+      return await ReportGenerator.generateCategoryReport(title, orders, pos.restaurantName.value ?? "Cafe", pos.currencySymbol);
+    }
+    return await ReportGenerator.generateSalesReport(title, orders, pos.restaurantName.value ?? "Cafe", pos.currencySymbol);
+  }
+
+  Widget _buildActionButton(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: () {
+        Get.back();
+        onTap();
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         ],
       ),
     );
