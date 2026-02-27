@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'dart:async';
 import 'dart:io';
 import '../data/models/food_item.dart';
+import 'package:dio/dio.dart';
 import '../data/models/printer_model.dart';
 import '../data/models/preparation_area_model.dart';
 import 'controller_parts/pos_controller_state.dart';

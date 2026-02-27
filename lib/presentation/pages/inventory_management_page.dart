@@ -27,15 +27,17 @@ class _InventoryManagementPageState extends State<InventoryManagementPage> {
             onPressed: () => _showMovementHistory(),
             tooltip: "Harakatlar tarixi",
           ),
-          ElevatedButton.icon(
-            onPressed: () => _showAddIngredientDialog(),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text("Yangi xom-ashyo"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: ElevatedButton.icon(
+              onPressed: () => _showAddIngredientDialog(),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text("Yangi xom-ashyo"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
             ),
           ),
         ],

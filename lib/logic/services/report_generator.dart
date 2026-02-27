@@ -894,7 +894,7 @@ class ReportGenerator {
                     width: 12,
                     height: (heightPct * 150) + 1, // min 1px
                     decoration: pw.BoxDecoration(
-                      color: index == maxRevenueHour ? _success : _primary.withOpacity(0.6),
+                      color: index == maxRevenueHour ? _success : PdfColor(_primary.red, _primary.green, _primary.blue, 0.6),
                       borderRadius: const pw.BorderRadius.vertical(top: pw.Radius.circular(4)),
                     ),
                   ),
@@ -924,7 +924,7 @@ class ReportGenerator {
               if (revenue == 0 && hourlyCount[i] == 0) return null;
               final pct = totalRevenue > 0 ? (revenue / totalRevenue * 100).toStringAsFixed(1) : '0.0';
               return pw.TableRow(
-                decoration: i == maxRevenueHour ? pw.BoxDecoration(color: _success.withOpacity(0.1)) : null,
+                decoration: i == maxRevenueHour ? pw.BoxDecoration(color: PdfColor(_success.red, _success.green, _success.blue, 0.1)) : null,
                 children: [
                   _tableCell("$i:00 - ${i + 1}:00", bold: i == maxRevenueHour),
                   _tableCell("${hourlyCount[i]}", align: pw.TextAlign.center),

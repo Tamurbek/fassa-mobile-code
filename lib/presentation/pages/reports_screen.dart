@@ -133,7 +133,7 @@ class ReportsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            _buildStickyFooter(context, todayRevenue),
+            _buildStickyFooter(context, pos, todayOrders, todayRevenue),
           ],
         );
       }),
@@ -300,20 +300,20 @@ class ReportsScreen extends StatelessWidget {
         spacing: 16,
         runSpacing: 16,
         children: [
-          _buildReportButton(context, "x_report".tr, Icons.assessment_outlined, Colors.blue, todayOrders, "X-Report (Smena holati)"),
-          _buildReportButton(context, "z_report".tr, Icons.summarize_outlined, Colors.orange, todayOrders, "Z-Report (Kun yakuniy)"),
-          _buildReportButton(context, "sales_report".tr, Icons.receipt_long_outlined, Colors.green, todayOrders, "Savdo hisoboti"),
-          _buildReportButton(context, "category_report".tr, Icons.category_outlined, Colors.purple, todayOrders, "Category savdosi"),
-          _buildReportButton(context, "payment_method_report".tr, Icons.payments_outlined, Colors.teal, todayOrders, "To'lov turlari"),
-          _buildReportButton(context, "best_hours".tr, Icons.access_time_rounded, Colors.indigo, todayOrders, "Eng yaxshi soatlar"),
+          _buildReportButton(context, "x_report".tr, Icons.assessment_outlined, Colors.blue, todayOrders, "X-Report (Smena holati)", buttonWidth),
+          _buildReportButton(context, "z_report".tr, Icons.summarize_outlined, Colors.orange, todayOrders, "Z-Report (Kun yakuniy)", buttonWidth),
+          _buildReportButton(context, "sales_report".tr, Icons.receipt_long_outlined, Colors.green, todayOrders, "Savdo hisoboti", buttonWidth),
+          _buildReportButton(context, "category_report".tr, Icons.category_outlined, Colors.purple, todayOrders, "Category savdosi", buttonWidth),
+          _buildReportButton(context, "payment_method_report".tr, Icons.payments_outlined, Colors.teal, todayOrders, "To'lov turlari", buttonWidth),
+          _buildReportButton(context, "best_hours".tr, Icons.access_time_rounded, Colors.indigo, todayOrders, "Eng yaxshi soatlar", buttonWidth),
           // Waiter Performance — opens a full page
           InkWell(
             onTap: () => Get.to(() => const WaiterPerformancePage()),
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              width: 180,
-              height: 100,
-              padding: const EdgeInsets.all(16),
+              width: buttonWidth,
+              height: 120,
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -323,8 +323,8 @@ class ReportsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.leaderboard_rounded, color: Color(0xFF2D3748), size: 28),
-                  const SizedBox(height: 10),
-                  Text("waiter_performance".tr, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Text("waiter_performance".tr, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, height: 1.1)),
                 ],
               ),
             ),
@@ -334,13 +334,13 @@ class ReportsScreen extends StatelessWidget {
     });
   }
 
-  Widget _buildReportButton(BuildContext context, String name, IconData icon, Color color, List<Map<String, dynamic>> orders, String title) {
+  Widget _buildReportButton(BuildContext context, String name, IconData icon, Color color, List<Map<String, dynamic>> orders, String title, double width) {
     return InkWell(
       onTap: () => _showReportActions(context, name, orders, title),
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        width: 180,
-        height: 100,
+        width: width,
+        height: 120,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -436,7 +436,7 @@ class ReportsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStickyFooter(BuildContext context, double todayRevenue) {
+  Widget _buildStickyFooter(BuildContext context, POSController pos, List<Map<String, dynamic>> todayOrders, double todayRevenue) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
