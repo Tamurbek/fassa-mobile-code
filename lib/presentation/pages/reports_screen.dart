@@ -336,7 +336,18 @@ class ReportsScreen extends StatelessWidget {
 
   Widget _buildReportButton(BuildContext context, String name, IconData icon, Color color, List<Map<String, dynamic>> orders, String title, double width) {
     return InkWell(
-      onTap: () => _showReportActions(context, name, orders, title),
+      onTap: () async {
+        final POSController pos = Get.find<POSController>();
+        Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
+        try {
+          final pdf = await _generateReport(orders, title, pos);
+          await ReportGenerator.printPdf(pdf);
+        } catch (e) {
+          Get.snackbar("Xatolik", "Hisobotni chop etib bo'lmadi");
+        } finally {
+          Get.back(); // close loading
+        }
+      },
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: width,
@@ -353,44 +364,6 @@ class ReportsScreen extends StatelessWidget {
             Icon(icon, color: color, size: 28),
             const SizedBox(height: 10),
             Text(name, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showReportActions(BuildContext context, String name, List<Map<String, dynamic>> orders, String title) {
-    final POSController pos = Get.find<POSController>();
-    Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildActionButton(context, "share".tr, Icons.share_rounded, Colors.blue, () async {
-                  final pdf = await _generateReport(orders, title, pos);
-                  await ReportGenerator.sharePdf(pdf, title.replaceAll(" ", "_"));
-                }),
-                _buildActionButton(context, "save_as_pdf".tr, Icons.picture_as_pdf_rounded, Colors.red, () async {
-                  final pdf = await _generateReport(orders, title, pos);
-                  await ReportGenerator.printPdf(pdf);
-                }),
-                _buildActionButton(context, "print".tr, Icons.print_rounded, Colors.black87, () async {
-                   final pdf = await _generateReport(orders, title, pos);
-                   await ReportGenerator.printPdf(pdf);
-                }),
-              ],
-            ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -414,26 +387,6 @@ class ReportsScreen extends StatelessWidget {
       return await ReportGenerator.generateHourlySalesReport(orders: orders, cafeName: cafeName, currency: currency);
     }
     return await ReportGenerator.generateSalesReport(title: title, orders: orders, cafeName: cafeName, currency: currency);
-  }
-
-  Widget _buildActionButton(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: () {
-        Get.back();
-        onTap();
-      },
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        ],
-      ),
-    );
   }
 
   Widget _buildStickyFooter(BuildContext context, POSController pos, List<Map<String, dynamic>> todayOrders, double todayRevenue) {
