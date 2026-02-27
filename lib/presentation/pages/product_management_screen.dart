@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../logic/pos_controller.dart';
 import '../../data/models/food_item.dart';
@@ -133,7 +134,7 @@ class ProductManagementScreen extends StatelessWidget {
                             )
                           else
                             Text(
-                              "${item.price.toStringAsFixed(0)} ${'currency'.tr}",
+                              "${NumberFormat("#,###", "uz_UZ").format(item.price)} ${pos.currencySymbol}",
                               style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w600),
                             ),
                         ],

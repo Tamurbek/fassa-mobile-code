@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../theme/app_colors.dart';
@@ -191,7 +192,7 @@ class OrdersScreen extends StatelessWidget {
                   ),
                   child: Text(order['mode'] ?? "Dine-in", style: const TextStyle(fontSize: 12, color: AppColors.primary)),
                 )),
-                DataCell(Text("${order['total'].toStringAsFixed(0)} so'm", style: const TextStyle(fontWeight: FontWeight.bold))),
+                DataCell(Text("${NumberFormat("#,###", "uz_UZ").format(order['total'])} ${pos.currencySymbol}", style: const TextStyle(fontWeight: FontWeight.bold))),
                 DataCell(_buildStatusBadge(order['status'] ?? "Pending")),
               ],
             );
@@ -511,8 +512,8 @@ class OrdersScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            "Order #${order['id']}", 
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18),
+                            "${order['table'] ?? '-'}", 
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 22 : 24, color: AppColors.primary),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
@@ -521,8 +522,8 @@ class OrdersScreen extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      "${order['table']} • $modeLabel • ${order['items']} ${'items'.tr}", 
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: isMobile ? 12 : 14),
+                      "Order #${order['id']} • $modeLabel • ${order['items']} ${'items'.tr}", 
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: isMobile ? 12 : 14, fontWeight: FontWeight.w500),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -538,7 +539,7 @@ class OrdersScreen extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  "${'total'.tr}: \$${order['total'].toStringAsFixed(2)}", 
+                  "${'total'.tr}: ${NumberFormat("#,###", "uz_UZ").format(order['total'])} ${pos.currencySymbol}", 
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 16 : 18, color: AppColors.primary),
                   overflow: TextOverflow.ellipsis,
                 ),
