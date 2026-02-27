@@ -11,6 +11,7 @@ import '../widgets/printing_overlay.dart';
 import '../widgets/virtual_keyboard.dart';
 import 'package:intl/intl.dart';
 import 'main_navigation_screen.dart';
+import 'kitchen_display_page.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -209,6 +210,9 @@ class HomeScreen extends StatelessWidget {
           _buildTopIcon(Icons.lock_rounded, onTap: () => pos.lockTerminal()),
           const SizedBox(width: 12),
           _buildTopIcon(Icons.refresh_rounded, onTap: () => pos.refreshData()),
+          const SizedBox(width: 12),
+          if (pos.isAdmin || pos.isCashier)
+            _buildTopIcon(Icons.kitchen_rounded, onTap: () => Get.to(() => const KitchenDisplayPage())),
           const SizedBox(width: 12),
           _buildTopIcon(Icons.settings_outlined, onTap: () => Get.toNamed('/settings')),
         ],

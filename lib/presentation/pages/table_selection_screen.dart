@@ -93,6 +93,8 @@ class _TableSelectionScreenState extends State<TableSelectionScreen> {
                            const SizedBox(width: 24),
                          ],
                          _StatusIndicator(color: Colors.orange, label: "editing_status".tr),
+                         const SizedBox(width: 24),
+                         _StatusIndicator(color: Colors.teal, label: "reserved".tr),
                       ],
                     ),
                   ),
@@ -331,6 +333,11 @@ class _FloorPlanView extends StatelessWidget {
                       onPanEnd: pos.isEditMode.value ? (_) {
                         pos.syncTablePositionWithBackend(tableId);
                       } : null,
+                      onLongPress: pos.isEditMode.value ? null : () {
+                        if (!isOccupied) {
+                          _showReservationDialog(context, tableId, pos);
+                        }
+                      },
                       onTap: pos.isEditMode.value ? null : (isLockedByOther ? () {
                         Get.snackbar("Xatolik", "Ushbu stolni hozirda $lockedByUser tahrirlamoqda", 
                           backgroundColor: Colors.orange, colorText: Colors.white);
@@ -361,7 +368,6 @@ class _FloorPlanView extends StatelessWidget {
                           }
                         } else {
                           // Check mobile orders permission for waiters if they are on a personal phone
-                          // (Even though floor plan usually shown on tablet/desktop, we keep permission check consistent)
                           if (pos.isWaiter && !pos.allowWaiterMobileOrders.value && pos.currentTerminal.value == null) {
                             Get.snackbar("Ruxsat berilmagan", "Shaxsiy telefondan buyurtma olish taqiqlangan.", 
                               backgroundColor: Colors.red, colorText: Colors.white);
@@ -384,6 +390,8 @@ class _FloorPlanView extends StatelessWidget {
                           o['table'] == tableId && 
                           !["Completed", "Cancelled"].contains(o['status'])
                         );
+                        final reservation = pos.getActiveReservationForTable(tableId);
+
                         final bool isServedByOther = pos.isWaiter && 
                           activeOrder != null && 
                           activeOrder['waiter_name'] != null && 
@@ -403,6 +411,8 @@ class _FloorPlanView extends StatelessWidget {
                           waiterName: activeOrder?['waiter_name'],
                           isServedByOther: isServedByOther,
                           isBilled: isBilled,
+                          isReserved: reservation != null,
+                          customerName: reservation?['customer_name'],
                         );
                       }(),
                     ),
@@ -458,8 +468,100 @@ class _FloorPlanView extends StatelessWidget {
     );
   }
 
+  void _showReservationDialog(BuildContext context, String tableId, POSController pos) {
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final guestsController = TextEditingController(text: "2");
+    DateTime selectedTime = DateTime.now().add(const Duration(hours: 1));
+
+    Get.dialog(
+      StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.bookmark_add_rounded, color: Colors.teal),
+              const SizedBox(width: 8),
+              Text("Stolni band qilish ($tableId)"),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Mijoz ismi", prefixIcon: Icon(Icons.person_outline)),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(labelText: "Telefon", prefixIcon: Icon(Icons.phone_outlined)),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: guestsController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: "Kishi soni", prefixIcon: Icon(Icons.people_outline)),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text("Vaqt", style: TextStyle(fontSize: 14)),
+                  subtitle: Text("${selectedTime.hour}:${selectedTime.minute.toString().padLeft(2, '0')}", 
+                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.teal)),
+                  trailing: ElevatedButton(
+                    onPressed: () async {
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.fromDateTime(selectedTime),
+                      );
+                      if (time != null) {
+                        setState(() {
+                          selectedTime = DateTime(
+                            selectedTime.year, selectedTime.month, selectedTime.day,
+                            time.hour, time.minute
+                          );
+                        });
+                      }
+                    },
+                    child: const Text("O'zgartirish"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Get.back(), child: const Text("Bekor qilish")),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isEmpty) return;
+                try {
+                  await pos.createReservation(
+                    tableId: tableId,
+                    customerName: nameController.text,
+                    phone: phoneController.text,
+                    guests: int.tryParse(guestsController.text) ?? 2,
+                    startTime: selectedTime,
+                  );
+                  Get.back();
+                  Get.snackbar("Muvaffaqiyatli", "Stol band qilindi", backgroundColor: Colors.green, colorText: Colors.white);
+                } catch (e) {
+                  Get.snackbar("Xatolik", e.toString(), backgroundColor: Colors.red, colorText: Colors.white);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+              child: const Text("Band qilish"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Map<String, double> _getDefaultPosition(String tableNum, double width, double height) {
-    // Extract numbers if possible, otherwise use hash
+    // ... (existing logic)
     int? parsed = int.tryParse(tableNum.replaceAll(RegExp(r'[^0-9]'), ''));
     int index = (parsed ?? tableNum.hashCode.abs()) % 20;
     
@@ -482,6 +584,8 @@ class _TableWidget extends StatelessWidget {
   final String? waiterName;
   final bool isServedByOther;
   final bool isBilled;
+  final bool isReserved;
+  final String? customerName;
 
   const _TableWidget({
     required this.tableNum,
@@ -495,6 +599,8 @@ class _TableWidget extends StatelessWidget {
     this.waiterName,
     this.isServedByOther = false,
     this.isBilled = false,
+    this.isReserved = false,
+    this.customerName,
   });
 
   @override
@@ -511,7 +617,9 @@ class _TableWidget extends StatelessWidget {
                     ? Colors.indigo.withOpacity(0.1)
                     : (isServedByOther 
                         ? Colors.blueGrey.withOpacity(0.2) 
-                        : (isOccupied ? Colors.red.withOpacity(0.1) : AppColors.white)))),
+                        : (isOccupied 
+                            ? Colors.red.withOpacity(0.1) 
+                            : (isReserved ? Colors.teal.withOpacity(0.1) : AppColors.white))))),
         shape: shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: shape == 'circle' ? null : BorderRadius.circular(20),
         border: Border.all(
@@ -523,8 +631,10 @@ class _TableWidget extends StatelessWidget {
                       ? Colors.indigo.withOpacity(0.4)
                       : (isServedByOther 
                           ? Colors.blueGrey.withOpacity(0.4) 
-                          : (isOccupied ? Colors.red.withOpacity(0.3) : Colors.grey.shade200)))),
-          width: (isEditMode || isLockedByOther || isServedByOther || isBilled) ? 2 : 1,
+                          : (isOccupied 
+                              ? Colors.red.withOpacity(0.3) 
+                              : (isReserved ? Colors.teal.withOpacity(0.5) : Colors.grey.shade200))))),
+          width: (isEditMode || isLockedByOther || isServedByOther || isBilled || isReserved) ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
@@ -544,14 +654,18 @@ class _TableWidget extends StatelessWidget {
                     ? Icons.lock_clock_rounded 
                     : (isBilled 
                         ? Icons.lock_person_rounded
-                        : (isServedByOther ? Icons.person_off_rounded : Icons.table_restaurant))), 
+                        : (isServedByOther 
+                            ? Icons.person_off_rounded 
+                            : (isReserved ? Icons.bookmark_rounded : Icons.table_restaurant)))), 
             color: isEditMode 
                 ? Colors.blue 
                 : (isLockedByOther 
                     ? Colors.orange 
                     : (isBilled 
                         ? Colors.indigo.shade400
-                        : (isServedByOther ? Colors.blueGrey : (isOccupied ? Colors.red : AppColors.primary)))),
+                        : (isServedByOther 
+                            ? Colors.blueGrey 
+                            : (isOccupied ? Colors.red : (isReserved ? Colors.teal : AppColors.primary))))),
             size: 24,
           ),
           const SizedBox(height: 4),
@@ -566,10 +680,20 @@ class _TableWidget extends StatelessWidget {
                       ? Colors.orange 
                       : (isBilled 
                           ? Colors.indigo.shade400
-                          : (isServedByOther ? Colors.blueGrey : (isOccupied ? Colors.red : AppColors.textPrimary)))),
+                          : (isServedByOther ? Colors.blueGrey : (isOccupied ? Colors.red : (isReserved ? Colors.teal : AppColors.textPrimary))))),
             ),
           ),
-          if (isLockedByOther)
+          if (isReserved && !isOccupied)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Text(
+                customerName ?? "Reserved",
+                style: const TextStyle(fontSize: 10, color: Colors.teal, fontWeight: FontWeight.bold),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            )
+          else if (isLockedByOther)
             Text(
               lockedByUser ?? "User",
               style: const TextStyle(fontSize: 8, color: Colors.orange, fontWeight: FontWeight.bold),

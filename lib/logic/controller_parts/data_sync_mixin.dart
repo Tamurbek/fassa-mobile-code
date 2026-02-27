@@ -191,6 +191,15 @@ mixin DataSyncMixin on POSControllerState {
           } catch (e) { print("Error fetching users: $e"); }
         }
       }(),
+      
+      // 9. Fetch Reservations
+      () async {
+        try {
+          final res = await api.getReservations();
+          reservations.assignAll(List<Map<String, dynamic>>.from(res));
+          storage.write('reservations', reservations.toList());
+        } catch (e) { print("Error fetching reservations: $e"); }
+      }(),
     ]);
   }
 

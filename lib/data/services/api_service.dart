@@ -496,4 +496,40 @@ class ApiService {
       rethrow;
     }
   }
+
+  // Reservations
+  Future<List<dynamic>> getReservations() async {
+    try {
+      final response = await _dio.get('/reservations');
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createReservation(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('/reservations', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateReservation(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('/reservations/$id', data: data);
+      return response.data;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteReservation(int id) async {
+    try {
+      await _dio.delete('/reservations/$id');
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

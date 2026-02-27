@@ -56,6 +56,7 @@ abstract class POSControllerState extends GetxController {
   var isOrderModified = false.obs;
   var isOffline = false.obs;
   var pendingOfflineOrders = 0.obs;
+  var reservations = <Map<String, dynamic>>[].obs;
 
   // Discount
   var discountType = "percent".obs; // "percent" | "fixed"

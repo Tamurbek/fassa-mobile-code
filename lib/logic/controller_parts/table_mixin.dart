@@ -42,4 +42,54 @@ mixin TableMixin on POSControllerState {
       print("Error updating area dimensions: $e");
     }
   }
+
+  // Reservations
+  Future<void> createReservation({
+    required String tableId,
+    required String customerName,
+    required String? phone,
+    required DateTime startTime,
+    required int guests,
+    String? note,
+  }) async {
+    final String? backendTableId = tableBackendIds[tableId];
+    if (backendTableId == null) throw "Table ID not found";
+
+    try {
+      await api.createReservation({
+        "table_id": backendTableId,
+        "customer_name": customerName,
+        "customer_phone": phone,
+        "guests_count": guests,
+        "start_time": startTime.toIso8601String(),
+        "note": note,
+        "cafe_id": cafeId,
+      });
+      // Refresh reservations
+      final res = await api.getReservations();
+      reservations.assignAll(List<Map<String, dynamic>>.from(res));
+    } catch (e) {
+      print("Error creating reservation: $e");
+      rethrow;
+    }
+  }
+
+  Map<String, dynamic>? getActiveReservationForTable(String tableId) {
+    final String? bTableId = tableBackendIds[tableId];
+    if (bTableId == null) return null;
+
+    final now = DateTime.now();
+    for (var r in reservations) {
+      if (r['table_id'] == bTableId && r['status'] == 'CONFIRMED' || r['status'] == 'PENDING') {
+        final start = DateTime.parse(r['start_time'].toString());
+        // If reservation is within next 2 hours or currently active
+        // Let's say we mark as reserved if it's within 1 hour of the current time
+        if (start.isAfter(now.subtract(const Duration(minutes: 30))) && 
+            start.isBefore(now.add(const Duration(hours: 3)))) {
+          return r;
+        }
+      }
+    }
+    return null;
+  }
 }
