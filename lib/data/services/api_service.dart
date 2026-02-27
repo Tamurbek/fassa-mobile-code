@@ -30,12 +30,10 @@ class ApiService {
       },
       onError: (DioException e, handler) {
         if (e.response?.statusCode == 401) {
-          final detail = e.response?.data?['detail'];
-          if (detail == "Qurilma o'zgargani sababli tizimdan chiqdingiz") {
-             try {
-                g.Get.find<logic.POSController>().logout(forced: true);
-             } catch (_) {}
-          }
+           // Any 401 error (expired, invalid, session deactivated) should trigger logout
+           try {
+              g.Get.find<logic.POSController>().logout(forced: true);
+           } catch (_) {}
         }
         return handler.next(e);
       }
