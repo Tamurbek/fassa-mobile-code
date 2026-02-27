@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'dart:typed_data';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
@@ -430,7 +431,7 @@ class PrinterService {
     }
   }
 
-  Future<bool> printPdfAsImage(PrinterModel printer, List<int> pdfBytes) async {
+  Future<bool> printPdfAsImage(PrinterModel printer, Uint8List pdfBytes) async {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
 
     try {
