@@ -293,6 +293,12 @@ class POSController extends POSControllerState with
       "is_paid": isPaid,
       "waiter_name": selectedWaiter.value ?? currentUser.value?['name'],
       "cafe_id": cafeId,
+      // Discount
+      if (discountValue.value > 0) ...{
+        "discount_type": discountType.value,
+        "discount_value": discountValue.value,
+        "discount_amount": discountAmount,
+      },
       "items": () {
         final Map<String, Map<String, dynamic>> grouped = {};
         for (var e in currentOrder) {

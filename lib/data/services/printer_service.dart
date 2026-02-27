@@ -210,6 +210,15 @@ class PrinterService {
         ]);
       }
 
+      // Discount row
+      final double discountAmt = (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
+      if (discountAmt > 0) {
+        bytes += generator.row([
+          PosColumn(text: _normalizeString('CHEGIRMA:'), width: 7, styles: const PosStyles(bold: true)),
+          PosColumn(text: _normalizeString('-${_formatPrice(discountAmt)} so\'m'), width: 5, styles: const PosStyles(align: PosAlign.right, bold: true)),
+        ]);
+      }
+
       bytes += generator.hr(ch: '=');
       bytes += generator.row([
         PosColumn(text: _normalizeString('TO\'LOV:'), width: 5, styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size1)),

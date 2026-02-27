@@ -26,7 +26,21 @@ mixin OrderMixin on POSControllerState {
     return 0.0;
   }
 
-  double get total => subtotal + serviceFee;
+  /// Chegirma miqdori (hisoblangan)
+  double get discountAmount {
+    if (discountValue.value <= 0) return 0.0;
+    if (discountType.value == "percent") {
+      return (subtotal + serviceFee) * (discountValue.value / 100);
+    }
+    return discountValue.value.clamp(0.0, subtotal + serviceFee);
+  }
+
+  double get total => (subtotal + serviceFee - discountAmount).clamp(0.0, double.infinity);
+
+  void resetDiscount() {
+    discountValue.value = 0.0;
+    discountType.value = "percent";
+  }
 
   void addToCart(FoodItem item, {FoodVariant? variant}) {
     int index = currentOrder.indexWhere((e) => 
@@ -269,6 +283,8 @@ mixin OrderMixin on POSControllerState {
     selectedTable.value = "";
     editingOrderId.value = null;
     isOrderModified.value = false;
+    discountValue.value = 0.0;
+    discountType.value = "percent";
   }
 
   void loadOrderForEditing(Map<String, dynamic> order, List<FoodItem> catalog) {

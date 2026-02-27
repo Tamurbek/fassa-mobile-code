@@ -760,91 +760,293 @@ class HomeScreen extends StatelessWidget {
         color: Colors.white,
         border: Border(top: BorderSide(color: Color(0xFFEDF0F5))),
       ),
-      child: Column(
-        children: [
-          _buildSumRow("subtotal_sum".tr, "${NumberFormat("#,###", "uz_UZ").format(pos.subtotal)} ${pos.currencySymbol}"),
-          _buildSumRow(
-          pos.currentMode.value == "Dine-in" 
-            ? "${"service_fee_label".tr} (${pos.serviceFeeDineIn.value.toStringAsFixed(0)}%)"
-            : "service_fee_label".tr, 
-          "${NumberFormat("#,###", "uz_UZ").format(pos.serviceFee)} ${pos.currencySymbol}"
-        ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("total".tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
-              Text("${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${pos.currencySymbol}", 
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFFF9500))),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              // Kitchen Print (Always visible)
-              Expanded(
-                child: _buildActionBtn(
-                  Icons.soup_kitchen_rounded, 
-                  pos.isOrderModified.value ? "Saqlash" : "Oshxona", 
-                  const Color(0xFF3B82F6), 
-                  () async {
-                  if (!pos.isOrderModified.value) {
-                    Get.snackbar("Eslatma", "O'zgarishlar yo'q", 
-                      backgroundColor: Colors.orange, colorText: Colors.white);
-                    return;
-                  }
-                  bool success = await pos.submitOrder(isPaid: false);
-                  if (success) {
-                    Get.offAll(() => const MainNavigationScreen());
-                  }
-                }, tooltip: "kitchen_print_sidebar".tr),
-              ),
-              const SizedBox(width: 8),
-              // Receipt Print (Always visible)
-              Expanded(
-                child: _buildActionBtn(Icons.receipt_long_rounded, "Hisob", const Color(0xFF64748B), () {
-                  pos.printBillAndExit();
-                }, tooltip: "Hisob chekini chiqarish"),
-              ),
-              // Pay & Finish (Admin/Cashier only)
-              if (pos.isAdmin || pos.isCashier) ...[
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildActionBtn(Icons.payments_rounded, "To`lov", const Color(0xFFFF9500), () async {
-                    Get.dialog(
-                      AlertDialog(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        title: const Text("To'lovni tasdiqlash", style: TextStyle(fontWeight: FontWeight.bold)),
-                        content: Text("Jami: ${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${pos.currencySymbol}\n\nTo'lov qabul qilindi va buyurtma yakunlansinmi?"),
-                        actions: [
-                          TextButton(onPressed: () => Get.back(), child: const Text("Yo'q, bekor qilish")),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF9500),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            onPressed: () async {
-                              Get.back(); // Close dialog
-                              bool success = await pos.submitOrder(isPaid: true);
-                              if (success) {
-                                Get.offAll(() => MainNavigationScreen());
-                              }
-                            },
-                            child: const Text("Ha, tasdiqlayman"),
-                          ),
-                        ],
-                      ),
-                    );
-                  }, tooltip: "pay_finish_sidebar".tr),
+      child: Obx(() {
+        final hasDiscount = pos.discountValue.value > 0;
+        return Column(
+          children: [
+            _buildSumRow("subtotal_sum".tr, "${NumberFormat("#,###", "uz_UZ").format(pos.subtotal)} ${pos.currencySymbol}"),
+            _buildSumRow(
+              pos.currentMode.value == "Dine-in"
+                ? "${"service_fee_label".tr} (${pos.serviceFeeDineIn.value.toStringAsFixed(0)}%)"
+                : "service_fee_label".tr,
+              "${NumberFormat("#,###", "uz_UZ").format(pos.serviceFee)} ${pos.currencySymbol}"
+            ),
+
+            // Chegirma satri
+            if (hasDiscount) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.discount_rounded, color: Colors.green, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          pos.discountType.value == "percent"
+                            ? "Chegirma (${pos.discountValue.value.toStringAsFixed(0)}%)"
+                            : "Chegirma (belgilangan)",
+                          style: const TextStyle(color: Colors.green, fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          "- ${NumberFormat("#,###", "uz_UZ").format(pos.discountAmount)} ${pos.currencySymbol}",
+                          style: const TextStyle(color: Colors.green, fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () => pos.resetDiscount(),
+                          child: const Icon(Icons.close, color: Colors.red, size: 16),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
+              ),
+            ],
+
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("total".tr, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
+                Text("${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${pos.currencySymbol}",
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFFFF9500))),
               ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                // Chegirma tugmasi
+                if (pos.isAdmin || pos.isCashier) ...[
+                  _buildActionBtn(
+                    Icons.discount_rounded,
+                    "Chegirma",
+                    hasDiscount ? Colors.green : const Color(0xFF6B7280),
+                    () => _showDiscountDialog(pos),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                // Kitchen Print
+                Expanded(
+                  child: _buildActionBtn(
+                    Icons.soup_kitchen_rounded,
+                    pos.isOrderModified.value ? "Saqlash" : "Oshxona",
+                    const Color(0xFF3B82F6),
+                    () async {
+                      if (!pos.isOrderModified.value) {
+                        Get.snackbar("Eslatma", "O'zgarishlar yo'q",
+                          backgroundColor: Colors.orange, colorText: Colors.white);
+                        return;
+                      }
+                      bool success = await pos.submitOrder(isPaid: false);
+                      if (success) {
+                        Get.offAll(() => const MainNavigationScreen());
+                      }
+                    },
+                    tooltip: "kitchen_print_sidebar".tr,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Receipt Print
+                Expanded(
+                  child: _buildActionBtn(Icons.receipt_long_rounded, "Hisob", const Color(0xFF64748B), () {
+                    pos.printBillAndExit();
+                  }, tooltip: "Hisob chekini chiqarish"),
+                ),
+                // Pay & Finish (Admin/Cashier only)
+                if (pos.isAdmin || pos.isCashier) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildActionBtn(Icons.payments_rounded, "To`lov", const Color(0xFFFF9500), () async {
+                      Get.dialog(
+                        AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          title: const Text("To'lovni tasdiqlash", style: TextStyle(fontWeight: FontWeight.bold)),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Jami: ${NumberFormat("#,###", "uz_UZ").format(pos.total)} ${pos.currencySymbol}"),
+                              if (hasDiscount)
+                                Text(
+                                  "Chegirma: -${NumberFormat("#,###", "uz_UZ").format(pos.discountAmount)} ${pos.currencySymbol}",
+                                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                                ),
+                              const SizedBox(height: 8),
+                              Text("To'lov qabul qilindi va buyurtma yakunlansinmi?",
+                                style: TextStyle(color: Colors.grey.shade600)),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Get.back(), child: const Text("Yo'q, bekor qilish")),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF9500),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              onPressed: () async {
+                                Get.back();
+                                bool success = await pos.submitOrder(isPaid: true);
+                                if (success) {
+                                  Get.offAll(() => MainNavigationScreen());
+                                }
+                              },
+                              child: const Text("Ha, tasdiqlayman"),
+                            ),
+                          ],
+                        ),
+                      );
+                    }, tooltip: "pay_finish_sidebar".tr),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  void _showDiscountDialog(POSController pos) {
+    final TextEditingController ctrl = TextEditingController(
+      text: pos.discountValue.value > 0 ? pos.discountValue.value.toStringAsFixed(0) : "",
+    );
+    String localType = pos.discountType.value;
+
+    Get.dialog(
+      StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text("Chegirma qo'shish", style: TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Type selector
+              Container(
+                decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  children: [
+                    Expanded(child: GestureDetector(
+                      onTap: () => setState(() => localType = "percent"),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: localType == "percent" ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: localType == "percent" ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)] : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.percent, size: 16, color: localType == "percent" ? const Color(0xFFFF9500) : Colors.grey),
+                            const SizedBox(width: 6),
+                            Text("Foiz (%)", style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 13,
+                              color: localType == "percent" ? const Color(0xFF1A1A1A) : Colors.grey,
+                            )),
+                          ],
+                        ),
+                      ),
+                    )),
+                    Expanded(child: GestureDetector(
+                      onTap: () => setState(() => localType = "fixed"),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: localType == "fixed" ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: localType == "fixed" ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)] : null,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.attach_money, size: 16, color: localType == "fixed" ? const Color(0xFFFF9500) : Colors.grey),
+                            const SizedBox(width: 6),
+                            Text("Miqdor", style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 13,
+                              color: localType == "fixed" ? const Color(0xFF1A1A1A) : Colors.grey,
+                            )),
+                          ],
+                        ),
+                      ),
+                    )),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: ctrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                autofocus: true,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFFF9500)),
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  hintText: localType == "percent" ? "Masalan: 10" : "Masalan: 5000",
+                  suffixText: localType == "percent" ? "%" : pos.currencySymbol,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFFF9500), width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Quick percent presets
+              if (localType == "percent")
+                Wrap(
+                  spacing: 8,
+                  children: [5, 10, 15, 20, 25, 50].map((p) => GestureDetector(
+                    onTap: () => ctrl.text = p.toString(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFFF9500).withOpacity(0.3)),
+                      ),
+                      child: Text("$p%", style: const TextStyle(color: Color(0xFFFF9500), fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                  )).toList(),
+                ),
             ],
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () {
+                pos.resetDiscount();
+                Get.back();
+              },
+              child: const Text("Bekor qilish", style: TextStyle(color: Colors.red)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF9500),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                final val = double.tryParse(ctrl.text.replaceAll(",", ".")) ?? 0.0;
+                if (val > 0) {
+                  pos.discountType.value = localType;
+                  pos.discountValue.value = localType == "percent" ? val.clamp(0.0, 100.0) : val;
+                }
+                Get.back();
+              },
+              child: const Text("Qo'llash"),
+            ),
+          ],
+        ),
       ),
     );
   }
+
 
   Widget _buildActionBtn(IconData icon, String label, Color color, VoidCallback onTap, {String? tooltip}) {
     return Column(

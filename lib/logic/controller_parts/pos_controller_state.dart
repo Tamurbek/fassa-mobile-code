@@ -55,6 +55,10 @@ abstract class POSControllerState extends GetxController {
   String originalOrderJson = ""; // To check if any changes were made
   var isOrderModified = false.obs;
 
+  // Discount
+  var discountType = "percent".obs; // "percent" | "fixed"
+  var discountValue = 0.0.obs;
+
   // Settings
   var printerPaperSize = "80mm".obs;
   var autoPrintReceipt = false.obs;
