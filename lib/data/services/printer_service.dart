@@ -618,6 +618,42 @@ class PrinterService {
     } catch (e) { return false; }
   }
 
+  Future<bool> printWaiterPerformanceReport(PrinterModel printer, List<Map<String, dynamic>> orders, String period) async {
+    if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
+    try {
+      final profile = await CapabilityProfile.load();
+      final generator = Generator(printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
+      List<int> bytes = [];
+
+      bytes += generator.text(_normalizeString('OFITSIANTLAR UNUMDORLIGI'), styles: const PosStyles(align: PosAlign.center, bold: true));
+      bytes += generator.text(_normalizeString('Davr: $period'), styles: const PosStyles(align: PosAlign.center));
+      bytes += generator.hr();
+
+      final Map<String, Map<String, dynamic>> map = {};
+      for (var o in orders) {
+        final name = (o['waiter_name'] ?? 'Nomaylum').toString();
+        final total = (o['total'] as num? ?? 0).toDouble();
+        if (!map.containsKey(name)) {
+          map[name] = {'name': name, 'orders': 0, 'revenue': 0.0};
+        }
+        map[name]!['orders'] = (map[name]!['orders'] as int) + 1;
+        map[name]!['revenue'] = (map[name]!['revenue'] as double) + total;
+      }
+
+      final list = map.values.toList();
+      list.sort((a, b) => (b['revenue'] as double).compareTo(a['revenue'] as double));
+
+      for (var w in list) {
+        bytes += generator.text(_normalizeString(w['name'].toString().toUpperCase()), styles: const PosStyles(bold: true));
+        bytes += _row(generator, '  ${w['orders']} buyurtma', _formatPrice(w['revenue']));
+      }
+
+      bytes += generator.feed(3);
+      bytes += generator.cut();
+      return await _sendToPrinter(printer, bytes);
+    } catch (e) { return false; }
+  }
+
   List<int> _row(Generator g, String left, String right, {bool bold = false}) {
     return g.row([
       PosColumn(text: _normalizeString(left), width: 7, styles: PosStyles(bold: bold)),

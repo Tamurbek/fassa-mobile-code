@@ -355,15 +355,34 @@ class _WaiterPerformancePageState extends State<WaiterPerformancePage> {
     setState(() => _exporting = true);
     try {
       final orders = _filteredOrders(pos);
+      final periodLabel = _periodLabels[_period] ?? '';
+      
+      // Try to find Receipt Printer for Direct ESC/POS printing
+      final receiptPrinters = pos.printers.where((p) => p.isActive && (p.printReceipts || p.printPayments)).toList();
+      
+      if (receiptPrinters.isNotEmpty) {
+        bool anySuccess = false;
+        for (var p in receiptPrinters) {
+          final ok = await pos.printerService.printWaiterPerformanceReport(p, orders, periodLabel);
+          if (ok) anySuccess = true;
+        }
+        if (anySuccess) {
+          Get.snackbar('Muvaffaqiyat', 'Hisobot printerga yuborildi', 
+              backgroundColor: Colors.green, colorText: Colors.white);
+          return;
+        }
+      }
+
+      // Fallback: Generate PDF
       final pdf = await ReportGenerator.generateWaiterPerformanceReport(
         orders: orders,
         cafeName: pos.restaurantName.value.isEmpty ? 'Cafe' : pos.restaurantName.value,
         currency: pos.currencySymbol,
-        period: _periodLabels[_period] ?? '',
+        period: periodLabel,
       );
-      await ReportGenerator.sharePdf(pdf, 'Waiter_Performance_${_period}');
+      await ReportGenerator.printPdf(pdf);
     } catch (e) {
-      Get.snackbar('Xato', 'PDF yaratib bo\'lmadi: $e',
+      Get.snackbar('Xato', 'Chop etib bo\'mladi: $e',
         backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
       setState(() => _exporting = false);
