@@ -24,11 +24,16 @@ jobs:
       - name: Build Windows
         run: flutter build windows --release
 
-      - name: Upload Windows Artifact
+      - name: Create Installer (Inno Setup)
+        shell: pwsh
+        run: |
+          iscc windows/installer.iss
+
+      - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
         with:
-          name: fassa-pos-windows
-          path: build/windows/x64/runner/Release/
+          name: fassa-pos-windows-installer
+          path: build/windows/x64/runner/Release/installer/FassaPos_Setup.exe
 
   build-android:
     name: Android Build
