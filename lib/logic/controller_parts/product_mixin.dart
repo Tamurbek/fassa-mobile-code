@@ -228,7 +228,6 @@ mixin ProductMixin on POSControllerState {
   }
 
   Future<void> reorderProducts(int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) newIndex -= 1;
     final item = products.removeAt(oldIndex);
     products.insert(newIndex, item);
     products.refresh();
