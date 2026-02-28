@@ -165,39 +165,88 @@ class ProductManagementScreen extends StatelessWidget {
                 }
               },
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              leading: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ReorderableDragStartListener(
-                    index: pos.products.indexOf(item),
-                    child: const Icon(Icons.drag_indicator, color: Colors.grey, size: 20),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      if (isExpanded) {
-                        expandedProductIds.remove(item.id);
-                      } else {
-                        expandedProductIds.add(item.id);
-                      }
-                    },
-                    child: Icon(
-                      isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right, 
-                      color: AppColors.primary,
-                      size: 28,
+              leading: DragTarget<Map<String, dynamic>>(
+                onWillAccept: (data) {
+                  // Cannot drop on itself
+                  if (data?['type'] == 'product' && data?['data'].id == item.id) return false;
+                  if (data?['type'] == 'variant' && data?['parentId'] == item.id) return false;
+                  return true;
+                },
+                onAccept: (data) {
+                   if (data['type'] == 'product') {
+                     // Check if source product has variants
+                     if (data['data'].hasVariants) {
+                       Get.snackbar("Xato", "Variantlari bor mahsulotni boshqasiga qo'shib bo'lmaydi");
+                       return;
+                     }
+                     pos.mergeProducts(data['data'], item);
+                   } else if (data['type'] == 'variant') {
+                     final sourceParent = pos.products.firstWhere((p) => p.id == data['parentId']);
+                     pos.moveVariantToProduct(sourceParent, data['index'], item);
+                   }
+                },
+                builder: (context, candidateData, rejectedData) {
+                  return Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      border: candidateData.isNotEmpty ? Border.all(color: AppColors.primary, width: 2) : null,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CommonImage(
-                      imageUrl: item.imageUrl,
-                      width: 45,
-                      height: 45,
-                      fit: BoxFit.cover,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Draggable<Map<String, dynamic>>(
+                          data: {'type': 'product', 'data': item},
+                          feedback: Material(
+                            elevation: 8,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                              child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                          childWhenDragging: Opacity(
+                            opacity: 0.3,
+                            child: ReorderableDragStartListener(
+                              index: pos.products.indexOf(item),
+                              child: const Icon(Icons.drag_indicator, color: Colors.grey, size: 20),
+                            ),
+                          ),
+                          child: ReorderableDragStartListener(
+                            index: pos.products.indexOf(item),
+                            child: const Icon(Icons.drag_indicator, color: Colors.grey, size: 20),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () {
+                            if (isExpanded) {
+                              expandedProductIds.remove(item.id);
+                            } else {
+                              expandedProductIds.add(item.id);
+                            }
+                          },
+                          child: Icon(
+                            isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right, 
+                            color: AppColors.primary,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: CommonImage(
+                            imageUrl: item.imageUrl,
+                            width: 45,
+                            height: 45,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
               title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
               subtitle: Row(
@@ -272,7 +321,19 @@ class ProductManagementScreen extends StatelessWidget {
       ),
       child: ListTile(
         visualDensity: VisualDensity.compact,
-        leading: const Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.grey),
+        leading: Draggable<Map<String, dynamic>>(
+          data: {'type': 'variant', 'data': variant, 'parentId': parentId, 'index': variantIndex},
+          feedback: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+              child: Text(variant.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            ),
+          ),
+          child: const Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.grey),
+        ),
         title: Text(variant.name, style: const TextStyle(fontSize: 14)),
         subtitle: Text("${NumberFormat("#,###", "uz_UZ").format(variant.price)} ${pos.currencySymbol}", style: const TextStyle(fontSize: 12, color: Colors.grey)),
         trailing: Row(

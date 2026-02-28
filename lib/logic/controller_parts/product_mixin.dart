@@ -116,6 +116,52 @@ mixin ProductMixin on POSControllerState {
     }
   }
 
+  Future<void> moveVariantToProduct(FoodItem sourceParent, int variantIndex, FoodItem targetProduct) async {
+    if (sourceParent.id == targetProduct.id) return;
+    
+    final variant = sourceParent.variants[variantIndex];
+    try {
+      // 1. Add variant to target
+      final targetVariants = List<FoodVariant>.from(targetProduct.variants)..add(variant);
+      final updatedTarget = FoodItem(
+        id: targetProduct.id,
+        name: targetProduct.name,
+        description: targetProduct.description,
+        price: targetProduct.price,
+        imageUrl: targetProduct.imageUrl,
+        category: targetProduct.category,
+        preparationArea: targetProduct.preparationArea,
+        preparationAreaId: targetProduct.preparationAreaId,
+        hasVariants: true,
+        variants: targetVariants,
+        isAvailable: targetProduct.isAvailable,
+      );
+      await updateProduct(updatedTarget);
+
+      // 2. Remove variant from source
+      final sourceVariants = List<FoodVariant>.from(sourceParent.variants)..removeAt(variantIndex);
+      final updatedSource = FoodItem(
+        id: sourceParent.id,
+        name: sourceParent.name,
+        description: sourceParent.description,
+        price: sourceParent.price,
+        imageUrl: sourceParent.imageUrl,
+        category: sourceParent.category,
+        preparationArea: sourceParent.preparationArea,
+        preparationAreaId: sourceParent.preparationAreaId,
+        hasVariants: sourceVariants.isNotEmpty,
+        variants: sourceVariants,
+        isAvailable: sourceParent.isAvailable,
+      );
+      await updateProduct(updatedSource);
+      
+      saveProducts();
+      Get.snackbar("Muvaffaqiyatli", "${variant.name} ${targetProduct.name} mahsulotiga o'tkazildi");
+    } catch (e) {
+      print("Error moving variant: $e");
+    }
+  }
+
   Future<void> addVariantToProduct(FoodItem parent, String name, double price) async {
     try {
       final newVariants = List<FoodVariant>.from(parent.variants)..add(FoodVariant(id: '', name: name, price: price));
