@@ -319,6 +319,7 @@ class ProductManagementScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
               ),
             ),
           );
