@@ -54,113 +54,124 @@ class ProductManagementScreen extends StatelessWidget {
         if (pos.products.isEmpty) {
           return Center(child: Text("no_products".tr));
         }
-        return ListView.separated(
+        return ReorderableListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: pos.products.length,
-          separatorBuilder: (c, i) => const SizedBox(height: 12),
+          onReorder: (oldIndex, newIndex) => pos.reorderProducts(oldIndex, newIndex),
           itemBuilder: (context, index) {
             final item = pos.products[index];
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Slidable(
-                key: ValueKey(item.id),
-                enabled: Responsive.isMobile(context),
-                startActionPane: ActionPane(
-                  motion: const ScrollMotion(),
-                  children: [
-                    SlidableAction(
-                      onPressed: (context) => _confirmDeleteProduct(context, pos, item),
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      icon: Icons.delete,
-                      label: 'delete'.tr,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ],
-                ),
-                endActionPane: ActionPane(
-                  motion: const ScrollMotion(),
-                  children: [
-                    SlidableAction(
-                      onPressed: (context) => Get.to(() => SaveProductScreen(item: item)),
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      icon: Icons.edit,
-                      label: 'edit'.tr,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ],
-                ),
-                child: Container(
-                  color: Colors.white,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: CommonImage( // Updated
-                        imageUrl: item.imageUrl,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
+            return Padding(
+              key: ValueKey(item.id),
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Slidable(
+                  key: ValueKey("slidable_${item.id}"),
+                  enabled: Responsive.isMobile(context),
+                  startActionPane: ActionPane(
+                    motion: const ScrollMotion(),
+                    children: [
+                      SlidableAction(
+                        onPressed: (context) => _confirmDeleteProduct(context, pos, item),
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        icon: Icons.delete,
+                        label: 'delete'.tr,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                    ),
-                    title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Row(
+                    ],
+                  ),
+                  endActionPane: ActionPane(
+                    motion: const ScrollMotion(),
+                    children: [
+                      SlidableAction(
+                        onPressed: (context) => Get.to(() => SaveProductScreen(item: item)),
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        icon: Icons.edit,
+                        label: 'edit'.tr,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ],
+                  ),
+                  child: Container(
+                    color: Colors.white,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              item.category,
-                              style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                          const Icon(Icons.drag_indicator, color: Colors.grey, size: 20),
+                          const SizedBox(width: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CommonImage(
+                              imageUrl: item.imageUrl,
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          if (item.hasVariants)
-                            Row(
-                              children: [
-                                const Icon(Icons.sell_outlined, size: 12, color: Colors.blue),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "${item.variants.length} variant",
-                                  style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            )
-                          else
-                            Text(
-                              "${NumberFormat("#,###", "uz_UZ").format(item.price)} ${pos.currencySymbol}",
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w600),
-                            ),
                         ],
                       ),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          onPressed: () => _showRecipeDialog(context, pos, item),
-                          icon: const Icon(Icons.receipt_long_rounded, color: Colors.teal, size: 22),
-                          tooltip: "Kalkulatsiya",
+                      title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                item.category,
+                                style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (item.hasVariants)
+                              Row(
+                                children: [
+                                  const Icon(Icons.sell_outlined, size: 12, color: Colors.blue),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${item.variants.length} variant",
+                                    style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              )
+                            else
+                              Text(
+                                "${NumberFormat("#,###", "uz_UZ").format(item.price)} ${pos.currencySymbol}",
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                          ],
                         ),
-                        if (!Responsive.isMobile(context)) ...[
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           IconButton(
-                            onPressed: () => Get.to(() => SaveProductScreen(item: item)),
-                            icon: const Icon(Icons.edit_rounded, color: Colors.blue, size: 20),
+                            onPressed: () => _showRecipeDialog(context, pos, item),
+                            icon: const Icon(Icons.receipt_long_rounded, color: Colors.teal, size: 22),
+                            tooltip: "Kalkulatsiya",
                           ),
-                          IconButton(
-                            onPressed: () => _confirmDeleteProduct(context, pos, item),
-                            icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                          ),
+                          if (!Responsive.isMobile(context)) ...[
+                            IconButton(
+                              onPressed: () => Get.to(() => SaveProductScreen(item: item)),
+                              icon: const Icon(Icons.edit_rounded, color: Colors.blue, size: 20),
+                            ),
+                            IconButton(
+                              onPressed: () => _confirmDeleteProduct(context, pos, item),
+                              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                            ),
+                          ],
+                          if (Responsive.isMobile(context))
+                            const Icon(Icons.chevron_right_rounded, color: Colors.grey),
                         ],
-                        if (Responsive.isMobile(context))
-                          const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-                      ],
+                      ),
                     ),
                   ),
                 ),

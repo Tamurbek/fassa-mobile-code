@@ -252,6 +252,14 @@ class ApiService {
     }
   }
 
+  Future<void> reorderProducts(List<Map<String, dynamic>> reorderData) async {
+    try {
+      await _dio.post('/products/reorder', data: reorderData);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Orders
   Future<Map<String, dynamic>> createOrder(Map<String, dynamic> orderData) async {
     try {

@@ -45,6 +45,26 @@ mixin ProductMixin on POSControllerState {
     } catch (e) { print("Error deleting product: $e"); }
   }
 
+  Future<void> reorderProducts(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) newIndex -= 1;
+    final item = products.removeAt(oldIndex);
+    products.insert(newIndex, item);
+    products.refresh();
+    
+    // Save to local storage for instant feedback
+    saveProducts();
+
+    try {
+      final reorderData = products.asMap().entries.map((entry) => {
+        "id": entry.value.id,
+        "sort_order": entry.key
+      }).toList();
+      await api.reorderProducts(reorderData);
+    } catch (e) {
+      print("Error reordering products: $e");
+    }
+  }
+
   Future<void> addCategory(String category) async {
     if (categories.contains(category)) return;
     try {
