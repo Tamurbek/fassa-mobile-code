@@ -207,6 +207,9 @@ mixin UserAuthMixin on POSControllerState {
     currentTerminal.value = terminal;
     if (terminal != null) {
       storage.write('terminal', terminal);
+      if (terminal.containsKey('is_main_printer') && terminal['is_main_printer'] != null) {
+        setIsMainPrinterTerminal(terminal['is_main_printer'] as bool);
+      }
     } else {
       storage.remove('terminal');
     }
