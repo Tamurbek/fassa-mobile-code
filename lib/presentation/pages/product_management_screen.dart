@@ -166,7 +166,11 @@ class ProductManagementScreen extends StatelessWidget {
                         expandedProductIds.add(item.id);
                       }
                     },
-                    child: Icon(isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right, color: AppColors.primary),
+                    child: Icon(
+                      isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right, 
+                      color: AppColors.primary,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(width: 4),
                   ClipRRect(

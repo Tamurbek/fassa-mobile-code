@@ -27,6 +27,7 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
   late String _selectedCategory;
   final RxString _selectedPrepAreaId = "".obs;
   final RxBool _hasVariants = false.obs;
+  final RxBool _isAvailable = true.obs;
   final RxList<FoodVariant> _variants = <FoodVariant>[].obs;
 
   @override
@@ -50,6 +51,7 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
     _selectedPrepAreaId.value =
         widget.item?.preparationAreaId ?? (pos.preparationAreas.isNotEmpty ? pos.preparationAreas[0].id : "");
     _hasVariants.value = widget.item?.hasVariants ?? false;
+    _isAvailable.value = widget.item?.isAvailable ?? true;
     if (widget.item?.variants != null) {
       _variants.assignAll(widget.item!.variants);
     }
@@ -83,6 +85,7 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
       id: "new_${DateTime.now().millisecondsSinceEpoch}",
       name: "",
       price: 0.0,
+      isAvailable: true,
     ));
   }
 
@@ -90,12 +93,13 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
     _variants.removeAt(index);
   }
 
-  void _updateVariant(int index, {String? name, double? price}) {
+  void _updateVariant(int index, {String? name, double? price, bool? isAvailable}) {
     final old = _variants[index];
     _variants[index] = FoodVariant(
       id: old.id,
       name: name ?? old.name,
       price: price ?? old.price,
+      isAvailable: isAvailable ?? old.isAvailable,
     );
   }
 
@@ -141,6 +145,7 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
       preparationAreaId: _selectedPrepAreaId.value.isEmpty ? null : _selectedPrepAreaId.value,
       hasVariants: _hasVariants.value,
       variants: _hasVariants.value ? _variants.toList() : [],
+      isAvailable: _isAvailable.value,
     );
 
     Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
@@ -207,6 +212,17 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
                    Obx(() => Switch(
                     value: _hasVariants.value,
                     onChanged: (val) => _hasVariants.value = val,
+                    activeColor: AppColors.primary,
+                  )),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   const Text("Faol (Sotuvda bor)", style: TextStyle(fontWeight: FontWeight.w600)),
+                   Obx(() => Switch(
+                    value: _isAvailable.value,
+                    onChanged: (val) => _isAvailable.value = val,
                     activeColor: AppColors.primary,
                   )),
                 ],
@@ -350,44 +366,62 @@ class _SaveProductScreenState extends State<SaveProductScreen> {
                 final nameCtrl = TextEditingController(text: variant.name);
                 final priceCtrl = TextEditingController(text: variant.price > 0 ? variant.price.toString() : "");
 
-                return Row(
+                return Column(
                   children: [
-                    Expanded(
-                      flex: 3,
-                      child: TextField(
-                        controller: nameCtrl,
-                        onChanged: (val) => _updateVariant(index, name: val),
-                        decoration: InputDecoration(
-                          hintText: "variant_name".tr,
-                          filled: true,
-                          fillColor: AppColors.background,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: TextField(
+                            controller: nameCtrl,
+                            onChanged: (val) => _updateVariant(index, name: val),
+                            decoration: InputDecoration(
+                              hintText: "variant_name".tr,
+                              filled: true,
+                              fillColor: AppColors.background,
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: priceCtrl,
-                        keyboardType: TextInputType.number,
-                        onChanged: (val) => _updateVariant(index, price: double.tryParse(val) ?? 0.0),
-                        decoration: InputDecoration(
-                          hintText: "price".tr,
-                          filled: true,
-                          fillColor: AppColors.background,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: priceCtrl,
+                            keyboardType: TextInputType.number,
+                            onChanged: (val) => _updateVariant(index, price: double.tryParse(val) ?? 0.0),
+                            decoration: InputDecoration(
+                              hintText: "price".tr,
+                              filled: true,
+                              fillColor: AppColors.background,
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                          ),
                         ),
-                      ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () => _removeVariant(index),
+                        )
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () => _removeVariant(index),
-                    )
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const Text("Faol", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        Transform.scale(
+                          scale: 0.7,
+                          child: Switch(
+                            value: variant.isAvailable,
+                            onChanged: (val) => _updateVariant(index, isAvailable: val),
+                            activeColor: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 );
               },
