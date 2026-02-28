@@ -55,6 +55,7 @@ class HomeScreen extends StatelessWidget {
                         final query = pos.searchQuery.value.toLowerCase();
                         
                         final items = pos.products.where((p) {
+                          if (!p.isAvailable) return false;
                           final bool matchCat = cat == "All" || p.category == cat;
                           final bool matchQuery = query.isEmpty || 
                             p.name.toLowerCase().contains(query) ||
@@ -497,7 +498,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text("Hajmni tanlang:", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
             const SizedBox(height: 16),
-            ...item.variants.map((variant) => GestureDetector(
+            ...item.variants.where((v) => v.isAvailable).map((variant) => GestureDetector(
               onTap: () {
                 pos.addToCart(item, variant: variant);
                 Navigator.pop(ctx);

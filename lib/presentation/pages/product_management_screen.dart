@@ -207,6 +207,11 @@ class ProductManagementScreen extends StatelessWidget {
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Switch.adaptive(
+                    value: item.isAvailable,
+                    onChanged: (v) => pos.toggleProductAvailability(item),
+                    activeColor: AppColors.primary,
+                  ),
                   IconButton(
                     onPressed: () => _showMergeDialog(context, pos, item),
                     icon: const Icon(Icons.merge_type, color: Colors.orange, size: 20),
@@ -247,6 +252,14 @@ class ProductManagementScreen extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Switch.adaptive(
+              value: variant.isAvailable,
+              onChanged: (v) {
+                final parent = pos.products.firstWhere((p) => p.id == parentId);
+                pos.toggleVariantAvailability(parent, variantIndex);
+              },
+              activeColor: AppColors.primary,
+            ),
             TextButton.icon(
               onPressed: () {
                 final parent = pos.products.firstWhere((p) => p.id == parentId);

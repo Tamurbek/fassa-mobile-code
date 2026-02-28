@@ -138,6 +138,49 @@ mixin ProductMixin on POSControllerState {
     }
   }
 
+  Future<void> toggleProductAvailability(FoodItem item) async {
+    final updatedItem = FoodItem(
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      imageUrl: item.imageUrl,
+      category: item.category,
+      preparationArea: item.preparationArea,
+      preparationAreaId: item.preparationAreaId,
+      hasVariants: item.hasVariants,
+      variants: item.variants,
+      isAvailable: !item.isAvailable,
+    );
+    await updateProduct(updatedItem);
+  }
+
+  Future<void> toggleVariantAvailability(FoodItem parent, int variantIndex) async {
+    final variants = List<FoodVariant>.from(parent.variants);
+    final variant = variants[variantIndex];
+    variants[variantIndex] = FoodVariant(
+      id: variant.id,
+      name: variant.name,
+      price: variant.price,
+      isAvailable: !variant.isAvailable,
+    );
+    
+    final updatedParent = FoodItem(
+      id: parent.id,
+      name: parent.name,
+      description: parent.description,
+      price: parent.price,
+      imageUrl: parent.imageUrl,
+      category: parent.category,
+      preparationArea: parent.preparationArea,
+      preparationAreaId: parent.preparationAreaId,
+      hasVariants: parent.hasVariants,
+      variants: variants,
+      isAvailable: parent.isAvailable,
+    );
+    await updateProduct(updatedParent);
+  }
+
   Future<void> reorderProducts(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex -= 1;
     final item = products.removeAt(oldIndex);
