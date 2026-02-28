@@ -74,6 +74,12 @@ class SettingsScreen extends StatelessWidget {
                     pos.enablePaymentPrint.value, 
                     (val) => pos.setEnablePaymentPrint(val)
                   )),
+                  Obx(() => _buildToggleItem(
+                    Icons.stars_rounded, 
+                    "Asosiy printer terminali", 
+                    pos.isMainPrinterTerminal.value, 
+                    (val) => pos.setIsMainPrinterTerminal(val)
+                  )),
                 ]),
               ],
 

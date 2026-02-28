@@ -128,6 +128,7 @@ class POSController extends POSControllerState with
     enableKitchenPrint.value = storage.read('enable_kitchen_print') ?? true;
     enableBillPrint.value = storage.read('enable_bill_print') ?? true;
     enablePaymentPrint.value = storage.read('enable_payment_print') ?? true;
+    isMainPrinterTerminal.value = storage.read('is_main_printer_terminal') ?? true;
 
     // Load Cafe Settings (Offline/First-load)
     restaurantName.value = storage.read('restaurant_name') ?? "";
@@ -167,12 +168,16 @@ class POSController extends POSControllerState with
             }
             _processedPrintIds[orderId] = now;
           }
-          printLocally(normalized, isKitchenOnly: true);
+          if (isMainPrinterTerminal.value) {
+            printLocally(normalized, isKitchenOnly: true);
+          }
         }
       }
     });
 
     socket.onPrintRequest((data) async {
+      if (!isMainPrinterTerminal.value) return; // Only main printer terminal processes print requests
+
       if (isAdmin || isCashier || currentTerminal.value != null) {
         final orderId = data['order']?['id']?.toString();
         if (orderId != null) {

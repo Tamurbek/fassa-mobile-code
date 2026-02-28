@@ -101,6 +101,7 @@ abstract class POSControllerState extends GetxController {
   var enableKitchenPrint = true.obs;
   var enableBillPrint = true.obs;
   var enablePaymentPrint = true.obs;
+  var isMainPrinterTerminal = true.obs;
 
   var isOrdersTableView = false.obs;
 
@@ -155,6 +156,11 @@ abstract class POSControllerState extends GetxController {
   void setEnablePaymentPrint(bool value) {
     enablePaymentPrint.value = value;
     storage.write('enable_payment_print', value);
+  }
+
+  void setIsMainPrinterTerminal(bool value) {
+    isMainPrinterTerminal.value = value;
+    storage.write('is_main_printer_terminal', value);
   }
 
   // Abstract/Bridge methods that mixins will implement or call

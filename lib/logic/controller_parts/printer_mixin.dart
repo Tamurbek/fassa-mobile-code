@@ -17,7 +17,7 @@ mixin PrinterMixin on POSControllerState {
       if (name != null) order['waiter_name'] = name;
     }
 
-    if ((deviceRole.value == "WAITER" || isWaiter) && currentTerminal.value == null) {
+    if (!isMainPrinterTerminal.value) {
       socket.emitPrintRequest({
         'order': order,
         'isKitchenOnly': isKitchenOnly,
@@ -25,7 +25,7 @@ mixin PrinterMixin on POSControllerState {
         'skipCancellation': skipCancellation,
         'sender': currentUser.value?['name'] ?? "Waiter",
       });
-      Get.snackbar("Chop etish yuborildi", "Kassaga yuborildi", 
+      Get.snackbar("Chop etish yuborildi", "Asosiy printer terminaliga yuborildi", 
         backgroundColor: Colors.blue.withOpacity(0.8), 
         colorText: Colors.white,
         duration: const Duration(seconds: 1),
@@ -33,17 +33,6 @@ mixin PrinterMixin on POSControllerState {
         margin: const EdgeInsets.all(10),
       );
       return;
-    }
-
-    // Still emit for other terminals/waiters, but proceed to print locally
-    if (currentTerminal.value != null && (deviceRole.value == "WAITER" || isWaiter)) {
-      socket.emitPrintRequest({
-        'order': order,
-        'isKitchenOnly': isKitchenOnly,
-        'receiptTitle': receiptTitle,
-        'skipCancellation': skipCancellation,
-        'sender': currentUser.value?['name'] ?? "Waiter",
-      });
     }
 
     await printLocally(order, isKitchenOnly: isKitchenOnly, receiptTitle: receiptTitle, skipCancellation: skipCancellation);
