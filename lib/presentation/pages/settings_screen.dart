@@ -95,7 +95,7 @@ class SettingsScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 _buildSectionLabel("menu_management".tr),
                 _buildSettingsCard([
-                  _buildActionItem(Icons.restaurant_menu_rounded, "menu_management".tr, trailingText: "products".tr, onTap: () => Get.to(() => const ProductManagementScreen())),
+                  _buildActionItem(Icons.restaurant_menu_rounded, "menu_management".tr, trailingText: "products".tr, onTap: () => Get.to(() => ProductManagementScreen())),
                 ]),
               ],
 
