@@ -570,16 +570,16 @@ class HomeScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: const Color(0xFFE0F2FE), borderRadius: BorderRadius.circular(12)),
-          child: const Icon(Icons.add, color: Color(0xFF0EA5E9), size: 20),
+          child: const Icon(Icons.add, color: Color(0xFF0EA5E9), size: 22),
         ),
       );
     }
     
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -587,22 +587,22 @@ class HomeScreen extends StatelessWidget {
           GestureDetector(
             onTap: () => pos.decrementFromCart(item, variant: variant),
             child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.remove, size: 18, color: Color(0xFF1A1A1A)),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              child: const Icon(Icons.remove, size: 22, color: Color(0xFF1A1A1A)),
             ),
           ),
           Container(
-            constraints: const BoxConstraints(minWidth: 32),
+            constraints: const BoxConstraints(minWidth: 44),
             alignment: Alignment.center,
-            child: Text("$qty", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+            child: Text("$qty", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
           ),
           GestureDetector(
             onTap: () => pos.addToCart(item, variant: variant),
             child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.add, size: 18, color: Colors.white),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(16)),
+              child: const Icon(Icons.add, size: 22, color: Colors.white),
             ),
           ),
         ],
