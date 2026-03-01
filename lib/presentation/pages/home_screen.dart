@@ -477,8 +477,9 @@ class HomeScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).padding.bottom + 24),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -498,45 +499,123 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text("Hajmni tanlang:", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
             const SizedBox(height: 16),
-            ...item.variants.where((v) => v.isAvailable).map((variant) => GestureDetector(
-              onTap: () {
-                pos.addToCart(item, variant: variant);
-                Navigator.pop(ctx);
-              },
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7ED),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFF9500).withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(variant.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(
-                      "${NumberFormat('#,###', 'uz_UZ').format(variant.price)} ${pos.currencySymbol}",
-                      style: const TextStyle(color: Color(0xFFFF9500), fontWeight: FontWeight.w900, fontSize: 16),
-                    ),
-                  ],
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: item.variants.where((v) => v.isAvailable).map((variant) => Obx(() {
+                    final int qty = pos.currentOrder
+                        .where((e) => (e['item'] as FoodItem).id == item.id && 
+                                     e['variant']?.id == variant.id && 
+                                     e['isNew'] == true)
+                        .fold(0, (sum, e) => sum + (e['quantity'] as int));
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: qty > 0 ? const Color(0xFFFFF7ED) : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: qty > 0 ? const Color(0xFFFF9500).withOpacity(0.5) : const Color(0xFFEDF0F5),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(variant.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                Text(
+                                  "${NumberFormat('#,###', 'uz_UZ').format(variant.price)} ${pos.currencySymbol}",
+                                  style: const TextStyle(color: Color(0xFFFF9500), fontWeight: FontWeight.w900, fontSize: 14),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _buildCounterForVariant(item, variant, qty, pos),
+                        ],
+                      ),
+                    );
+                  })).toList(),
                 ),
               ),
-            )),
-            const SizedBox(height: 8),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF9500),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
+                ),
+                child: const Text("Tayyor", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCounterControl(FoodItem item, int qty, POSController pos) {
-
+  Widget _buildCounterForVariant(FoodItem item, dynamic variant, int qty, POSController pos) {
+    if (qty == 0) {
+      return GestureDetector(
+        onTap: () => pos.addToCart(item, variant: variant),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: const Color(0xFFE0F2FE), borderRadius: BorderRadius.circular(12)),
+          child: const Icon(Icons.add, color: Color(0xFF0EA5E9), size: 20),
+        ),
+      );
+    }
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => pos.decrementFromCart(item, variant: variant),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.remove, size: 18, color: Color(0xFF1A1A1A)),
+            ),
+          ),
+          Container(
+            constraints: const BoxConstraints(minWidth: 32),
+            alignment: Alignment.center,
+            child: Text("$qty", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+          ),
+          GestureDetector(
+            onTap: () => pos.addToCart(item, variant: variant),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.add, size: 18, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCounterControl(FoodItem item, int qty, POSController pos) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -544,21 +623,22 @@ class HomeScreen extends StatelessWidget {
           GestureDetector(
             onTap: () => pos.decrementFromCart(item),
             child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.remove, size: 14, color: Color(0xFF1A1A1A)),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.remove, size: 18, color: Color(0xFF1A1A1A)),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text("$qty", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          Container(
+            constraints: const BoxConstraints(minWidth: 32),
+            alignment: Alignment.center,
+            child: Text("$qty", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
           ),
           GestureDetector(
             onTap: () => pos.addToCart(item),
             child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.add, size: 14, color: Colors.white),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.add, size: 18, color: Colors.white),
             ),
           ),
         ],
@@ -762,15 +842,19 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildVerticalCounter(int index, int qty, POSController pos, bool isCancelled) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30), border: Border.all(color: const Color(0xFFEDF0F5))),
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        borderRadius: BorderRadius.circular(30), 
+        border: Border.all(color: const Color(0xFFEDF0F5), width: 1.5)
+      ),
       child: Column(
         children: [
           _buildCounterBtn(Icons.add, () => pos.updateQuantity(index, 1)),
           GestureDetector(
             onTap: () => pos.showQuantityDialog(index),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text("$qty", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: isCancelled ? Colors.red : const Color(0xFF1A1A1A))),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text("$qty", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: isCancelled ? Colors.red : const Color(0xFF1A1A1A))),
             ),
           ),
           _buildCounterBtn(Icons.remove, () => pos.updateQuantity(index, -1)),
@@ -783,8 +867,8 @@ class HomeScreen extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Icon(icon, size: 14, color: const Color(0xFF9CA3AF)),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Icon(icon, size: 18, color: const Color(0xFF9CA3AF)),
       ),
     );
   }
