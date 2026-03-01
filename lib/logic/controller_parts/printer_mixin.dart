@@ -55,138 +55,136 @@ mixin PrinterMixin on POSControllerState {
       return;
     }
 
+    List<Future<void>> tasks = [];
+
     for (var printer in activePrinters) {
-      try {
-        bool success = false;
-        bool shouldPrintCurrentReceipt = false;
-        
-        if (receiptTitle == "HISOB CHEKI" && printer.printReceipts) {
-          shouldPrintCurrentReceipt = true;
-        } else if (receiptTitle == null && !isKitchenOnly && printer.printPayments) {
-          shouldPrintCurrentReceipt = true;
-        } else if (receiptTitle != null && receiptTitle != "HISOB CHEKI" && printer.printPayments) {
-          shouldPrintCurrentReceipt = true;
-        }
-
-        if (shouldPrintCurrentReceipt && printer.tableAreaNames.isNotEmpty) {
-          final String orderTableId = (order['table'] ?? "").toString();
-          final String orderAreaName = orderTableId.contains("-") ? orderTableId.split("-")[0] : "";
-          if (!printer.tableAreaNames.contains(orderAreaName)) shouldPrintCurrentReceipt = false;
-        }
-
-        if (shouldPrintCurrentReceipt && !isKitchenOnly) {
-          if ((receiptTitle == "HISOB CHEKI" && !enableBillPrint.value) || 
-              (receiptTitle != "HISOB CHEKI" && !enablePaymentPrint.value)) {
-            // Disabled
-          } else {
-            final orderForPrinting = Map<String, dynamic>.from(order);
-            orderForPrinting['service_fee_dine_in'] = serviceFeeDineIn.value;
-            orderForPrinting['service_fee_takeaway'] = serviceFeeTakeaway.value;
-            orderForPrinting['service_fee_delivery'] = serviceFeeDelivery.value;
-            
-            success = await printerService.printReceipt(printer, orderForPrinting, title: receiptTitle);
-            if (success) successPrinters.add(printer.name);
-            else failedPrinters.add(printer.name);
+      tasks.add(() async {
+        try {
+          bool success = false;
+          bool shouldPrintCurrentReceipt = false;
+          
+          if (receiptTitle == "HISOB CHEKI" && printer.printReceipts) {
+            shouldPrintCurrentReceipt = true;
+          } else if (receiptTitle == null && !isKitchenOnly && printer.printPayments) {
+            shouldPrintCurrentReceipt = true;
+          } else if (receiptTitle != null && receiptTitle != "HISOB CHEKI" && printer.printPayments) {
+            shouldPrintCurrentReceipt = true;
           }
-        }
 
-        if (printer.preparationAreaIds.isNotEmpty && (isKitchenOnly || receiptTitle == null)) {
-          if (enableKitchenPrint.value) {
-            final orderIdStr = order['id']?.toString() ?? "0";
-            final previouslyPrintedRaw = printedKitchenQuantities[orderIdStr];
-            final Map<String, int> previouslyPrinted = previouslyPrintedRaw != null 
-                ? Map<String, int>.from(previouslyPrintedRaw) : {};
-            
-            final areaItems = details.where((d) {
-              final itemId = d['id']?.toString().trim();
-              if (itemId == null) return false;
-              final product = products.firstWhereOrNull((p) => p.id.toString().trim() == itemId);
-              if (product == null || product.preparationAreaId == null) return false;
-              final String prodAreaId = product.preparationAreaId.toString().trim();
-              return printer.preparationAreaIds.any((id) => id.trim() == prodAreaId);
-            }).toList();
+          if (shouldPrintCurrentReceipt && printer.tableAreaNames.isNotEmpty) {
+            final String orderTableId = (order['table'] ?? "").toString();
+            final String orderAreaName = orderTableId.contains("-") ? orderTableId.split("-")[0] : "";
+            if (!printer.tableAreaNames.contains(orderAreaName)) shouldPrintCurrentReceipt = false;
+          }
 
-            if (areaItems.isNotEmpty || previouslyPrinted.isNotEmpty) {
-              // Group items by preparationAreaId
-              final Map<String, List<dynamic>> itemsByArea = {};
-              for (var item in areaItems) {
-                final product = products.firstWhereOrNull((p) => p.id.toString().trim() == item['id'].toString().trim());
-                final areaId = product?.preparationAreaId?.toString() ?? "unknown";
-                itemsByArea.putIfAbsent(areaId, () => []).add(item);
-              }
+          if (shouldPrintCurrentReceipt && !isKitchenOnly) {
+            if ((receiptTitle == "HISOB CHEKI" && !enableBillPrint.value) || 
+                (receiptTitle != "HISOB CHEKI" && !enablePaymentPrint.value)) {
+              // Disabled
+            } else {
+              final orderForPrinting = Map<String, dynamic>.from(order);
+              orderForPrinting['service_fee_dine_in'] = serviceFeeDineIn.value;
+              orderForPrinting['service_fee_takeaway'] = serviceFeeTakeaway.value;
+              orderForPrinting['service_fee_delivery'] = serviceFeeDelivery.value;
+              
+              success = await printerService.printReceipt(printer, orderForPrinting, title: receiptTitle);
+              if (success) successPrinters.add(printer.name);
+              else failedPrinters.add(printer.name);
+            }
+          }
 
-              // Identify all unique areas that had items previously or have items now for this printer
-              final Set<String> allActiveAreaIds = {
-                ...itemsByArea.keys,
-                ...previouslyPrinted.keys.map((pId) {
-                  final product = products.firstWhereOrNull((p) => p.id.toString().trim() == pId.trim());
-                  return product?.preparationAreaId?.toString() ?? "unknown";
-                }).where((aId) => printer.preparationAreaIds.any((pAId) => pAId.trim() == aId.trim()))
-              };
+          if (printer.preparationAreaIds.isNotEmpty && (isKitchenOnly || receiptTitle == null)) {
+            if (enableKitchenPrint.value) {
+              final orderIdStr = order['id']?.toString() ?? "0";
+              final previouslyPrintedRaw = printedKitchenQuantities[orderIdStr];
+              final Map<String, int> previouslyPrinted = previouslyPrintedRaw != null 
+                  ? Map<String, int>.from(previouslyPrintedRaw) : {};
+              
+              final areaItems = details.where((d) {
+                final itemId = d['id']?.toString().trim();
+                if (itemId == null) return false;
+                final product = products.firstWhereOrNull((p) => p.id.toString().trim() == itemId);
+                if (product == null || product.preparationAreaId == null) return false;
+                final String prodAreaId = product.preparationAreaId.toString().trim();
+                return printer.preparationAreaIds.any((id) => id.trim() == prodAreaId);
+              }).toList();
 
-              bool jobPrintedOverall = false;
-
-              for (final areaId in allActiveAreaIds) {
-                final currentAreaItems = itemsByArea[areaId] ?? [];
-                
-                // Get area name from products (could also get from preparationAreas list if needed)
-                String areaName = "Oshxona";
-                final areaProduct = products.firstWhereOrNull((p) => p.preparationAreaId?.toString() == areaId);
-                if (areaProduct != null) areaName = areaProduct.preparationArea;
-
-                List<dynamic> addedItems = [];
-                List<dynamic> cancelledItems = [];
-
-                for (var item in currentAreaItems) {
-                  final String pId = item['id'].toString();
-                  final int currentQty = int.tryParse(item['qty'].toString()) ?? 0;
-                  final int prevQty = previouslyPrinted[pId] ?? 0;
-                  if (currentQty > prevQty) addedItems.add({...item, 'qty': currentQty - prevQty});
-                }
-
-                previouslyPrinted.forEach((pId, prevQty) {
-                  final product = products.firstWhereOrNull((p) => p.id.toString().trim() == pId.trim());
-                  if (product != null && product.preparationAreaId?.toString() == areaId) {
-                    final currentItem = currentAreaItems.firstWhereOrNull((i) => i['id'].toString() == pId);
-                    final int currentQty = currentItem != null ? (int.tryParse(currentItem['qty'].toString()) ?? 0) : 0;
-                    if (currentQty < prevQty) {
-                      cancelledItems.add({'id': pId, 'name': product.name, 'qty': prevQty - currentQty});
-                    }
-                  }
-                });
-
-                if (addedItems.isNotEmpty) {
-                  success = await printerService.printKitchenTicket(printer, order, addedItems, title: areaName);
-                  if (success) { successPrinters.add("${printer.name} ($areaName)"); jobPrintedOverall = true; } 
-                  else failedPrinters.add("${printer.name} ($areaName)");
-                }
-                
-                if (cancelledItems.isNotEmpty && !skipCancellation) {
-                  success = await printerService.printCancellationTicket(printer, order, cancelledItems, title: "$areaName Bekor");
-                  if (success) { successPrinters.add("${printer.name} ($areaName Bekor)"); jobPrintedOverall = true; } 
-                  else failedPrinters.add("${printer.name} ($areaName Bekor xatosi)");
-                }
-              }
-
-              if (jobPrintedOverall) {
-                final currentPrintedMap = Map<String, int>.from(printedKitchenQuantities[orderIdStr] ?? {});
+              if (areaItems.isNotEmpty || previouslyPrinted.isNotEmpty) {
+                final Map<String, List<dynamic>> itemsByArea = {};
                 for (var item in areaItems) {
-                  currentPrintedMap[item['id'].toString()] = int.tryParse(item['qty'].toString()) ?? 0;
+                  final product = products.firstWhereOrNull((p) => p.id.toString().trim() == item['id'].toString().trim());
+                  final areaId = product?.preparationAreaId?.toString() ?? "unknown";
+                  itemsByArea.putIfAbsent(areaId, () => []).add(item);
                 }
-                printedKitchenQuantities[orderIdStr] = currentPrintedMap;
-                storage.write('printed_kitchen_items', Map.from(printedKitchenQuantities));
-              }
 
-              if (jobPrintedOverall == false && !shouldPrintCurrentReceipt) {
-                filteredPrinters.add(printer.name);
+                final Set<String> allActiveAreaIds = {
+                  ...itemsByArea.keys,
+                  ...previouslyPrinted.keys.map((pId) {
+                    final product = products.firstWhereOrNull((p) => p.id.toString().trim() == pId.trim());
+                    return product?.preparationAreaId?.toString() ?? "unknown";
+                  }).where((aId) => printer.preparationAreaIds.any((pAId) => pAId.trim() == aId.trim()))
+                };
+
+                bool jobPrintedOverall = false;
+
+                for (final areaId in allActiveAreaIds) {
+                  final currentAreaItems = itemsByArea[areaId] ?? [];
+                  String areaName = "Oshxona";
+                  final areaProduct = products.firstWhereOrNull((p) => p.preparationAreaId?.toString() == areaId);
+                  if (areaProduct != null) areaName = areaProduct.preparationArea;
+
+                  List<dynamic> addedItems = [];
+                  List<dynamic> cancelledItems = [];
+
+                  for (var item in currentAreaItems) {
+                    final String pId = item['id'].toString();
+                    final int currentQty = int.tryParse(item['qty'].toString()) ?? 0;
+                    final int prevQty = previouslyPrinted[pId] ?? 0;
+                    if (currentQty > prevQty) addedItems.add({...item, 'qty': currentQty - prevQty});
+                  }
+
+                  previouslyPrinted.forEach((pId, prevQty) {
+                    final product = products.firstWhereOrNull((p) => p.id.toString().trim() == pId.trim());
+                    if (product != null && product.preparationAreaId?.toString() == areaId) {
+                      final currentItem = currentAreaItems.firstWhereOrNull((i) => i['id'].toString() == pId);
+                      final int currentQty = currentItem != null ? (int.tryParse(currentItem['qty'].toString()) ?? 0) : 0;
+                      if (currentQty < prevQty) {
+                        cancelledItems.add({'id': pId, 'name': product.name, 'qty': prevQty - currentQty});
+                      }
+                    }
+                  });
+
+                  if (addedItems.isNotEmpty) {
+                    success = await printerService.printKitchenTicket(printer, order, addedItems, title: areaName);
+                    if (success) { successPrinters.add("${printer.name} ($areaName)"); jobPrintedOverall = true; } 
+                    else failedPrinters.add("${printer.name} ($areaName)");
+                  }
+                  
+                  if (cancelledItems.isNotEmpty && !skipCancellation) {
+                    success = await printerService.printCancellationTicket(printer, order, cancelledItems, title: "$areaName Bekor");
+                    if (success) { successPrinters.add("${printer.name} ($areaName Bekor)"); jobPrintedOverall = true; } 
+                    else failedPrinters.add("${printer.name} ($areaName Bekor xatosi)");
+                  }
+                }
+
+                if (jobPrintedOverall) {
+                  final currentPrintedMap = Map<String, int>.from(printedKitchenQuantities[orderIdStr] ?? {});
+                  for (var item in areaItems) {
+                    currentPrintedMap[item['id'].toString()] = int.tryParse(item['qty'].toString()) ?? 0;
+                  }
+                  printedKitchenQuantities[orderIdStr] = currentPrintedMap;
+                  storage.write('printed_kitchen_items', Map.from(printedKitchenQuantities));
+                }
               }
             }
           }
+        } catch (e) {
+          failedPrinters.add(printer.name);
         }
-      } catch (e) {
-        failedPrinters.add(printer.name);
-      }
+      }());
     }
+
+    await Future.wait(tasks);
     
     isPrinting.value = false;
     if (failedPrinters.isNotEmpty) {

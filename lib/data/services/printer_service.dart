@@ -11,11 +11,21 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:flutter/foundation.dart';
 
 class PrinterService {
+  static img.Image? _decodeImage(Uint8List bytes) {
+    return img.decodeImage(bytes);
+  }
   static final PrinterService _instance = PrinterService._internal();
   factory PrinterService() => _instance;
   PrinterService._internal();
+
+  CapabilityProfile? _cachedProfile;
+  Future<CapabilityProfile> _getProfile() async {
+    _cachedProfile ??= await CapabilityProfile.load();
+    return _cachedProfile!;
+  }
 
   String _formatPrice(dynamic amount) {
     double value = double.tryParse(amount.toString()) ?? 0.0;
@@ -58,7 +68,7 @@ class PrinterService {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
 
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(
           printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       
@@ -71,7 +81,7 @@ class PrinterService {
           final logoUrl = posController.restaurantLogo.value;
           final response = await http.get(Uri.parse(logoUrl)).timeout(const Duration(seconds: 5));
           if (response.statusCode == 200) {
-            final image = img.decodeImage(response.bodyBytes);
+            final image = await compute(_decodeImage, response.bodyBytes);
             if (image != null) {
               // Resize image if it's too large to fit the printer. 
               final maxWidth = printer.paperSize == '58mm' ? 150 : 200;
@@ -258,7 +268,7 @@ class PrinterService {
 
       print('Connecting to printer ${printer.name} at ${printer.ipAddress}:${printer.port}...');
       final socket = await Socket.connect(printer.ipAddress, printer.port,
-          timeout: const Duration(seconds: 5));
+          timeout: const Duration(seconds: 2));
       print('Connected to printer ${printer.name}. Sending ${bytes.length} bytes...');
       socket.add(bytes);
       await socket.flush();
@@ -275,7 +285,7 @@ class PrinterService {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty || items.isEmpty) return false;
 
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(
           printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       
@@ -323,7 +333,7 @@ class PrinterService {
 
       print('Connecting to printer ${printer.name} at ${printer.ipAddress}:${printer.port}...');
       final socket = await Socket.connect(printer.ipAddress, printer.port,
-          timeout: const Duration(seconds: 5));
+          timeout: const Duration(seconds: 2));
       print('Connected to printer ${printer.name}. Sending ${bytes.length} bytes...');
       socket.add(bytes);
       await socket.flush();
@@ -340,7 +350,7 @@ class PrinterService {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty || items.isEmpty) return false;
 
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(
           printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       
@@ -383,7 +393,7 @@ class PrinterService {
       bytes += generator.cut();
 
       final socket = await Socket.connect(printer.ipAddress, printer.port,
-          timeout: const Duration(seconds: 5));
+          timeout: const Duration(seconds: 2));
       socket.add(bytes);
       await socket.flush();
       await socket.close();
@@ -399,7 +409,7 @@ class PrinterService {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
 
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(
           printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       List<int> bytes = [];
@@ -420,7 +430,7 @@ class PrinterService {
       bytes += generator.cut();
 
       final socket = await Socket.connect(printer.ipAddress, printer.port,
-          timeout: const Duration(seconds: 5));
+          timeout: const Duration(seconds: 2));
       socket.add(bytes);
       await socket.flush();
       await socket.close();
@@ -436,7 +446,7 @@ class PrinterService {
   Future<bool> printXorZReport(PrinterModel printer, List<Map<String, dynamic>> orders, {required String title, String? cashierName}) async {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       List<int> bytes = [];
       final posController = Get.find<POSController>();
@@ -485,7 +495,7 @@ class PrinterService {
   Future<bool> printCategoryReport(PrinterModel printer, List<Map<String, dynamic>> orders, String title) async {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       List<int> bytes = [];
       final posController = Get.find<POSController>();
@@ -527,7 +537,7 @@ class PrinterService {
   Future<bool> printPaymentMethodReport(PrinterModel printer, List<Map<String, dynamic>> orders, String title) async {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       List<int> bytes = [];
       final posController = Get.find<POSController>();
@@ -560,7 +570,7 @@ class PrinterService {
   Future<bool> printHourlySalesReport(PrinterModel printer, List<Map<String, dynamic>> orders, String title) async {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       List<int> bytes = [];
 
@@ -588,7 +598,7 @@ class PrinterService {
   Future<bool> printSalesReport(PrinterModel printer, List<Map<String, dynamic>> orders, String title) async {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       List<int> bytes = [];
 
@@ -621,7 +631,7 @@ class PrinterService {
   Future<bool> printWaiterPerformanceReport(PrinterModel printer, List<Map<String, dynamic>> orders, String period) async {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       List<int> bytes = [];
 
@@ -663,7 +673,7 @@ class PrinterService {
 
   Future<bool> _sendToPrinter(PrinterModel printer, List<int> bytes) async {
     try {
-      final socket = await Socket.connect(printer.ipAddress, printer.port, timeout: const Duration(seconds: 5));
+      final socket = await Socket.connect(printer.ipAddress, printer.port, timeout: const Duration(seconds: 2));
       socket.add(bytes);
       await socket.flush();
       await socket.close();
@@ -675,7 +685,7 @@ class PrinterService {
     if (printer.ipAddress == null || printer.ipAddress!.isEmpty) return false;
 
     try {
-      final profile = await CapabilityProfile.load();
+      final profile = await _getProfile();
       final generator = Generator(
           printer.paperSize == '58mm' ? PaperSize.mm58 : PaperSize.mm80, profile);
       

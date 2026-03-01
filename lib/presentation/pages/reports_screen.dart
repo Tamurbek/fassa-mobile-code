@@ -347,35 +347,43 @@ class ReportsScreen extends StatelessWidget {
           if (receiptPrinters.isNotEmpty) {
             bool anySuccess = false;
             final String? cashierName = pos.currentUser.value?['name']?.toString();
-            
+            List<Future<bool>> printTasks = [];
             for (var p in receiptPrinters) {
-              bool ok = false;
+              Future<bool> task;
               if (title.contains("X-Report")) {
-                ok = await pos.printerService.printXorZReport(p, orders, title: "X-REPORT", cashierName: cashierName);
+                task = pos.printerService.printXorZReport(p, orders, title: "X-REPORT", cashierName: cashierName);
               } else if (title.contains("Z-Report")) {
-                ok = await pos.printerService.printXorZReport(p, orders, title: "Z-REPORT", cashierName: cashierName);
+                task = pos.printerService.printXorZReport(p, orders, title: "Z-REPORT", cashierName: cashierName);
               } else if (title.contains("Category")) {
-                ok = await pos.printerService.printCategoryReport(p, orders, title);
+                task = pos.printerService.printCategoryReport(p, orders, title);
               } else if (title.contains("Payment")) {
-                ok = await pos.printerService.printPaymentMethodReport(p, orders, title);
+                task = pos.printerService.printPaymentMethodReport(p, orders, title);
               } else if (title.contains("Hourly")) {
-                ok = await pos.printerService.printHourlySalesReport(p, orders, title);
+                task = pos.printerService.printHourlySalesReport(p, orders, title);
               } else {
-                ok = await pos.printerService.printSalesReport(p, orders, title);
+                task = pos.printerService.printSalesReport(p, orders, title);
               }
-              if (ok) anySuccess = true;
+              printTasks.add(task);
             }
             
-            if (anySuccess) return; // Printed successfully via ESC/POS
+            final results = await Future.wait(printTasks);
+            anySuccess = results.any((r) => r);
+            
+            if (anySuccess) {
+              if (Get.isDialogOpen ?? false) Get.back();
+              return;
+            }
           }
+
+          if (Get.isDialogOpen ?? false) Get.back();
 
           // Fallback to PDF if no printers or ESC/POS failed
           final pdfDoc = await _generateReport(orders, title, pos);
           await ReportGenerator.printPdf(pdfDoc);
         } catch (e) {
-          Get.snackbar("Xatolik", "Hisobotni chop etib bo'lmadi");
-        } finally {
-          Get.back(); // close loading
+          if (Get.isDialogOpen ?? false) Get.back();
+          Get.snackbar("Xatolik", "Hisobotni chop etib bo'lmadi: $e", 
+            backgroundColor: Colors.red, colorText: Colors.white);
         }
       },
       borderRadius: BorderRadius.circular(16),

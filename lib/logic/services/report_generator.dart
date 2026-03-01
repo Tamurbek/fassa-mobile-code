@@ -25,8 +25,13 @@ class ReportGenerator {
   static pw.Font? _boldFont;
 
   static Future<pw.ThemeData> _getTheme() async {
-    _regularFont ??= await PdfGoogleFonts.robotoRegular();
-    _boldFont ??= await PdfGoogleFonts.robotoBold();
+    try {
+      _regularFont ??= await PdfGoogleFonts.robotoRegular().timeout(const Duration(seconds: 3));
+      _boldFont ??= await PdfGoogleFonts.robotoBold().timeout(const Duration(seconds: 3));
+    } catch (e) {
+      print("Warning: Google fonts could not be loaded, using fallback: $e");
+    }
+    
     return pw.ThemeData.withFont(
       base: _regularFont,
       bold: _boldFont,
