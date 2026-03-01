@@ -16,7 +16,8 @@ import 'controller_parts/staff_mixin.dart';
 import 'controller_parts/table_mixin.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
-import '../presentation/pages/main_navigation_screen.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:tray_manager/tray_manager.dart';
 import '../data/services/offline_service.dart';
 
 class POSController extends POSControllerState with 
@@ -26,7 +27,9 @@ class POSController extends POSControllerState with
     PrinterMixin, 
     ProductMixin, 
     StaffMixin,
-    TableMixin {
+    TableMixin,
+    WindowListener,
+    TrayListener {
 
   final Map<String, DateTime> _processedPrintIds = {};
 
@@ -34,11 +37,17 @@ class POSController extends POSControllerState with
   void onInit() {
     super.onInit();
     _loadLocalData();
+    initConnectivityListener();
     fetchBackendData();
     _setupSocketListenersDetailed();
     updateService.checkForUpdate();
     startSubscriptionCheck();
     initLocationTracking();
+    
+    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      windowManager.addListener(this);
+      trayManager.addListener(this);
+    }
   }
 
   @override
@@ -47,6 +56,10 @@ class POSController extends POSControllerState with
     searchFocusNode.dispose();
     subscriptionTimer?.cancel();
     locationTimer?.cancel();
+    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+      windowManager.removeListener(this);
+      trayManager.removeListener(this);
+    }
     super.onClose();
   }
 
@@ -129,6 +142,15 @@ class POSController extends POSControllerState with
     enableBillPrint.value = storage.read('enable_bill_print') ?? true;
     enablePaymentPrint.value = storage.read('enable_payment_print') ?? true;
     isMainPrinterTerminal.value = storage.read('is_main_printer_terminal') ?? true;
+
+    // Load Feature Flags
+    isGeofencingEnabled.value = storage.read('is_geofencing_enabled') ?? true;
+    isShiftBroadcastEnabled.value = storage.read('is_shift_broadcast_enabled') ?? true;
+    isTableManagementEnabled.value = storage.read('is_table_management_enabled') ?? true;
+    isKitchenPrintEnabled.value = storage.read('is_kitchen_print_enabled') ?? true;
+    isSubscriptionEnforced.value = storage.read('is_subscription_enforced') ?? true;
+    isQrLoginEnabled.value = storage.read('is_qr_login_enabled') ?? true;
+    isOfflineSyncEnabled.value = storage.read('is_offline_sync_enabled') ?? true;
 
     // Load Cafe Settings (Offline/First-load)
     restaurantName.value = storage.read('restaurant_name') ?? "";
@@ -310,13 +332,22 @@ class POSController extends POSControllerState with
 
     if (editingOrderId.value != null) return await updateExistingOrder(isPaid: isPaid, paymentMethod: paymentMethod);
 
+    if (!isOnline.value && !isOfflineSyncEnabled.value) {
+      Get.snackbar("Xato", "Internetingiz o'chgan va oflayn rejim ruxsat etilmagan. Buyurtmani faqat onlayn holatda berish mumkin.",
+          backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+      return false;
+    }
+
     final orderData = {
+      "id": uuid.v4(), // Client-side ID for offline sync
       "table_number": currentMode.value == "Dine-in" ? selectedTable.value : null,
       "type": currentMode.value.toUpperCase().replaceAll("-", "_"),
       "is_paid": isPaid,
       "waiter_name": selectedWaiter.value ?? currentUser.value?['name'],
       "payment_method": paymentMethod,
       "cafe_id": cafeId,
+      "createdAt": DateTime.now().toIso8601String(),
+      "total_amount": total,
       // Discount
       if (discountValue.value > 0) ...{
         "discount_type": discountType.value,
@@ -350,60 +381,53 @@ class POSController extends POSControllerState with
       }(),
     };
 
-    try {
-      final newOrder = await api.createOrder(orderData);
-      isOffline.value = false;
-      final normalized = normalizeOrder(newOrder);
-      
-      // Check if already added by socket to prevent duplicates
-      int index = allOrders.indexWhere((o) => o['id'].toString() == normalized['id'].toString());
-      if (index == -1) {
+    if (isOnline.value) {
+      try {
+        // Perform Optimistic UI Update first if we think we are online
+        final normalized = normalizeOrder(orderData);
         allOrders.insert(0, normalized);
-      } else {
-        allOrders[index] = normalized;
+        allOrders.refresh();
+        saveAllOrders();
+
+        final newOrder = await api.createOrder(orderData);
+        int idx = allOrders.indexWhere((o) => o['id'] == normalized['id']);
+        if (idx != -1) {
+          allOrders[idx] = normalizeOrder(newOrder);
+          allOrders.refresh();
+          saveAllOrders();
+        }
+      } catch (e) {
+        print("Online order failed: $e");
+        if (isOfflineSyncEnabled.value) {
+          addToSyncQueue('CREATE_ORDER', orderData);
+        } else {
+          // Revert list if possible
+          allOrders.removeWhere((o) => o['id'] == orderData['id']);
+          allOrders.refresh();
+          saveAllOrders();
+          Get.snackbar("Xato", "Buyurtmani yuborishda xatolik yuz berdi. Offline rejim ochiq emas.",
+              backgroundColor: Colors.red, colorText: Colors.white);
+          return false;
+        }
       }
-      
-      final orderId = normalized['id']?.toString();
-      if (orderId != null) {
-        _processedPrintIds[orderId] = DateTime.now();
-      }
-
-      await printOrder(normalized, isKitchenOnly: !isPaid, 
-          receiptTitle: isPaid ? "TO'LOV CHEKI" : "HISOB CHEKI");
-
-      // ── Try sync queue ──
-      OfflineService().syncQueue().then((_) {
-        pendingOfflineOrders.value = OfflineService().queueCount;
-      });
-
-      clearCurrentOrder();
+    } else {
+      // We are strictly offline (and isOfflineSyncEnabled must be true to reach here)
+      final normalized = normalizeOrder(orderData);
+      allOrders.insert(0, normalized);
+      allOrders.refresh();
       saveAllOrders();
-      return true;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout || 
-          e.type == DioExceptionType.sendTimeout || 
-          e.type == DioExceptionType.receiveTimeout || 
-          e.type == DioExceptionType.connectionError) {
-        
-        isOffline.value = true;
-        await OfflineService().queueOrder(orderData);
-        pendingOfflineOrders.value = OfflineService().queueCount;
-        
-        Get.snackbar(
-          "Oflayn rejim", 
-          "Internet yo'q. Buyurtma lokal xotiraga saqlandi va internet ulanganda yuboriladi.",
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 5),
-        );
-        
-        clearCurrentOrder();
-        return true; 
-      }
-      return false;
-    } catch (e) {
-      return false;
+
+      addToSyncQueue('CREATE_ORDER', orderData);
+      Get.snackbar("Oflayn", "Buyurtma saqlandi. Internet paydo bo'lishi bilan yuboriladi.", 
+        backgroundColor: Colors.blue, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
     }
+
+    await printOrder(normalized, isKitchenOnly: !isPaid, 
+        receiptTitle: isPaid ? "TO'LOV CHEKI" : "HISOB CHEKI");
+
+    clearCurrentOrder();
+    return true;
+
   }
 
   Future<bool> updateExistingOrder({bool isPaid = false, String? paymentMethod}) async {
@@ -473,8 +497,9 @@ class POSController extends POSControllerState with
         wasBillPrinted = allOrders[index]['status'] == "Bill Printed";
       }
 
-      await api.updateOrderStatus(editingOrderId.value!, newStatus);
-      await api.updateOrder(editingOrderId.value!, {
+      consolidatedList = grouped.values.toList();
+
+      final payload = {
         "status": newStatus,
         "payment_method": paymentMethod,
         if (discountValue.value > 0) ...{
@@ -488,7 +513,21 @@ class POSController extends POSControllerState with
           "quantity": i["qty"], 
           "price": i["price"] 
         }).toList()
-      });
+      };
+
+      if (isOnline.value) {
+        try {
+          await api.updateOrderStatus(editingOrderId.value!, newStatus);
+          await api.updateOrder(editingOrderId.value!, payload);
+        } catch (e) {
+          print("Online update failed, task added to sync queue: $e");
+          if (!addToSyncQueue('UPDATE_STATUS', {'id': editingOrderId.value!, 'status': newStatus})) return false;
+          addToSyncQueue('UPDATE_ORDER', {'id': editingOrderId.value!, 'payload': payload});
+        }
+      } else {
+          if (!addToSyncQueue('UPDATE_STATUS', {'id': editingOrderId.value!, 'status': newStatus})) return false;
+          addToSyncQueue('UPDATE_ORDER', {'id': editingOrderId.value!, 'payload': payload});
+      }
       
       if (index != -1) {
         final orderToPrint = Map<String, dynamic>.from(allOrders[index]);
@@ -604,4 +643,33 @@ class POSController extends POSControllerState with
   void toggleEditMode() => isEditMode.value = !isEditMode.value;
   void setDeviceRole(String? role) { deviceRole.value = role; storage.write('device_role', role); }
   void setWaiterCafeId(String? cafeId) { waiterCafeId.value = cafeId; storage.write('waiter_cafe_id', cafeId); }
+
+  @override
+  void onWindowClose() async {
+    // Agar asosiy printer terminali bo'lsa, x ni bosganda shunchaki berkitamiz (hide)
+    // Shunda socket va print ishlashda davom etadi
+    bool isPreventClose = await windowManager.isPreventClose();
+    if (isPreventClose) {
+      Get.snackbar(
+        "Terminal ishlamoqda", 
+        "Dastur orqa fonda (trayda) ishlashda davom etmoqda. Printerlar faol.",
+        backgroundColor: Colors.blue.withOpacity(0.8),
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      await windowManager.hide();
+    }
+  }
+
+  @override
+  void onTrayIconMouseDown() {
+    windowManager.show();
+    windowManager.focus();
+  }
+
+  @override
+  void onTrayIconRightMouseDown() {
+    trayManager.popUpContextMenu();
+  }
 }

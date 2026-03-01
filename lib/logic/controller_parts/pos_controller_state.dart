@@ -10,6 +10,8 @@ import '../../data/services/api_service.dart';
 import '../../data/services/socket_service.dart';
 import '../../data/services/printer_service.dart';
 import '../../data/services/update_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../presentation/widgets/virtual_keyboard.dart';
 
@@ -20,6 +22,10 @@ abstract class POSControllerState extends GetxController {
   final printerService = PrinterService();
   final updateService = UpdateService();
   final audioPlayer = AudioPlayer();
+  final uuid = const Uuid();
+  
+  var isOnline = true.obs;
+  var syncQueue = <Map<String, dynamic>>[].obs;
   
   var currentOrder = <Map<String, dynamic>>[].obs;
   var allOrders = <Map<String, dynamic>>[].obs;
@@ -54,8 +60,7 @@ abstract class POSControllerState extends GetxController {
   var editingOrderId = RxnInt(); // Track if we are editing an existing order
   String originalOrderJson = ""; // To check if any changes were made
   var isOrderModified = false.obs;
-  var isOffline = false.obs;
-  var pendingOfflineOrders = 0.obs;
+  var isOrderModified = false.obs;
   var reservations = <Map<String, dynamic>>[].obs;
   var ingredients = <Map<String, dynamic>>[].obs;
 
@@ -96,6 +101,7 @@ abstract class POSControllerState extends GetxController {
   var isKitchenPrintEnabled = true.obs;
   var isSubscriptionEnforced = true.obs;
   var isQrLoginEnabled = true.obs;
+  var isOfflineSyncEnabled = true.obs;
 
   // Printing Toggles
   var enableKitchenPrint = true.obs;
@@ -174,4 +180,6 @@ abstract class POSControllerState extends GetxController {
   void clearCurrentOrder();
   Future<void> printOrder(Map<String, dynamic> order, {bool isKitchenOnly = false, String? receiptTitle, bool skipCancellation = false});
   Future<void> printLocally(Map<String, dynamic> order, {bool isKitchenOnly = false, String? receiptTitle, bool skipCancellation = false});
+  bool addToSyncQueue(String type, Map<String, dynamic> data);
+  Future<void> processSyncQueue();
 }

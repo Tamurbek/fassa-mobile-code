@@ -16,6 +16,9 @@ import 'presentation/pages/auth/qr_scanner_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'logic/background_service.dart';
 import 'presentation/components/location_checker.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +32,36 @@ void main() async {
   
   // Initialize Controller
   Get.put(POSController());
+  
+  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+    await windowManager.ensureInitialized();
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(1200, 800),
+      minimumSize: Size(1000, 700),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      title: "Fassa POS Terminal",
+    );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+      await windowManager.setPreventClose(true); // Close button will hide instead of exit
+    });
+
+    // Tray management
+    await trayManager.setIcon(
+      Platform.isWindows ? 'assets/images/app_icon.ico' : 'assets/images/app_icon.png',
+    );
+    Menu menu = Menu(
+      items: [
+        MenuItem(label: 'Terminalni ochish', onClick: (_) => windowManager.show()),
+        MenuItem.separator(),
+        MenuItem(label: 'Tizimdan chiqish', onClick: (_) => exit(0)),
+      ],
+    );
+    await trayManager.setContextMenu(menu);
+  }
   
   runApp(const FassaApp());
 }
