@@ -18,6 +18,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
+import '../presentation/pages/main_navigation_screen.dart';
 import '../data/services/offline_service.dart';
 
 class POSController extends POSControllerState with 
@@ -381,10 +382,10 @@ class POSController extends POSControllerState with
       }(),
     };
 
+    final normalized = normalizeOrder(orderData);
+
     if (isOnline.value) {
       try {
-        // Perform Optimistic UI Update first if we think we are online
-        final normalized = normalizeOrder(orderData);
         allOrders.insert(0, normalized);
         allOrders.refresh();
         saveAllOrders();
@@ -401,7 +402,6 @@ class POSController extends POSControllerState with
         if (isOfflineSyncEnabled.value) {
           addToSyncQueue('CREATE_ORDER', orderData);
         } else {
-          // Revert list if possible
           allOrders.removeWhere((o) => o['id'] == orderData['id']);
           allOrders.refresh();
           saveAllOrders();
@@ -411,8 +411,6 @@ class POSController extends POSControllerState with
         }
       }
     } else {
-      // We are strictly offline (and isOfflineSyncEnabled must be true to reach here)
-      final normalized = normalizeOrder(orderData);
       allOrders.insert(0, normalized);
       allOrders.refresh();
       saveAllOrders();
@@ -427,7 +425,6 @@ class POSController extends POSControllerState with
 
     clearCurrentOrder();
     return true;
-
   }
 
   Future<bool> updateExistingOrder({bool isPaid = false, String? paymentMethod}) async {

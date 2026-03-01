@@ -6,6 +6,7 @@ import '../../data/models/printer_model.dart';
 import '../../data/models/preparation_area_model.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'pos_controller_state.dart';
+import '../../data/services/offline_service.dart';
 
 mixin DataSyncMixin on POSControllerState {
   Future<void> refreshData({bool showMessage = true}) async {
@@ -24,7 +25,8 @@ mixin DataSyncMixin on POSControllerState {
   }
 
   void initConnectivityListener() {
-    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+    Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      ConnectivityResult result = results.isNotEmpty ? results.first : ConnectivityResult.none;
       bool wasOffline = !isOnline.value;
       isOnline.value = result != ConnectivityResult.none;
       

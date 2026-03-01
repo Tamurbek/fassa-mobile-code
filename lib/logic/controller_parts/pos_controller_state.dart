@@ -60,7 +60,8 @@ abstract class POSControllerState extends GetxController {
   var editingOrderId = RxnInt(); // Track if we are editing an existing order
   String originalOrderJson = ""; // To check if any changes were made
   var isOrderModified = false.obs;
-  var isOrderModified = false.obs;
+  var pendingOfflineOrders = 0.obs;
+  bool get isOffline => !isOnline.value;
   var reservations = <Map<String, dynamic>>[].obs;
   var ingredients = <Map<String, dynamic>>[].obs;
 

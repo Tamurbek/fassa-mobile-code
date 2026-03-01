@@ -198,11 +198,11 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           // Offline Indicator
-          Obx(() => pos.isOffline.value || pos.pendingOfflineOrders.value > 0 ? 
+          Obx(() => pos.isOffline || pos.pendingOfflineOrders.value > 0 ? 
             _buildTopStatusBadge(
-              pos.isOffline.value ? Icons.cloud_off_rounded : Icons.cloud_sync_rounded,
+              pos.isOffline ? Icons.cloud_off_rounded : Icons.cloud_sync_rounded,
               pos.pendingOfflineOrders.value.toString(),
-              pos.isOffline.value ? Colors.red : Colors.orange,
+              pos.isOffline ? Colors.red : Colors.orange,
               onTap: () => pos.refreshData() // Refresh tries to sync
             ) : const SizedBox.shrink()),
           const SizedBox(width: 12),
