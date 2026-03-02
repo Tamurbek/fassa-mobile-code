@@ -142,7 +142,7 @@ class POSController extends POSControllerState with
     enableKitchenPrint.value = storage.read('enable_kitchen_print') ?? true;
     enableBillPrint.value = storage.read('enable_bill_print') ?? true;
     enablePaymentPrint.value = storage.read('enable_payment_print') ?? true;
-    isMainPrinterTerminal.value = storage.read('is_main_printer_terminal') ?? true;
+    isMainPrinterTerminal.value = storage.read('is_main_printer_terminal') ?? false;
 
     // Load Feature Flags
     isGeofencingEnabled.value = storage.read('is_geofencing_enabled') ?? true;
@@ -165,7 +165,7 @@ class POSController extends POSControllerState with
     receiptFooter.value = storage.read('receipt_footer') ?? "Xaridingiz uchun rahmat!";
     showLogo.value = storage.read('show_logo') ?? true;
 
-    if (currentUser.value != null) {
+    if (currentUser.value != null || currentTerminal.value != null) {
       socket.setCafeId(cafeId);
     }
   }
@@ -181,48 +181,47 @@ class POSController extends POSControllerState with
         allOrders.refresh();
         saveAllOrders();
 
-        if (isAdmin || isCashier || currentTerminal.value != null) {
+        if (isMainPrinterTerminal.value) {
           final orderId = data['id']?.toString();
           if (orderId != null) {
             final now = DateTime.now();
-            if (_processedPrintIds.containsKey(orderId) && 
-                now.difference(_processedPrintIds[orderId]!).inSeconds < 10) {
+            final printKey = "${orderId}_kitchen_auto";
+            if (_processedPrintIds.containsKey(printKey) && 
+                now.difference(_processedPrintIds[printKey]!).inSeconds < 10) {
               return;
             }
-            _processedPrintIds[orderId] = now;
+            _processedPrintIds[printKey] = now;
           }
-          if (isMainPrinterTerminal.value) {
-            printLocally(normalized, isKitchenOnly: true);
-          }
+          printLocally(normalized, isKitchenOnly: true);
         }
       }
     });
 
     socket.onPrintRequest((data) async {
-      if (!isMainPrinterTerminal.value) return; // Only main printer terminal processes print requests
+      if (!isMainPrinterTerminal.value) return;
 
-      if (isAdmin || isCashier || currentTerminal.value != null) {
-        final orderId = data['order']?['id']?.toString();
-        if (orderId != null) {
-          final now = DateTime.now();
-          if (_processedPrintIds.containsKey(orderId) && 
-              now.difference(_processedPrintIds[orderId]!).inSeconds < 10) {
-            return;
-          }
-          _processedPrintIds[orderId] = now;
+      final orderId = data['order']?['id']?.toString();
+      final String receiptTitle = data['receiptTitle']?.toString() ?? (data['isKitchenOnly'] == true ? "KITCHEN" : "ALL");
+      
+      if (orderId != null) {
+        final now = DateTime.now();
+        final printKey = "${orderId}_$receiptTitle";
+        if (_processedPrintIds.containsKey(printKey) && 
+            now.difference(_processedPrintIds[printKey]!).inSeconds < 10) {
+          return;
         }
+        _processedPrintIds[printKey] = now;
+      }
 
-        final Map<String, dynamic> order = Map<String, dynamic>.from(data['order']);
-        if (data['sender'] != null) order['waiter_name'] = data['sender'];
-        final bool isKitchenOnly = data['isKitchenOnly'] == true;
-        final bool skipCancellation = data['skipCancellation'] == true;
-        
-        await printLocally(order, isKitchenOnly: isKitchenOnly, receiptTitle: data['receiptTitle'], skipCancellation: skipCancellation);
-        
-        // If it was a persistent job from DB, acknowledge it
-        if (data['job_id'] != null) {
-          socket.emitPrintAck(data['job_id']);
-        }
+      final Map<String, dynamic> order = Map<String, dynamic>.from(data['order']);
+      if (data['sender'] != null) order['waiter_name'] = data['sender'];
+      final bool isKitchenOnly = data['isKitchenOnly'] == true;
+      final bool skipCancellation = data['skipCancellation'] == true;
+      
+      await printLocally(order, isKitchenOnly: isKitchenOnly, receiptTitle: data['receiptTitle'], skipCancellation: skipCancellation);
+      
+      if (data['job_id'] != null) {
+        socket.emitPrintAck(data['job_id']);
       }
     });
 
