@@ -11,6 +11,7 @@ import 'settings_screen.dart';
 import 'product_management_screen.dart';
 import 'table_selection_screen.dart';
 import 'staff_management_screen.dart';
+import 'stop_list_page.dart';
 
 class MainNavigationScreen extends StatelessWidget {
   const MainNavigationScreen({super.key});
@@ -26,6 +27,7 @@ class MainNavigationScreen extends StatelessWidget {
       {"icon": Icons.people_rounded, "label": "staff".tr, "page": const StaffManagementScreen(), "adminOnly": true},
       {"icon": Icons.restaurant_menu_rounded, "label": "menu".tr, "page": ProductManagementScreen(), "adminOnly": true},
       {"icon": Icons.bar_chart_rounded, "label": "reports".tr, "page": const ReportsScreen(), "adminOnly": true},
+      {"icon": Icons.block_flipped, "label": "Stop-list", "page": const StopListPage()},
       {"icon": Icons.settings_rounded, "label": "settings".tr, "page": const SettingsScreen()},
     ];
 
