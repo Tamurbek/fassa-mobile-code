@@ -3,6 +3,7 @@ name: Build Mobile App (Windows & Android)
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   workflow_dispatch:
 
 concurrency:
@@ -61,3 +62,18 @@ jobs:
         with:
           name: fassa-pos-android-aab
           path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+            build/windows/x64/runner/Release/installer/FassaPos_Setup.exe
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
