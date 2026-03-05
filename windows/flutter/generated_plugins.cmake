@@ -5,8 +5,10 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   connectivity_plus
+  desktop_multi_window
   file_selector_windows
   geolocator_windows
+  local_auth_windows
   printing
   screen_retriever_windows
   share_plus
