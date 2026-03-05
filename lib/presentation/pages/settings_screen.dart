@@ -142,6 +142,15 @@ class SettingsScreen extends StatelessWidget {
                     "Mijoz ekranini ochish", 
                     onTap: () => pos.openCustomerDisplay()
                   ),
+                  Obx(() => _buildToggleItem(
+                    Icons.auto_awesome_rounded, 
+                    "Avtomatik ochish", 
+                    pos.autoOpenCustomerDisplay.value, 
+                    (val) {
+                      pos.autoOpenCustomerDisplay.value = val;
+                      GetStorage().write('auto_open_customer_display', val);
+                    }
+                  )),
                 ]),
               ],
 

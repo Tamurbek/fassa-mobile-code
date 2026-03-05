@@ -20,6 +20,9 @@ import 'package:window_manager/window_manager.dart';
 import 'package:tray_manager/tray_manager.dart';
 import '../presentation/pages/main_navigation_screen.dart';
 import '../data/services/offline_service.dart';
+import 'package:screen_retriever/screen_retriever.dart';
+import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'dart:convert';
 
 class POSController extends POSControllerState with 
     UserAuthMixin, 
@@ -48,6 +51,11 @@ class POSController extends POSControllerState with
     if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
       windowManager.addListener(this);
       trayManager.addListener(this);
+      
+      // Auto-open if setting is on
+      if (autoOpenCustomerDisplay.value) {
+        Future.delayed(const Duration(seconds: 3), () => openCustomerDisplay());
+      }
     }
 
     // Customer Display Listeners
@@ -59,19 +67,47 @@ class POSController extends POSControllerState with
   Future<void> openCustomerDisplay() async {
     if (customerWindowId.value != null) return;
     
-    final window = await DesktopMultiWindow.createWindow(jsonEncode({
-      'restaurantName': restaurantName.value,
-      'currency': currencySymbol,
-      'items': [],
-      'total': 0.0,
-    }));
-    
-    customerWindowId.value = window.windowId;
-    window
-      ..setFrame(const Offset(0, 0) & const Size(1024, 768))
-      ..center()
-      ..setTitle("Mijoz Ekran")
-      ..show();
+    try {
+      final window = await DesktopMultiWindow.createWindow(jsonEncode({
+        'restaurantName': restaurantName.value,
+        'currency': currencySymbol,
+        'items': [],
+        'total': 0.0,
+      }));
+      
+      customerWindowId.value = window.windowId;
+
+      Display? secondaryDisplay;
+      try {
+        final displays = await screenRetriever.getAllDisplays();
+        if (displays.length > 1) {
+          // Find first display that is NOT primary
+          secondaryDisplay = displays.firstWhere((d) => d.id != displays[0].id);
+        }
+      } catch (e) {
+        print("Monitor detection error: $e");
+      }
+
+      if (secondaryDisplay != null) {
+        // Position on second monitor and maximize
+        final offset = secondaryDisplay.visiblePosition ?? secondaryDisplay.bounds.topLeft;
+        final size = secondaryDisplay.visibleSize ?? secondaryDisplay.bounds.size;
+        
+        window
+          ..setFrame(offset & size)
+          ..setTitle("Mijoz Ekran")
+          ..show();
+      } else {
+        // Fallback to centered on main screen
+        window
+          ..setFrame(const Offset(100, 100) & const Size(1024, 768))
+          ..center()
+          ..setTitle("Mijoz Ekran")
+          ..show();
+      }
+    } catch (e) {
+      print("Open Customer Display failed: $e");
+    }
   }
 
   @override
@@ -196,6 +232,7 @@ class POSController extends POSControllerState with
     enableBillPrint.value = storage.read('enable_bill_print') ?? true;
     enablePaymentPrint.value = storage.read('enable_payment_print') ?? true;
     isMainPrinterTerminal.value = storage.read('is_main_printer_terminal') ?? false;
+    autoOpenCustomerDisplay.value = storage.read('auto_open_customer_display') ?? false;
 
     // Load Feature Flags
     isGeofencingEnabled.value = storage.read('is_geofencing_enabled') ?? true;
