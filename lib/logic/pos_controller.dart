@@ -166,6 +166,12 @@ class POSController extends POSControllerState with
     receiptFooter.value = storage.read('receipt_footer') ?? "Xaridingiz uchun rahmat!";
     showLogo.value = storage.read('show_logo') ?? true;
 
+    var storedRL = storage.read('receipt_layout');
+    if (storedRL != null) receiptLayout.assignAll(List<Map<String, dynamic>>.from(storedRL));
+
+    var storedKRL = storage.read('kitchen_receipt_layout');
+    if (storedKRL != null) kitchenReceiptLayout.assignAll(List<Map<String, dynamic>>.from(storedKRL));
+
     if (currentUser.value != null || currentTerminal.value != null) {
       socket.setCafeId(cafeId);
     }

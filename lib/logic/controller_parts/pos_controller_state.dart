@@ -94,6 +94,8 @@ abstract class POSControllerState extends GetxController {
   var instagram = "".obs;
   var telegram = "".obs;
   var allowWaiterMobileOrders = true.obs;
+  var receiptLayout = <Map<String, dynamic>>[].obs;
+  var kitchenReceiptLayout = <Map<String, dynamic>>[].obs;
 
   // Feature Flags (from backend)
   var isGeofencingEnabled = true.obs;

@@ -130,6 +130,12 @@ mixin DataSyncMixin on POSControllerState {
           telegram.value = cafe['telegram'] ?? "";
           allowWaiterMobileOrders.value = cafe['allow_waiter_mobile_orders'] ?? true;
 
+          final rl = cafe['receipt_layout'];
+          if (rl != null) receiptLayout.assignAll(List<Map<String, dynamic>>.from(rl));
+          
+          final krl = cafe['kitchen_receipt_layout'];
+          if (krl != null) kitchenReceiptLayout.assignAll(List<Map<String, dynamic>>.from(krl));
+
           // Feature Flags
           isGeofencingEnabled.value = cafe['is_geofencing_enabled'] ?? true;
           isShiftBroadcastEnabled.value = cafe['is_shift_broadcast_enabled'] ?? true;
@@ -168,6 +174,8 @@ mixin DataSyncMixin on POSControllerState {
           storage.write('instagram', instagram.value);
           storage.write('telegram', telegram.value);
           storage.write('allow_waiter_mobile_orders', allowWaiterMobileOrders.value);
+          storage.write('receipt_layout', receiptLayout.toList());
+          storage.write('kitchen_receipt_layout', kitchenReceiptLayout.toList());
           
           storage.write('is_geofencing_enabled', isGeofencingEnabled.value);
           storage.write('is_shift_broadcast_enabled', isShiftBroadcastEnabled.value);
