@@ -34,12 +34,12 @@ class SettingsScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              _buildProfileCard(pos),
+              _buildProfileCard(context, pos),
               const SizedBox(height: 32),
               
               if (pos.isAdmin) ...[
                 _buildSectionLabel("printer_settings".tr),
-                _buildSettingsCard([
+                _buildSettingsCard(context, [
                   Obx(() => _buildActionItem(
                     Icons.receipt_rounded, 
                     "printer_paper_size".tr, 
@@ -87,7 +87,7 @@ class SettingsScreen extends StatelessWidget {
               if (pos.isAdmin) ...[
                 const SizedBox(height: 24),
                 _buildSectionLabel("staff".tr),
-                _buildSettingsCard([
+                _buildSettingsCard(context, [
                   _buildActionItem(Icons.badge_rounded, "waiter_management".tr, onTap: () => Get.to(() => const StaffManagementScreen())),
                 ]),
               ],
@@ -95,7 +95,7 @@ class SettingsScreen extends StatelessWidget {
               if (pos.isAdmin) ...[
                 const SizedBox(height: 24),
                 _buildSectionLabel("menu_management".tr),
-                _buildSettingsCard([
+                _buildSettingsCard(context, [
                   _buildActionItem(Icons.restaurant_menu_rounded, "menu_management".tr, trailingText: "products".tr, onTap: () => Get.to(() => ProductManagementScreen())),
                 ]),
               ],
@@ -103,7 +103,7 @@ class SettingsScreen extends StatelessWidget {
               if (pos.isAdmin) ...[
                 const SizedBox(height: 24),
                 _buildSectionLabel("inventory".tr),
-                _buildSettingsCard([
+                _buildSettingsCard(context, [
                   _buildActionItem(Icons.inventory_2_rounded, "inventory_management".tr, onTap: () => Get.to(() => const InventoryManagementPage())),
                 ]),
               ],
@@ -111,7 +111,7 @@ class SettingsScreen extends StatelessWidget {
               if (pos.isAdmin) ...[
                 const SizedBox(height: 24),
                 _buildSectionLabel("restaurant_info".tr),
-                _buildSettingsCard([
+                _buildSettingsCard(context, [
                   Obx(() => _buildActionItem(
                     Icons.store_rounded, 
                     "restaurant_name".tr, 
@@ -134,7 +134,7 @@ class SettingsScreen extends StatelessWidget {
               ],
 
               _buildSectionLabel("Appearance & System"),
-              _buildSettingsCard([
+              _buildSettingsCard(context, [
                 Obx(() => _buildToggleItem(
                   Icons.dark_mode_rounded, 
                   "Tungi rejim", 
@@ -175,31 +175,32 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
               _buildSectionLabel("system".tr),
-              _buildSettingsCard([
-                _buildActionItem(
-                  Icons.language_rounded, 
-                  "language".tr, 
-                  trailingText: Get.locale?.languageCode == 'uz' ? "O'zbekcha" : (Get.locale?.languageCode == 'ru' ? "Русский" : "English"), 
-                  onTap: () => _showLanguageSwitcher(context)
-                ),
-                if (pos.isAdmin)
-                  _buildActionItem(Icons.delete_forever_rounded, "clear_data".tr, isDestructive: true, onTap: () => _confirmClearData(context, pos, storage)),
-                _buildActionItem(Icons.info_rounded, "app_version".tr, trailingText: "v1.0.5", onTap: () {}),
-              ]),
-              
-              const SizedBox(height: 48),
-              _buildLogoutButton(pos),
-              const SizedBox(height: 24),
-              _buildFooter(),
-              const SizedBox(height: 24),
-            ],
+                _buildSettingsCard(context, [
+                  _buildActionItem(
+                    Icons.language_rounded, 
+                    "language".tr, 
+                    trailingText: Get.locale?.languageCode == 'uz' ? "O'zbekcha" : (Get.locale?.languageCode == 'ru' ? "Русский" : "English"), 
+                    onTap: () => _showLanguageSwitcher(context)
+                  ),
+                  if (pos.isAdmin)
+                    _buildActionItem(Icons.delete_forever_rounded, "clear_data".tr, isDestructive: true, onTap: () => _confirmClearData(context, pos, storage)),
+                  _buildActionItem(Icons.info_rounded, "app_version".tr, trailingText: "v1.0.5", onTap: () {}),
+                ]),
+                
+                const SizedBox(height: 48),
+                _buildLogoutButton(pos),
+                const SizedBox(height: 24),
+                _buildFooter(),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildProfileCard(POSController pos) {
+  Widget _buildProfileCard(BuildContext context, POSController pos) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -277,7 +278,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsCard(List<Widget> children) {
+  Widget _buildSettingsCard(BuildContext context, List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
