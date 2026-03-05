@@ -170,14 +170,20 @@ class PrinterService {
               bytes += generator.hr(ch: '-');
               break;
             case 'INSTAGRAM_QR':
-              if (posController.instagram.value.isNotEmpty) {
-                final instaLink = "https://instagram.com/${posController.instagram.value.replaceAll('@', '')}";
+              String instaLink = posController.instagramLink.value;
+              if (instaLink.isEmpty && posController.instagram.value.isNotEmpty) {
+                 instaLink = "https://instagram.com/${posController.instagram.value.replaceAll('@', '')}";
+              }
+              if (instaLink.isNotEmpty) {
                 bytes += generator.qrcode(instaLink, size: QRSize.size4);
               }
               break;
             case 'TELEGRAM_QR':
-              if (posController.telegram.value.isNotEmpty) {
-                final tgLink = "https://t.me/${posController.telegram.value.replaceAll('t.me/', '')}";
+              String tgLink = posController.telegramLink.value;
+              if (tgLink.isEmpty && posController.telegram.value.isNotEmpty) {
+                 tgLink = "https://t.me/${posController.telegram.value.replaceAll('t.me/', '')}";
+              }
+              if (tgLink.isNotEmpty) {
                 bytes += generator.qrcode(tgLink, size: QRSize.size4);
               }
               break;

@@ -128,6 +128,8 @@ mixin DataSyncMixin on POSControllerState {
           wifiPassword.value = cafe['wifi_password'] ?? "";
           instagram.value = cafe['instagram'] ?? "";
           telegram.value = cafe['telegram'] ?? "";
+          instagramLink.value = cafe['instagram_link'] ?? "";
+          telegramLink.value = cafe['telegram_link'] ?? "";
           allowWaiterMobileOrders.value = cafe['allow_waiter_mobile_orders'] ?? true;
 
           final rl = cafe['receipt_layout'];
@@ -173,6 +175,8 @@ mixin DataSyncMixin on POSControllerState {
           storage.write('wifi_password', wifiPassword.value);
           storage.write('instagram', instagram.value);
           storage.write('telegram', telegram.value);
+          storage.write('instagram_link', instagramLink.value);
+          storage.write('telegram_link', telegramLink.value);
           storage.write('allow_waiter_mobile_orders', allowWaiterMobileOrders.value);
           storage.write('receipt_layout', receiptLayout.toList());
           storage.write('kitchen_receipt_layout', kitchenReceiptLayout.toList());
