@@ -90,8 +90,8 @@ class POSController extends POSControllerState with
 
       if (secondaryDisplay != null) {
         // Position on second monitor and maximize
-        final offset = secondaryDisplay.visiblePosition ?? secondaryDisplay.bounds.topLeft;
-        final size = secondaryDisplay.visibleSize ?? secondaryDisplay.bounds.size;
+        final offset = secondaryDisplay.visiblePosition ?? Offset.zero;
+        final size = secondaryDisplay.visibleSize ?? secondaryDisplay.size;
         
         window
           ..setFrame(offset & size)
