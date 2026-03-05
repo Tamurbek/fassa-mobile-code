@@ -20,9 +20,9 @@ class SettingsScreen extends StatelessWidget {
     final storage = GetStorage();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text("settings".tr, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 24, color: Color(0xFF1A1A1A))),
+        title: Text("settings".tr, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24, color: Theme.of(context).textTheme.displayLarge?.color)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
@@ -133,10 +133,27 @@ class SettingsScreen extends StatelessWidget {
                 ]),
               ],
 
-              if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) ...[
-                const SizedBox(height: 24),
-                _buildSectionLabel("Displey Sozlamalari"),
-                _buildSettingsCard([
+              _buildSectionLabel("Appearance & System"),
+              _buildSettingsCard([
+                Obx(() => _buildToggleItem(
+                  Icons.dark_mode_rounded, 
+                  "Tungi rejim", 
+                  pos.isDarkMode.value, 
+                  (val) => pos.toggleTheme()
+                )),
+                Obx(() => _buildToggleItem(
+                  Icons.fullscreen_rounded, 
+                  "To'liq ekran", 
+                  pos.isFullScreen.value, 
+                  (val) => pos.toggleFullScreen()
+                )),
+                Obx(() => _buildToggleItem(
+                  Icons.power_settings_new_rounded, 
+                  "Avto-yuklash (boot)", 
+                  pos.isAutoStart.value, 
+                  (val) => pos.toggleAutoStart()
+                )),
+                if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) ...[
                   _buildActionItem(
                     Icons.monitor_rounded, 
                     "Mijoz ekranini ochish", 
@@ -144,15 +161,17 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   Obx(() => _buildToggleItem(
                     Icons.auto_awesome_rounded, 
-                    "Avtomatik ochish", 
+                    "Mijoz ekranini avto-ochish", 
                     pos.autoOpenCustomerDisplay.value, 
                     (val) {
                       pos.autoOpenCustomerDisplay.value = val;
                       GetStorage().write('auto_open_customer_display', val);
                     }
                   )),
-                ]),
-              ],
+                ],
+              ]),
+
+              const SizedBox(height: 24),
 
               const SizedBox(height: 24),
               _buildSectionLabel("system".tr),
@@ -184,7 +203,7 @@ class SettingsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20)],
       ),
@@ -209,7 +228,7 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Obx(() => Text(pos.restaurantName.value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A)))),
+                Obx(() => Text(pos.restaurantName.value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Theme.of(context).textTheme.displayLarge?.color))),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -261,7 +280,7 @@ class SettingsScreen extends StatelessWidget {
   Widget _buildSettingsCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
       ),
@@ -283,46 +302,54 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Widget _buildActionItem(IconData icon, String title, {String? trailingText, bool isDestructive = false, required VoidCallback onTap}) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, color: const Color(0xFF4B5563), size: 18),
-      ),
-      title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (trailingText != null) 
-            Text(trailingText, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13, fontWeight: FontWeight.w500)),
-          const SizedBox(width: 8),
-          if (isDestructive) 
-            const Icon(Icons.warning_amber_rounded, size: 20, color: Colors.redAccent)
-          else 
-            const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFD1D5DB)),
-        ],
-      ),
+    return Builder(
+      builder: (context) {
+        return ListTile(
+          onTap: onTap,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Theme.of(context).cardColor.withOpacity(0.5), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: Theme.of(context).iconTheme.color?.withOpacity(0.7) ?? const Color(0xFF4B5563), size: 18),
+          ),
+          title: Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (trailingText != null) 
+                Text(trailingText, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13, fontWeight: FontWeight.w500)),
+              const SizedBox(width: 8),
+              if (isDestructive) 
+                const Icon(Icons.warning_amber_rounded, size: 20, color: Colors.redAccent)
+              else 
+                const Icon(Icons.chevron_right_rounded, size: 18, color: Color(0xFFD1D5DB)),
+            ],
+          ),
+        );
+      }
     );
   }
 
   Widget _buildToggleItem(IconData icon, String title, bool value, ValueChanged<bool> onChanged) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, color: const Color(0xFF4B5563), size: 18),
-      ),
-      title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeColor: const Color(0xFFFF9500),
-        activeTrackColor: const Color(0xFFFF9500).withOpacity(0.2),
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
+    return Builder(
+      builder: (context) {
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Theme.of(context).cardColor.withOpacity(0.5), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: Theme.of(context).iconTheme.color?.withOpacity(0.7) ?? const Color(0xFF4B5563), size: 18),
+          ),
+          title: Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          trailing: Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: const Color(0xFFFF9500),
+            activeTrackColor: const Color(0xFFFF9500).withOpacity(0.2),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        );
+      }
     );
   }
 
@@ -354,7 +381,7 @@ class SettingsScreen extends StatelessWidget {
   void _showLanguageSwitcher(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
       builder: (context) => Container(
         padding: const EdgeInsets.all(32),
@@ -390,8 +417,8 @@ class SettingsScreen extends StatelessWidget {
   void _showPaperSizeDialog(BuildContext context, POSController pos) {
     Get.defaultDialog(
       title: "printer_paper_size".tr,
-      titleStyle: const TextStyle(fontWeight: FontWeight.w900),
-      backgroundColor: Colors.white,
+      titleStyle: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).textTheme.displayLarge?.color),
+      backgroundColor: Theme.of(context).cardColor,
       radius: 24,
       contentPadding: const EdgeInsets.symmetric(vertical: 20),
       content: Column(
@@ -414,8 +441,8 @@ class SettingsScreen extends StatelessWidget {
     final controller = TextEditingController(text: observable.value);
     Get.defaultDialog(
       title: title,
-      titleStyle: const TextStyle(fontWeight: FontWeight.w900),
-      backgroundColor: Colors.white,
+      titleStyle: TextStyle(fontWeight: FontWeight.w900, color: Theme.of(context).textTheme.displayLarge?.color),
+      backgroundColor: Theme.of(context).cardColor,
       radius: 24,
       content: Padding(
         padding: const EdgeInsets.all(16.0),

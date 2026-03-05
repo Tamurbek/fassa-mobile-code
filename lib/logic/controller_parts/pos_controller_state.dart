@@ -116,6 +116,9 @@ abstract class POSControllerState extends GetxController {
   var isMainPrinterTerminal = false.obs;
   var customerWindowId = RxnInt();
   var autoOpenCustomerDisplay = false.obs;
+  var isDarkMode = false.obs;
+  var isFullScreen = false.obs;
+  var isAutoStart = false.obs;
 
   var isOrdersTableView = false.obs;
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:auto_start_flutter/auto_start_flutter.dart';
 import 'package:get/get.dart';
 import 'dart:async';
 import 'dart:io';
@@ -243,6 +245,17 @@ class POSController extends POSControllerState with
     enablePaymentPrint.value = storage.read('enable_payment_print') ?? true;
     isMainPrinterTerminal.value = storage.read('is_main_printer_terminal') ?? false;
     autoOpenCustomerDisplay.value = storage.read('auto_open_customer_display') ?? false;
+    isDarkMode.value = storage.read('is_dark_mode') ?? false;
+    isFullScreen.value = storage.read('is_full_screen') ?? false;
+    isAutoStart.value = storage.read('is_auto_start') ?? false;
+    
+    if (isDarkMode.value) {
+      Get.changeTheme(AppTheme.darkTheme);
+    }
+
+    if (isFullScreen.value) {
+      _applyFullScreen(true);
+    }
 
     // Load Feature Flags
     isGeofencingEnabled.value = storage.read('is_geofencing_enabled') ?? true;
@@ -776,5 +789,42 @@ class POSController extends POSControllerState with
   @override
   void onTrayIconRightMouseDown() {
     trayManager.popUpContextMenu();
+  }
+
+  void toggleTheme() {
+    isDarkMode.value = !isDarkMode.value;
+    storage.write('is_dark_mode', isDarkMode.value);
+    Get.changeTheme(isDarkMode.value ? AppTheme.darkTheme : AppTheme.lightTheme);
+  }
+
+  void toggleFullScreen() async {
+    isFullScreen.value = !isFullScreen.value;
+    storage.write('is_full_screen', isFullScreen.value);
+    _applyFullScreen(isFullScreen.value);
+  }
+
+  void _applyFullScreen(bool value) async {
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      await windowManager.setFullScreen(value);
+    } else {
+      if (value) {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      } else {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      }
+    }
+  }
+
+  void toggleAutoStart() async {
+    isAutoStart.value = !isAutoStart.value;
+    storage.write('is_auto_start', isAutoStart.value);
+    
+    if (Platform.isAndroid) {
+      if (isAutoStart.value) {
+        // This usually opens the system settings where user must enable it
+        await isAutoStartAvailable; // check
+        await getAutoStartPermission();
+      }
+    }
   }
 }

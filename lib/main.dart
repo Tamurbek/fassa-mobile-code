@@ -98,6 +98,8 @@ class CustomerDisplayApp extends StatelessWidget {
       title: 'Customer Display',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: Get.find<POSController>().isDarkMode.value ? ThemeMode.dark : ThemeMode.light,
       home: CustomerDisplayPage(initialData: initialData),
     );
   }
@@ -121,6 +123,8 @@ class FassaApp extends StatelessWidget {
       title: 'FassaPos',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: pos.isDarkMode.value ? ThemeMode.dark : ThemeMode.light,
       translations: AppTranslations(),
       locale: initialLocale,
       fallbackLocale: const Locale('en', 'US'),
