@@ -130,6 +130,13 @@ class POSController extends POSControllerState with
     if (customerWindowId.value == null || !Platform.isMacOS && !Platform.isWindows && !Platform.isLinux) return;
     
     try {
+      // Extra check: verify if the window is still active
+      final activeIds = await DesktopMultiWindow.getAllSubWindowIds();
+      if (!activeIds.contains(customerWindowId.value)) {
+        customerWindowId.value = null;
+        return;
+      }
+
       final itemsData = currentOrder.map((e) {
         final foodItem = e['item'] as FoodItem;
         final variant = e['variant'] as FoodVariant?;
@@ -152,7 +159,6 @@ class POSController extends POSControllerState with
       await DesktopMultiWindow.invokeMethod(customerWindowId.value!, 'updateData', jsonEncode(data));
     } catch (e) {
       print("Customer Display update error: $e");
-      // If communication fails, it's likely the window was closed
       customerWindowId.value = null;
     }
   }
