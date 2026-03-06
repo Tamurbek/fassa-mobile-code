@@ -36,6 +36,7 @@ void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   
   if (args.firstOrNull == 'multi_window') {
+    await GetStorage.init();
     final windowId = int.parse(args[1]);
     final argument = args.length > 2 ? jsonDecode(args[2]) as Map<String, dynamic> : <String, dynamic>{};
     
@@ -94,12 +95,14 @@ class CustomerDisplayApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = GetStorage().read('is_dark_mode') ?? false;
+    
     return GetMaterialApp(
       title: 'Customer Display',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: Get.find<POSController>().isDarkMode.value ? ThemeMode.dark : ThemeMode.light,
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       home: CustomerDisplayPage(initialData: initialData),
     );
   }
