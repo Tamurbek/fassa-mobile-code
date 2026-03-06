@@ -1,4 +1,4 @@
-name: Build Mobile App (Optimized)
+name: Build Mobile App (All Platforms)
 
 on:
   push:
@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Job 1: Build for Windows
+  # Job 1: Windows
   build-windows:
     name: Windows Build
     runs-on: windows-latest
@@ -38,8 +38,7 @@ jobs:
 
       - name: Create Installer (Inno Setup)
         shell: pwsh
-        run: |
-          iscc windows/installer.iss
+        run: iscc windows/installer.iss
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
@@ -47,7 +46,7 @@ jobs:
           name: fassa-pos-windows-installer
           path: build/windows/x64/runner/Release/installer/FassaPos_Setup.exe
 
-  # Job 2: Build for Android
+  # Job 2: Android
   build-android:
     name: Android Build
     runs-on: ubuntu-latest
@@ -86,7 +85,7 @@ jobs:
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab
 
-  # Job 3: Build for Linux
+  # Job 3: Linux
   build-linux:
     name: Linux Build
     runs-on: ubuntu-latest
@@ -123,3 +122,72 @@ jobs:
         with:
           name: fassa-pos-linux-build
           path: FassaPos_Linux.tar.gz
+
+  # Job 4: macOS
+  build-macos:
+    name: macOS Build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS
+        run: flutter build macos --release
+
+      - name: Package macOS Build
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../../FassaPos_macOS.zip *.app
+
+      - name: Upload macOS Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: fassa-pos-macos-build
+          path: FassaPos_macOS.zip
+
+  # Job 5: iOS
+  build-ios:
+    name: iOS Build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS (No codesign)
+        # Note: Codesigning requires certificates which are not present in CI.
+        # This builds the runner but it cannot be installed on a device without signing.
+        run: flutter build ios --release --no-codesign
+
+      - name: Package iOS Build
+        run: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -r ../../../FassaPos_iOS.ipa Payload
+          rm -rf Payload
+
+      - name: Upload iOS Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: fassa-pos-ios-build
+          path: FassaPos_iOS.ipa
