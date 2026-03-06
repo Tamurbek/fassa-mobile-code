@@ -79,7 +79,7 @@ void main(List<String> args) async {
       items: [
         MenuItem(label: 'Terminalni ochish', onClick: (_) => windowManager.show()),
         MenuItem.separator(),
-        MenuItem(label: 'Tizimdan chiqish', onClick: (_) => exit(0)),
+        MenuItem(label: 'Tizimdan chiqish', onClick: (_) => Get.find<POSController>().quitApp()),
       ],
     );
     await trayManager.setContextMenu(menu);

@@ -155,6 +155,9 @@ class POSController extends POSControllerState with
 
   @override
   void onClose() {
+    if (customerWindowId.value != null && (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+      DesktopMultiWindow.close(customerWindowId.value!);
+    }
     searchController.dispose();
     searchFocusNode.dispose();
     subscriptionTimer?.cancel();
@@ -753,6 +756,10 @@ class POSController extends POSControllerState with
   void onWindowClose() async {
     bool isPreventClose = await windowManager.isPreventClose();
     if (isPreventClose) {
+      if (customerWindowId.value != null && (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+         DesktopMultiWindow.close(customerWindowId.value!);
+         customerWindowId.value = null;
+      }
       Get.snackbar(
         "Terminal ishlamoqda", 
         "Dastur orqa fonda (trayda) ishlashda davom etmoqda. Printerlar faol.",
@@ -769,6 +776,11 @@ class POSController extends POSControllerState with
   void onTrayIconMouseDown() {
     windowManager.show();
     windowManager.focus();
+    // Re-open customer display if enabled
+    bool autoOpen = storage.read('auto_open_customer_display') ?? false;
+    if (autoOpen && customerWindowId.value == null) {
+      openCustomerDisplay();
+    }
   }
 
   @override
@@ -810,5 +822,12 @@ class POSController extends POSControllerState with
         await getAutoStartPermission();
       }
     }
+  }
+
+  void quitApp() async {
+    if (customerWindowId.value != null && (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+      await DesktopMultiWindow.close(customerWindowId.value!);
+    }
+    exit(0);
   }
 }
