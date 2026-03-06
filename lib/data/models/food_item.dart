@@ -66,15 +66,15 @@ class FoodItem {
     required this.price,
     required this.imageUrl,
     required this.category,
-    required this.rating,
-    required this.timeEstimate,
-    required this.preparationArea,
+    this.rating = 5.0,
+    this.timeEstimate = 20,
+    this.preparationArea = 'Kitchen',
     this.preparationAreaId,
-    required this.hasVariants,
+    this.hasVariants = false,
     this.isAvailable = true,
     this.stockRemaining,
     this.lastPreparedAt,
-    required this.variants,
+    this.variants = const [],
   });
 
   Map<String, dynamic> toJson() => {

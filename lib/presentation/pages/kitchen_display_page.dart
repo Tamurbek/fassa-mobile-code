@@ -308,19 +308,17 @@ class _OrderCard extends StatelessWidget {
 
   void _markOrderReady(BuildContext context) async {
     try {
-      final success = await pos.updateOrderStatus(order['id'], "Ready");
-      if (success) {
-        Get.snackbar(
-          "tayyor".tr, 
-          "buyurtma_tayyor_deb_belgilandi".tr,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
-          margin: const EdgeInsets.all(15),
-          borderRadius: 15,
-          icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
-        );
-      }
+      await pos.updateOrderStatus(order['id'], "Ready");
+      Get.snackbar(
+        "tayyor".tr, 
+        "buyurtma_tayyor_deb_belgilandi".tr,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+        margin: const EdgeInsets.all(15),
+        borderRadius: 15,
+        icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
+      );
     } catch (e) {
       Get.snackbar("error".tr, "holatni_yangilashda_xatolik".tr);
     }

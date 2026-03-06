@@ -168,43 +168,56 @@ class _CustomerDisplayPageState extends State<CustomerDisplayPage> {
             ),
           ),
           const SizedBox(height: 60),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                timeStr,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 160,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'monospace',
-                  letterSpacing: -5,
-                ),
-              ),
-              Text(
-                secondsStr,
-                style: const TextStyle(
-                  color: Color(0xFFFF9500),
-                  fontSize: 60,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ],
-          ),
-          Text(
-            dateStr,
-            style: const TextStyle(
-              color: Colors.white54,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 4,
-            ),
-          ),
+          _buildClockSection(Colors.white, Colors.white54),
         ],
       ),
+    );
+  }
+
+  Widget _buildClockSection(Color primaryColor, Color secondaryColor) {
+    String timeStr = DateFormat('HH:mm').format(_now);
+    String secondsStr = DateFormat(':ss').format(_now);
+    String dateStr = DateFormat('EEEE, d MMMM', 'uz_UZ').format(_now).toUpperCase();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              timeStr,
+              style: TextStyle(
+                color: primaryColor,
+                fontSize: 100,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'monospace',
+                letterSpacing: -5,
+              ),
+            ),
+            Text(
+              secondsStr,
+              style: const TextStyle(
+                color: Color(0xFFFF9500),
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ],
+        ),
+        Text(
+          dateStr,
+          style: TextStyle(
+            color: secondaryColor,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 2,
+          ),
+        ),
+      ],
     );
   }
 
@@ -306,15 +319,22 @@ class _CustomerDisplayPageState extends State<CustomerDisplayPage> {
           ),
         ),
 
-        // Side Summary Board
         Container(
           width: 480,
           padding: const EdgeInsets.all(50),
           decoration: BoxDecoration(
-        const SizedBox(height: 20),
-        Text(
-          restaurantName.toUpperCase(),
-          style: TextStyle(color: textColor, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+            color: Colors.white.withOpacity(0.02),
+            border: Border(left: BorderSide(color: Colors.white.withOpacity(0.05))),
+          ),
+          child: Column(
+            children: [
+              _buildClockSection(Colors.white, Colors.white70),
+              const Spacer(),
+              _buildTotalCard(const Color(0xFFFF9500), total),
+              const Spacer(),
+              _buildFooter(Colors.white38),
+            ],
+          ),
         ),
       ],
     );
