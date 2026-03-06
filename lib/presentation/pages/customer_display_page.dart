@@ -77,39 +77,49 @@ class _CustomerDisplayPageState extends State<CustomerDisplayPage> {
 
     return Scaffold(
       backgroundColor: bgColor,
-      body: Row(
-        children: [
-          // Left Side: Order List or Welcome/Clock
-          Expanded(
-            flex: 3,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 500),
-              child: items.isEmpty ? _buildEmptyState(textColor, secondaryTextColor, accentColor, cardColor) : _buildOrderList(textColor, secondaryTextColor, accentColor, cardColor),
-            ),
-          ),
-          
-          // Right Side: Summary & Total
-          Expanded(
-            flex: 2,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF9FAFB),
-                border: Border(left: BorderSide(color: textColor.withOpacity(0.05))),
-              ),
-              child: Column(
-                children: [
-                  _buildRestaurantHeader(accentColor, textColor),
-                  const Spacer(),
-                  _buildTotalCard(accentColor, total),
-                  const SizedBox(height: 60),
-                  _buildFooter(secondaryTextColor),
-                ],
-              ),
-            ),
-          ),
-        ],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 600),
+        transitionBuilder: (child, animation) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        child: items.isEmpty 
+          ? _buildEmptyState(textColor, secondaryTextColor, accentColor, cardColor) 
+          : _buildOrderState(isDark, textColor, secondaryTextColor, accentColor, cardColor),
       ),
+    );
+  }
+
+  Widget _buildOrderState(bool isDark, Color textColor, Color secondaryTextColor, Color accentColor, Color cardColor) {
+    return Row(
+      key: const ValueKey("order_state"),
+      children: [
+        // Left Side: Order List
+        Expanded(
+          flex: 3,
+          child: _buildOrderList(textColor, secondaryTextColor, accentColor, cardColor),
+        ),
+        
+        // Right Side: Summary & Total (Only visible when items exist)
+        Expanded(
+          flex: 2,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF9FAFB),
+              border: Border(left: BorderSide(color: textColor.withOpacity(0.05))),
+            ),
+            child: Column(
+              children: [
+                _buildRestaurantHeader(accentColor, textColor),
+                const Spacer(),
+                _buildTotalCard(accentColor, total),
+                const SizedBox(height: 60),
+                _buildFooter(secondaryTextColor),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -119,39 +129,54 @@ class _CustomerDisplayPageState extends State<CustomerDisplayPage> {
     String dateStr = DateFormat('EEEE, d MMMM', 'uz_UZ').format(_now);
 
     return Container(
-      key: const ValueKey("empty"),
+      key: const ValueKey("empty_state"),
+      width: double.infinity,
+      height: double.infinity,
       padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(color: cardColor),
+      color: cardColor,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Elegant clock
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  timeStr,
-                  style: TextStyle(color: accentColor, fontSize: 180, fontWeight: FontWeight.w900, height: 1.0, letterSpacing: -5),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 35),
-                  child: Text(
-                    secondsStr,
-                    style: TextStyle(color: accentColor.withOpacity(0.5), fontSize: 60, fontWeight: FontWeight.bold),
+            // Elegant large clock
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    timeStr,
+                    style: TextStyle(
+                      color: accentColor, 
+                      fontSize: 220, 
+                      fontWeight: FontWeight.w900, 
+                      height: 1.0, 
+                      letterSpacing: -10
+                    ),
                   ),
-                ),
-              ],
+                  Text(
+                    secondsStr,
+                    style: TextStyle(
+                      color: accentColor.withOpacity(0.4), 
+                      fontSize: 220, 
+                      fontWeight: FontWeight.w900, 
+                      height: 1.0,
+                      letterSpacing: -10
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
             Text(
               dateStr.toUpperCase(),
-              style: TextStyle(color: textColor.withOpacity(0.6), fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: 2),
+              style: TextStyle(color: textColor.withOpacity(0.4), fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: 4),
             ),
-            const SizedBox(height: 80),
+            const SizedBox(height: 100),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 25),
               decoration: BoxDecoration(
                 color: accentColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(50),
@@ -160,11 +185,11 @@ class _CustomerDisplayPageState extends State<CustomerDisplayPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.stars_rounded, color: accentColor, size: 30),
-                  const SizedBox(width: 15),
+                  Icon(Icons.stars_rounded, color: accentColor, size: 36),
+                  const SizedBox(width: 20),
                   Text(
                     "Xush kelibsiz! Buyurtmangizni kutamiz",
-                    style: TextStyle(color: accentColor, fontSize: 22, fontWeight: FontWeight.w600),
+                    style: TextStyle(color: accentColor, fontSize: 26, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -177,7 +202,6 @@ class _CustomerDisplayPageState extends State<CustomerDisplayPage> {
 
   Widget _buildOrderList(Color textColor, Color secondaryTextColor, Color accentColor, Color cardColor) {
     return Container(
-      key: const ValueKey("list"),
       padding: const EdgeInsets.all(40),
       color: cardColor,
       child: Column(
