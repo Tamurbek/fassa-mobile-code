@@ -547,6 +547,15 @@ class ApiService {
     }
   }
 
+  Future<void> sendHeartbeat(String terminalId) async {
+    try {
+      // Use terminal token specifically if needed, or default token
+      await _dio.post('/terminals/$terminalId/heartbeat');
+    } catch (e) {
+      // Silent fail for heartbeat
+    }
+  }
+
   // Reservations
   Future<List<dynamic>> getReservations() async {
     try {

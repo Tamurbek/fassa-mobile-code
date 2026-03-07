@@ -65,6 +65,18 @@ class POSController extends POSControllerState with
     debounce(currentOrder, (_) => updateCustomerDisplay(), time: const Duration(milliseconds: 300));
     debounce(discountValue, (_) => updateCustomerDisplay(), time: const Duration(milliseconds: 300));
     debounce(discountType, (_) => updateCustomerDisplay(), time: const Duration(milliseconds: 300));
+    
+    _startHeartbeat();
+  }
+
+  Timer? _heartbeatTimer;
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (currentTerminal.value != null) {
+        api.sendHeartbeat(currentTerminal.value!['id'].toString());
+      }
+    });
   }
 
   Future<void> openCustomerDisplay() async {
