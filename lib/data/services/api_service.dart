@@ -42,11 +42,12 @@ class ApiService {
            }
         } else if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.unknown) {
           // Show technical error for debugging "Security" issues on Windows
+          // Use hex colors to avoid conflicts and ensure it works without context
           g.Get.snackbar(
             "Tarmoq xatosi", 
             "Serverga ulanib bo'lmadi. Texnik xato: ${e.error ?? e.message}",
-            backgroundColor: Colors.red.withOpacity(0.8),
-            colorText: Colors.white,
+            backgroundColor: const Color(0xFFE53935), // Red 600
+            colorText: const Color(0xFFFFFFFF), // White
             duration: const Duration(seconds: 10),
           );
         }
