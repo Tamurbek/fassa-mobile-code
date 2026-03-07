@@ -22,6 +22,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'dart:convert';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'presentation/pages/customer_display_page.dart';
+import 'package:windows_single_instance/windows_single_instance.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -39,6 +40,17 @@ void main(List<String> args) async {
   await initializeDateFormatting('uz_UZ', null);
   await initializeDateFormatting('en_US', null);
   await initializeDateFormatting('ru_RU', null);
+
+  if (Platform.isWindows) {
+    await WindowsSingleInstance.ensureSingleInstance(
+      args,
+      "fassa_pos_terminal",
+      onSecondWindow: (args) {
+        windowManager.show();
+        windowManager.focus();
+      },
+    );
+  }
 
   if (args.firstOrNull == 'multi_window') {
     await GetStorage.init();
@@ -72,9 +84,12 @@ void main(List<String> args) async {
     });
 
     // Tray management
-    await trayManager.setIcon(
-      Platform.isWindows ? 'assets/images/app_icon.ico' : 'assets/images/app_icon.png',
-    );
+    // For Windows, ensure we use the .ico file from assets
+    String trayIconPath = Platform.isWindows 
+        ? 'assets/images/app_icon.ico' 
+        : 'assets/images/app_icon.png';
+        
+    await trayManager.setIcon(trayIconPath);
     Menu menu = Menu(
       items: [
         MenuItem(label: 'Terminalni ochish', onClick: (_) => windowManager.show()),

@@ -19,10 +19,19 @@ class RoleSelectionScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.fastfood, color: Color(0xFFFF9500), size: 80),
+              Container(
+                width: 100,
+                height: 100,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Image.asset('assets/logo.png'),
+              ),
               const SizedBox(height: 24),
               const Text(
-                "FAST FOOD PRO",
+                "Fassa",
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,

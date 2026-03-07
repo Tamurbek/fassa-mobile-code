@@ -481,18 +481,20 @@ class _PinCodeScreenState extends State<PinCodeScreen> {
 
   Widget _buildHeaderIcon() {
     return Container(
-      width: 80,
-      height: 80,
-      decoration: const BoxDecoration(
-        color: Color(0xFFFFF7ED),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
         shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: const Center(
-        child: Icon(
-          Icons.lock_rounded,
-          color: Color(0xFFFF9500),
-          size: 36,
-        ),
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Image.asset('assets/logo.png'),
       ),
     );
   }

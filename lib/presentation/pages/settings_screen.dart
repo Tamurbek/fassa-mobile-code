@@ -217,9 +217,8 @@ class SettingsScreen extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Center(
-              child: Text(
-                pos.restaurantName.value.isNotEmpty ? pos.restaurantName.value.substring(0, 1).toUpperCase() : "C",
-                style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+              child: ClipOval(
+                child: Image.asset('assets/logo.png', width: 60, height: 60),
               ),
             ),
           ),

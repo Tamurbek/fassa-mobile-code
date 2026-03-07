@@ -70,6 +70,7 @@ dependencies:
   desktop_multi_window: ^0.2.0
   screen_retriever: ^0.2.0
   auto_start_flutter: ^0.7.0
+  windows_single_instance: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -114,6 +115,7 @@ flutter:
   assets:
     - assets/
     - assets/images/
+    - assets/images/app_icon.ico
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
