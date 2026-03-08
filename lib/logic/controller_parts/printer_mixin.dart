@@ -63,24 +63,28 @@ mixin PrinterMixin on POSControllerState {
           bool success = false;
           bool shouldPrintCurrentReceipt = false;
           
-          if (receiptTitle == "HISOB CHEKI" && printer.printReceipts) {
+          if ((receiptTitle == "HISOB CHEKI" || receiptTitle == "HISOB") && (printer.printReceipts || printer.printPayments)) {
             shouldPrintCurrentReceipt = true;
           } else if (receiptTitle == null && !isKitchenOnly && printer.printPayments) {
             shouldPrintCurrentReceipt = true;
-          } else if (receiptTitle != null && receiptTitle != "HISOB CHEKI" && printer.printPayments) {
+          } else if (receiptTitle != null && receiptTitle != "HISOB CHEKI" && receiptTitle != "HISOB" && printer.printPayments) {
             shouldPrintCurrentReceipt = true;
           }
 
           if (shouldPrintCurrentReceipt && printer.tableAreaNames.isNotEmpty) {
             final String orderTableId = (order['table'] ?? "").toString();
-            final String orderAreaName = orderTableId.contains("-") ? orderTableId.split("-")[0] : "";
-            if (!printer.tableAreaNames.contains(orderAreaName)) shouldPrintCurrentReceipt = false;
+            final String? orderAreaName = order['table_area']?.toString() ?? 
+                                         (orderTableId.contains("-") ? orderTableId.split("-")[0] : null);
+            
+            if (orderAreaName != null && orderAreaName.isNotEmpty) {
+              if (!printer.tableAreaNames.contains(orderAreaName)) shouldPrintCurrentReceipt = false;
+            }
           }
 
-          if (shouldPrintCurrentReceipt && !isKitchenOnly) {
+          if (shouldPrintCurrentReceipt && (!isKitchenOnly || receiptTitle != null)) {
             if ((receiptTitle == "HISOB CHEKI" && !enableBillPrint.value) || 
-                (receiptTitle != "HISOB CHEKI" && !enablePaymentPrint.value)) {
-              // Disabled
+                (receiptTitle != "HISOB CHEKI" && receiptTitle != null && !enablePaymentPrint.value)) {
+              // Disabled in settings
             } else {
               final orderForPrinting = Map<String, dynamic>.from(order);
               orderForPrinting['service_fee_dine_in'] = serviceFeeDineIn.value;
@@ -93,7 +97,10 @@ mixin PrinterMixin on POSControllerState {
             }
           }
 
-          if (printer.preparationAreaIds.isNotEmpty && (isKitchenOnly || receiptTitle == null)) {
+          if (printer.preparationAreaIds.isNotEmpty) {
+            // Kitchen ticket prints if isKitchenOnly (waiter draft) 
+            // OR if it's a manual/auto print (receiptTitle == null)
+            // OR if it's a bill/payment but we still want kitchen (always true if items exist usually)
             if (enableKitchenPrint.value) {
               final orderIdStr = order['id']?.toString() ?? "0";
               final previouslyPrintedRaw = printedKitchenQuantities[orderIdStr];

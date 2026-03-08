@@ -40,19 +40,17 @@ class PrinterService {
     // However, the printer error is likely because it doesn't support UTF-8/multi-byte at all.
     // For now, let's just ensure we only send ASCII characters to the printer.
     
+    // Comprehensive Cyrillic to Latin transliteration for printers without Cyrillic support
     Map<String, String> replacements = {
-      'Е': 'E', 'е': 'e',
-      'А': 'A', 'а': 'a',
-      'В': 'B',
-      'С': 'C', 'с': 'c',
-      'Н': 'H',
-      'К': 'K', 'к': 'k',
-      'М': 'M', 'м': 'm',
-      'О': 'O', 'о': 'o',
-      'Р': 'P', 'р': 'p',
-      'Т': 'T',
-      'Х': 'X', 'х': 'x',
-      'У': 'Y', 'у': 'y',
+      'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo', 'Ж': 'Zh', 
+      'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N', 'О': 'O', 
+      'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F', 'Х': 'Kh', 'Ц': 'Ts', 
+      'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya',
+      'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh', 
+      'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 
+      'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts', 
+      'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+      'Ў': 'O\'', 'ў': 'o\'', 'Қ': 'Q', 'қ': 'q', 'Ғ': 'G\'', 'ғ': 'g\'', 'Ҳ': 'H', 'ҳ': 'h',
     };
 
     String result = text;
@@ -82,15 +80,53 @@ class PrinterService {
 
       if (layout.isEmpty) {
         // Simple fallback if no layout is defined
-        bytes += generator.text(_normalizeString(posController.restaurantName.value), styles: const PosStyles(align: PosAlign.center, bold: true));
+        bytes += generator.text(_normalizeString(posController.restaurantName.value), styles: const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2, width: PosTextSize.size2));
+        if (posController.restaurantAddress.value.isNotEmpty) bytes += generator.text(_normalizeString(posController.restaurantAddress.value), styles: const PosStyles(align: PosAlign.center));
         bytes += generator.hr();
+        bytes += generator.text(_normalizeString(title ?? 'BUYURTMA'), styles: const PosStyles(align: PosAlign.center, bold: true));
         bytes += generator.text(_normalizeString('ID: ${order['id']}'), styles: const PosStyles(align: PosAlign.center));
+        bytes += generator.text(_normalizeString(DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())), styles: const PosStyles(align: PosAlign.center));
+        if (order['table'] != null && order['table'] != '-') bytes += generator.text(_normalizeString('STOL: ${order['table']}'), styles: const PosStyles(align: PosAlign.center, bold: true));
         bytes += generator.hr();
-        for (var item in (order['details'] as List)) {
-          bytes += _row(generator, item['name'], '${item['qty']} x ${_formatPrice(item['price'])}');
+        
+        final items = (order['details'] as List);
+        for (var item in items) {
+          int qty = int.tryParse(item['qty'].toString()) ?? 0;
+          double price = double.tryParse(item['price'].toString()) ?? 0.0;
+          bytes += _row(generator, item['name'], '$qty x ${_formatPrice(price)}');
         }
         bytes += generator.hr();
-        bytes += _row(generator, 'JAMI:', _formatPrice(order['total']), styles: const PosStyles(bold: true));
+        
+        // Use the same logic as TOTAL_BLOCK for the fallback
+        double subtotal = 0;
+        for (var item in items) {
+          subtotal += (double.tryParse(item['price'].toString()) ?? 0.0) * (int.tryParse(item['qty'].toString()) ?? 0);
+        }
+
+        double feePercent = 0.0;
+        double feeFixed = 0.0;
+        final String mode = (order['mode'] ?? "Dine-in").toString().toLowerCase();
+        if (mode.contains("dine")) feePercent = (order['service_fee_dine_in'] as num?)?.toDouble() ?? 10.0;
+        else if (mode.contains("takeaway")) feeFixed = (order['service_fee_takeaway'] as num?)?.toDouble() ?? 0.0;
+        else if (mode.contains("delivery")) feeFixed = (order['service_fee_delivery'] as num?)?.toDouble() ?? 0.0;
+
+        double feeAmt = feeFixed;
+        if (feePercent > 0) {
+          feeAmt = subtotal * (feePercent / 100);
+          bytes += _row(generator, 'XIZMAT (${feePercent.toInt()}%):', _formatPrice(feeAmt));
+        } else if (feeFixed > 0) {
+          bytes += _row(generator, 'XIZMAT:', _formatPrice(feeAmt));
+        }
+
+        final double discountAmt = (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
+        if (discountAmt > 0) bytes += _row(generator, 'CHEGIRMA:', '-${_formatPrice(discountAmt)}');
+
+        double finalTotal = subtotal + feeAmt - discountAmt;
+        if (finalTotal < 0) finalTotal = 0;
+        
+        bytes += generator.hr(ch: '=');
+        bytes += _row(generator, 'JAMI:', _formatPrice(finalTotal), styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size2));
+        bytes += generator.hr(ch: '=');
       } else {
         for (int i = 0; i < layout.length; i++) {
           var element = layout[i];
@@ -228,14 +264,42 @@ class PrinterService {
         break;
       case 'TOTAL_BLOCK':
         double subtotal = 0;
-        for (var item in (order['details'] as List)) {
+        final items = (order['details'] as List);
+        for (var item in items) {
           subtotal += (double.tryParse(item['price'].toString()) ?? 0.0) * (int.tryParse(item['qty'].toString()) ?? 0);
         }
-        bytes += _row(generator, 'SUMMA:', _formatPrice(subtotal), styles: styles);
-        final double discountAmt = (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
-        if (discountAmt > 0) bytes += _row(generator, 'CHEGIRMA:', '-${_formatPrice(discountAmt)}', styles: styles.copyWith(bold: true));
         
-        double finalTotal = subtotal - discountAmt;
+        bytes += _row(generator, 'SUMMA:', _formatPrice(subtotal), styles: styles);
+        
+        // Calculate Service Fee
+        double feePercent = 0.0;
+        double feeFixed = 0.0;
+        final String mode = (order['mode'] ?? "Dine-in").toString().toLowerCase();
+        
+        if (mode.contains("dine")) {
+          feePercent = (order['service_fee_dine_in'] as num?)?.toDouble() ?? 10.0;
+        } else if (mode.contains("takeaway")) {
+          feeFixed = (order['service_fee_takeaway'] as num?)?.toDouble() ?? 0.0;
+        } else if (mode.contains("delivery")) {
+          feeFixed = (order['service_fee_delivery'] as num?)?.toDouble() ?? 0.0;
+        }
+
+        double feeAmt = feeFixed;
+        if (feePercent > 0) {
+          feeAmt = subtotal * (feePercent / 100);
+          bytes += _row(generator, 'XIZMAT (${feePercent.toInt()}%):', _formatPrice(feeAmt), styles: styles);
+        } else if (feeFixed > 0) {
+          bytes += _row(generator, 'XIZMAT:', _formatPrice(feeAmt), styles: styles);
+        }
+
+        final double discountAmt = (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
+        if (discountAmt > 0) {
+          bytes += _row(generator, 'CHEGIRMA:', '-${_formatPrice(discountAmt)}', styles: styles.copyWith(bold: true));
+        }
+        
+        double finalTotal = subtotal + feeAmt - discountAmt;
+        if (finalTotal < 0) finalTotal = 0;
+
         bytes += generator.hr(ch: '=');
         bytes += generator.row([
           PosColumn(text: _normalizeString('JAMI:'), width: 5, styles: styles.copyWith(bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
@@ -357,7 +421,7 @@ class PrinterService {
       bytes += generator.feed(1);
       bytes += generator.text(_normalizeString('VAQT: ${DateFormat('HH:mm').format(DateTime.now())}'), styles: const PosStyles(align: PosAlign.center));
       if (order['waiter_name'] != null && order['waiter_name'].toString().isNotEmpty) {
-        bytes += generator.text(_normalizeString('AFITSANT: ${order['waiter_name']}'), styles: const PosStyles(align: PosAlign.center, bold: true));
+        bytes += generator.text(_normalizeString('OFITSIANT: ${order['waiter_name']}'), styles: const PosStyles(align: PosAlign.center, bold: true));
       }
       bytes += generator.hr(ch: '-');
 
@@ -647,7 +711,7 @@ class PrinterService {
 
   Future<bool> _sendToPrinter(PrinterModel printer, List<int> bytes) async {
     try {
-      final socket = await Socket.connect(printer.ipAddress, printer.port, timeout: const Duration(seconds: 2));
+      final socket = await Socket.connect(printer.ipAddress, printer.port, timeout: const Duration(seconds: 5));
       socket.add(bytes);
       await socket.flush();
       await socket.close();
