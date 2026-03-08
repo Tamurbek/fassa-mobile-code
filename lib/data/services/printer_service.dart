@@ -105,11 +105,12 @@ class PrinterService {
           double price = double.tryParse(item['price'].toString()) ?? 0.0;
           double lineTotal = qty * price;
           
-          bytes += generator.text(_normalizeString(item['name']), styles: PosStyles(bold: true, height: isKitchenOnly ? PosTextSize.size3 : PosTextSize.size1));
-          
           if (isKitchenOnly) {
-             bytes += generator.text(_normalizeString('SONI: ${qty} ta'), styles: const PosStyles(bold: true, height: PosTextSize.size3, width: PosTextSize.size2));
-             bytes += generator.feed(1); // Space between items in kitchen
+             bytes += generator.row([
+               PosColumn(text: _normalizeString(item['name']), width: 9, styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
+               PosColumn(text: _normalizeString('$qty ta'), width: 3, styles: const PosStyles(align: PosAlign.right, bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
+             ]);
+             bytes += generator.feed(1); 
           } else {
             bytes += generator.row([
               PosColumn(text: _normalizeString('  $qty x ${_formatPrice(price)}'), width: 7, styles: const PosStyles(fontType: PosFontType.fontB)),
@@ -298,14 +299,12 @@ class PrinterService {
           double lineTotal = qty * price;
           
           // Print Name
-          bytes += generator.text(_normalizeString(item['name']), 
-              styles: styles.copyWith(bold: true, fontType: PosFontType.fontA, height: isKitchenOnly ? PosTextSize.size3 : PosTextSize.size1));
-          
           if (isKitchenOnly) {
-            // Kitchen: Only Quantity (XLARGE)
-            bytes += generator.text(_normalizeString('SONI: $qty ta'), 
-                styles: styles.copyWith(bold: true, height: PosTextSize.size3, width: PosTextSize.size2));
-            bytes += generator.feed(1); // More space for kitchen
+            bytes += generator.row([
+              PosColumn(text: _normalizeString(item['name']), width: 9, styles: styles.copyWith(bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
+              PosColumn(text: _normalizeString('$qty ta'), width: 3, styles: styles.copyWith(align: PosAlign.right, bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
+            ]);
+            bytes += generator.feed(1); 
           } else {
             // Bill: Quantity x Price and Total
             bytes += generator.row([
