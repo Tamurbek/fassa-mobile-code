@@ -97,10 +97,7 @@ mixin PrinterMixin on POSControllerState {
             }
           }
 
-          if (printer.preparationAreaIds.isNotEmpty) {
-            // Kitchen ticket prints if isKitchenOnly (waiter draft) 
-            // OR if it's a manual/auto print (receiptTitle == null)
-            // OR if it's a bill/payment but we still want kitchen (always true if items exist usually)
+          if (printer.preparationAreaIds.isNotEmpty && (isKitchenOnly || receiptTitle == null)) {
             if (enableKitchenPrint.value) {
               final orderIdStr = order['id']?.toString() ?? "0";
               final previouslyPrintedRaw = printedKitchenQuantities[orderIdStr];
