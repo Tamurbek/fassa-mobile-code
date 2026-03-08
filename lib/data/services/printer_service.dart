@@ -85,7 +85,18 @@ class PrinterService {
         bytes += generator.text(_normalizeString(title ?? 'BUYURTMA'), styles: const PosStyles(align: PosAlign.center, bold: true));
         bytes += generator.text(_normalizeString('ID: ${order['id']}'), styles: const PosStyles(align: PosAlign.center));
         bytes += generator.text(_normalizeString(DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())), styles: const PosStyles(align: PosAlign.center));
-        if (order['table'] != null && order['table'] != '-') bytes += generator.text(_normalizeString('STOL: ${order['table']}'), styles: const PosStyles(align: PosAlign.center, bold: true));
+        
+        final String cashierName = posController.currentUser.value?['name'] ?? "";
+        if (cashierName.isNotEmpty) {
+           bytes += generator.text(_normalizeString('KASSIR: $cashierName'), styles: const PosStyles(align: PosAlign.left));
+        }
+        
+        final String waiterName = order['waiter_name'] ?? "";
+        if (waiterName.isNotEmpty) {
+           bytes += generator.text(_normalizeString('AFITSANT: $waiterName'), styles: const PosStyles(align: PosAlign.left));
+        }
+
+        if (order['table'] != null && order['table'] != '-') bytes += generator.text(_normalizeString('STOL: ${order['table']}'), styles: const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2));
         bytes += generator.hr();
         
         final items = (order['details'] as List);
@@ -256,11 +267,17 @@ class PrinterService {
         if (title != null) bytes += generator.text(_normalizeString(title.toUpperCase()), styles: _getStyles(element, defaultBold: true));
         bytes += generator.text(_normalizeString('ID: ${order['id'].toString().substring(0, order['id'].toString().length > 8 ? 8 : order['id'].toString().length)}'), styles: styles);
         bytes += generator.text(_normalizeString(DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())), styles: styles);
+        
+        final String currentCashier = posController.currentUser.value?['name'] ?? "";
+        if (currentCashier.isNotEmpty) {
+           bytes += generator.text(_normalizeString('KASSIR: $currentCashier'), styles: styles);
+        }
+
         if (order['table'] != null && order['table'] != '-') {
            bytes += generator.text(_normalizeString('STOL: ${order['table']}'), styles: _getStyles(element, defaultBold: true, defaultSize: isKitchenOnly ? PosTextSize.size3 : PosTextSize.size2));
         }
         if (order['waiter_name'] != null && order['waiter_name'].toString().isNotEmpty) {
-           bytes += generator.text(_normalizeString('OFITSIANT: ${order['waiter_name']}'), styles: styles);
+           bytes += generator.text(_normalizeString('AFITSANT: ${order['waiter_name']}'), styles: styles);
         }
         break;
       case 'ITEMS_TABLE':
