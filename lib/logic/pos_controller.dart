@@ -583,8 +583,9 @@ class POSController extends POSControllerState with
       return false;
     }
 
+    final String orderId = uuid.v4();
     final orderData = {
-      "id": uuid.v4(), // Client-side ID for offline sync
+      "id": orderId, // Client-side ID for offline sync
       "table_number": currentMode.value == "Dine-in" ? selectedTable.value : null,
       "type": currentMode.value.toUpperCase().replaceAll("-", "_"),
       "is_paid": isPaid,
@@ -599,7 +600,7 @@ class POSController extends POSControllerState with
         "discount_value": discountValue.value,
         "discount_amount": discountAmount,
       },
-      "client_id": orderData['id'],
+      "client_id": orderId,
       "items": () {
         final Map<String, Map<String, dynamic>> grouped = {};
         for (var e in currentOrder) {
