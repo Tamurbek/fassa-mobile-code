@@ -185,7 +185,7 @@ mixin OrderMixin on POSControllerState {
     }
   }
 
-  void deleteOrder(int orderId) {
+  void deleteOrder(dynamic orderId) {
     allOrders.removeWhere((o) => o['id'] == orderId);
     printedKitchenQuantities.remove(orderId.toString());
     storage.write('printed_kitchen_items', Map.from(printedKitchenQuantities));
@@ -193,7 +193,7 @@ mixin OrderMixin on POSControllerState {
     saveAllOrders();
   }
 
-  Future<void> changeOrderTable(int orderId, String newTableId) async {
+  Future<void> changeOrderTable(dynamic orderId, String newTableId) async {
     try {
       await api.updateOrder(orderId, {"table_number": newTableId});
       int index = allOrders.indexWhere((o) => o['id'] == orderId);
@@ -313,11 +313,7 @@ mixin OrderMixin on POSControllerState {
   }
 
   void loadOrderForEditing(Map<String, dynamic> order, List<FoodItem> catalog) {
-// ... existing code ...
-    isOrderModified.value = false;
-    syncCartToDisplay();
-// ... rest of the code ...
-    editingOrderId.value = order['id'];
+    editingOrderId.value = order['id']?.toString();
     currentMode.value = order['mode'] ?? "Dine-in";
     final String tableVal = (order['table'] ?? "").toString();
     if (tableVal != "-" && tableVal.isNotEmpty) {
@@ -330,39 +326,42 @@ mixin OrderMixin on POSControllerState {
     currentOrder.clear();
     final details = order['details'] as List? ?? [];
     for (var d in details) {
-      final item = catalog.firstWhereOrNull((f) => f.id == d['id'] || f.name == d['name']);
+      final item = catalog.firstWhereOrNull((f) => f.id.toString() == d['id'].toString() || f.name == d['name']);
       if (item != null) {
         FoodVariant? variant;
         if (d['variant_id'] != null && item.hasVariants) {
-          variant = item.variants.firstWhereOrNull((v) => v.id == d['variant_id']);
+          variant = item.variants.firstWhereOrNull((v) => v.id.toString() == d['variant_id'].toString());
         }
         
         currentOrder.add({
           'item': item, 
           'variant': variant,
-          'quantity': d['qty'],
-          'sentQty': d['qty'],
+          'quantity': (d['qty'] as num?)?.toInt() ?? 0,
+          'sentQty': (d['qty'] as num?)?.toInt() ?? 0,
           'isNew': false,
           'timestamp': d['timestamp'] ?? order['timestamp'],
         });
       }
     }
+    
     originalOrderJson = currentOrder.map((e) => {
       "id": (e['item'] as FoodItem).id,
       "variant_id": (e['variant'] as FoodVariant?)?.id,
       "qty": e['quantity'],
     }).toList().toString();
+    
     isOrderModified.value = false;
+    syncCartToDisplay();
     
     discountType.value = order['discount_type'] ?? "percent";
     discountValue.value = (order['discount_value'] as num?)?.toDouble() ?? 0.0;
 
     // Sync printed quantities for kitchen
-    final String orderIdStr = order['id'].toString();
+    final String orderIdStr = order['id']?.toString() ?? "0";
     if (!printedKitchenQuantities.containsKey(orderIdStr)) {
       final Map<String, int> printedMap = {};
       for (var d in details) {
-        printedMap[d['id'].toString()] = d['qty'] as int;
+        printedMap[d['id']?.toString() ?? ""] = (d['qty'] as num?)?.toInt() ?? 0;
       }
       printedKitchenQuantities[orderIdStr] = printedMap;
       storage.write('printed_kitchen_items', Map.from(printedKitchenQuantities));
