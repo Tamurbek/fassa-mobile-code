@@ -80,9 +80,19 @@ class MainNavigationScreen extends StatelessWidget {
                   children: [
                     _buildDesktopBackBar(context, currentIndex, filteredMenu, pos),
                     Expanded(
-                      child: IndexedStack(
-                        index: currentIndex.value,
-                        children: filteredMenu.map<Widget>((e) => e['page'] as Widget).toList(),
+                      child: Theme(
+                        // Hide AppBar on desktop since we have our own back bar
+                        data: Theme.of(context).copyWith(
+                          appBarTheme: Theme.of(context).appBarTheme.copyWith(
+                            toolbarHeight: 0,
+                            shadowColor: Colors.transparent,
+                            elevation: 0,
+                          ),
+                        ),
+                        child: IndexedStack(
+                          index: currentIndex.value,
+                          children: filteredMenu.map<Widget>((e) => e['page'] as Widget).toList(),
+                        ),
                       ),
                     ),
                   ],
