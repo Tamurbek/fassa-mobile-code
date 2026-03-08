@@ -95,49 +95,56 @@ class PrinterService {
           double price = double.tryParse(item['price'].toString()) ?? 0.0;
           double lineTotal = qty * price;
           
-          bytes += generator.text(_normalizeString(item['name']), styles: const PosStyles(bold: true));
-          bytes += generator.row([
-            PosColumn(text: _normalizeString('  $qty x ${_formatPrice(price)}'), width: 7, styles: const PosStyles(fontType: PosFontType.fontB)),
-            PosColumn(text: _normalizeString(_formatPrice(lineTotal)), width: 5, styles: const PosStyles(align: PosAlign.right)),
-          ]);
+          bytes += generator.text(_normalizeString(item['name']), styles: PosStyles(bold: true, height: isKitchenOnly ? PosTextSize.size2 : PosTextSize.size1));
+          
+          if (isKitchenOnly) {
+             bytes += generator.text(_normalizeString('SONI: $qty ta'), styles: const PosStyles(bold: true, height: PosTextSize.size2));
+          } else {
+            bytes += generator.row([
+              PosColumn(text: _normalizeString('  $qty x ${_formatPrice(price)}'), width: 7, styles: const PosStyles(fontType: PosFontType.fontB)),
+              PosColumn(text: _normalizeString(_formatPrice(lineTotal)), width: 5, styles: const PosStyles(align: PosAlign.right)),
+            ]);
+          }
         }
         bytes += generator.hr();
         
-        // Use the same logic as TOTAL_BLOCK for the fallback
-        double subtotal = 0;
-        for (var item in items) {
-          subtotal += (double.tryParse(item['price'].toString()) ?? 0.0) * (int.tryParse(item['qty'].toString()) ?? 0);
+        if (!isKitchenOnly) {
+          // Use the same logic as TOTAL_BLOCK for the fallback
+          double subtotal = 0;
+          for (var item in items) {
+            subtotal += (double.tryParse(item['price'].toString()) ?? 0.0) * (int.tryParse(item['qty'].toString()) ?? 0);
+          }
+
+          bytes += _row(generator, 'SUMMA:', _formatPrice(subtotal));
+
+          double feePercent = 0.0;
+          double feeFixed = 0.0;
+          final String mode = (order['mode'] ?? "Dine-in").toString().toLowerCase();
+          if (mode.contains("dine")) feePercent = (order['service_fee_dine_in'] as num?)?.toDouble() ?? 10.0;
+          else if (mode.contains("takeaway")) feeFixed = (order['service_fee_takeaway'] as num?)?.toDouble() ?? 0.0;
+          else if (mode.contains("delivery")) feeFixed = (order['service_fee_delivery'] as num?)?.toDouble() ?? 0.0;
+
+          double feeAmt = feeFixed;
+          if (feePercent > 0) {
+            feeAmt = subtotal * (feePercent / 100);
+            bytes += _row(generator, 'XIZMAT (${feePercent.toInt()}%):', _formatPrice(feeAmt));
+          } else if (feeFixed > 0) {
+            bytes += _row(generator, 'XIZMAT:', _formatPrice(feeAmt));
+          }
+
+          final double discountAmt = (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
+          if (discountAmt > 0) bytes += _row(generator, 'CHEGIRMA:', '-${_formatPrice(discountAmt)}', styles: const PosStyles(bold: true));
+
+          double finalTotal = subtotal + feeAmt - discountAmt;
+          if (finalTotal < 0) finalTotal = 0;
+          
+          bytes += generator.hr(ch: '=');
+          bytes += generator.row([
+            PosColumn(text: _normalizeString('JAMI:'), width: 5, styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
+            PosColumn(text: _normalizeString(_formatPrice(finalTotal)), width: 7, styles: const PosStyles(align: PosAlign.right, bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
+          ]);
+          bytes += generator.hr(ch: '=');
         }
-
-        bytes += _row(generator, 'SUMMA:', _formatPrice(subtotal));
-
-        double feePercent = 0.0;
-        double feeFixed = 0.0;
-        final String mode = (order['mode'] ?? "Dine-in").toString().toLowerCase();
-        if (mode.contains("dine")) feePercent = (order['service_fee_dine_in'] as num?)?.toDouble() ?? 10.0;
-        else if (mode.contains("takeaway")) feeFixed = (order['service_fee_takeaway'] as num?)?.toDouble() ?? 0.0;
-        else if (mode.contains("delivery")) feeFixed = (order['service_fee_delivery'] as num?)?.toDouble() ?? 0.0;
-
-        double feeAmt = feeFixed;
-        if (feePercent > 0) {
-          feeAmt = subtotal * (feePercent / 100);
-          bytes += _row(generator, 'XIZMAT (${feePercent.toInt()}%):', _formatPrice(feeAmt));
-        } else if (feeFixed > 0) {
-          bytes += _row(generator, 'XIZMAT:', _formatPrice(feeAmt));
-        }
-
-        final double discountAmt = (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
-        if (discountAmt > 0) bytes += _row(generator, 'CHEGIRMA:', '-${_formatPrice(discountAmt)}', styles: const PosStyles(bold: true));
-
-        double finalTotal = subtotal + feeAmt - discountAmt;
-        if (finalTotal < 0) finalTotal = 0;
-        
-        bytes += generator.hr(ch: '=');
-        bytes += generator.row([
-          PosColumn(text: _normalizeString('JAMI:'), width: 5, styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
-          PosColumn(text: _normalizeString(_formatPrice(finalTotal)), width: 7, styles: const PosStyles(align: PosAlign.right, bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
-        ]);
-        bytes += generator.hr(ch: '=');
       } else {
         for (int i = 0; i < layout.length; i++) {
           var element = layout[i];
@@ -165,7 +172,7 @@ class PrinterService {
             }
           }
 
-          bytes += await _printElement(generator, element, order, posController, printer, title);
+          bytes += await _printElement(generator, element, order, posController, printer, title, isKitchenOnly);
         }
       }
 
@@ -205,7 +212,7 @@ class PrinterService {
     );
   }
 
-  Future<List<int>> _printElement(Generator generator, Map<String, dynamic> element, Map<String, dynamic> order, POSController posController, PrinterModel printer, String? title) async {
+  Future<List<int>> _printElement(Generator generator, Map<String, dynamic> element, Map<String, dynamic> order, POSController posController, PrinterModel printer, String? title, bool isKitchenOnly) async {
     List<int> bytes = [];
     final type = element['type'];
     final styles = _getStyles(element);
