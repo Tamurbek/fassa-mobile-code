@@ -74,25 +74,8 @@ class _StopListPageState extends State<StopListPage> with SingleTickerProviderSt
               children: [
                 Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Get.back(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF9500),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [BoxShadow(color: const Color(0xFFFF9500).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
-                            const SizedBox(width: 6),
-                            const Text("Orqaga", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
+                    const Icon(Icons.block_rounded, color: Color(0xFFEF4444), size: 24),
+                    const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
