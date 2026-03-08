@@ -144,7 +144,16 @@ class PrinterService {
           }
 
           final double discountAmt = (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
-          if (discountAmt > 0) bytes += _row(generator, 'CHEGIRMA:', '-${_formatPrice(discountAmt)}', styles: const PosStyles(bold: true));
+          final String discType = (order['discount_type'] ?? "").toString().toUpperCase();
+          final double discValue = (order['discount_value'] as num?)?.toDouble() ?? 0.0;
+          
+          if (discountAmt > 0) {
+            String discLabel = 'CHEGIRMA:';
+            if (discType == "PERCENT" || discType == "PERCENTAGE") {
+              discLabel = 'CHEGIRMA (${discValue.toInt()}%):';
+            }
+            bytes += _row(generator, discLabel, '-${_formatPrice(discountAmt)}', styles: const PosStyles(bold: true));
+          }
 
           final String payMethod = (order['payment_method'] ?? "").toString().toUpperCase();
           if (payMethod.isNotEmpty && !isKitchenOnly) {
@@ -345,8 +354,15 @@ class PrinterService {
         }
  
         final double discountAmt = (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
+        final String discType = (order['discount_type'] ?? "").toString().toUpperCase();
+        final double discValue = (order['discount_value'] as num?)?.toDouble() ?? 0.0;
+        
         if (discountAmt > 0) {
-          bytes += _row(generator, 'CHEGIRMA:', '-${_formatPrice(discountAmt)}', styles: styles.copyWith(bold: true));
+          String discLabel = 'CHEGIRMA:';
+          if (discType == "PERCENT" || discType == "PERCENTAGE") {
+            discLabel = 'CHEGIRMA (${discValue.toInt()}%):';
+          }
+          bytes += _row(generator, discLabel, '-${_formatPrice(discountAmt)}', styles: styles.copyWith(bold: true));
         }
         
         double finalTotal = subtotal + feeAmt - discountAmt;
