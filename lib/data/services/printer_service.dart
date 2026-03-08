@@ -95,10 +95,11 @@ class PrinterService {
           double price = double.tryParse(item['price'].toString()) ?? 0.0;
           double lineTotal = qty * price;
           
-          bytes += generator.text(_normalizeString(item['name']), styles: PosStyles(bold: true, height: isKitchenOnly ? PosTextSize.size2 : PosTextSize.size1));
+          bytes += generator.text(_normalizeString(item['name']), styles: PosStyles(bold: true, height: isKitchenOnly ? PosTextSize.size3 : PosTextSize.size1));
           
           if (isKitchenOnly) {
-             bytes += generator.text(_normalizeString('SONI: $qty ta'), styles: const PosStyles(bold: true, height: PosTextSize.size2));
+             bytes += generator.text(_normalizeString('SONI: ${qty} ta'), styles: const PosStyles(bold: true, height: PosTextSize.size3, width: PosTextSize.size2));
+             bytes += generator.feed(1); // Space between items in kitchen
           } else {
             bytes += generator.row([
               PosColumn(text: _normalizeString('  $qty x ${_formatPrice(price)}'), width: 7, styles: const PosStyles(fontType: PosFontType.fontB)),
@@ -252,7 +253,7 @@ class PrinterService {
         bytes += generator.text(_normalizeString('ID: ${order['id'].toString().substring(0, order['id'].toString().length > 8 ? 8 : order['id'].toString().length)}'), styles: styles);
         bytes += generator.text(_normalizeString(DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())), styles: styles);
         if (order['table'] != null && order['table'] != '-') {
-           bytes += generator.text(_normalizeString('STOL: ${order['table']}'), styles: _getStyles(element, defaultBold: true, defaultSize: PosTextSize.size2));
+           bytes += generator.text(_normalizeString('STOL: ${order['table']}'), styles: _getStyles(element, defaultBold: true, defaultSize: isKitchenOnly ? PosTextSize.size3 : PosTextSize.size2));
         }
         if (order['waiter_name'] != null && order['waiter_name'].toString().isNotEmpty) {
            bytes += generator.text(_normalizeString('OFITSIANT: ${order['waiter_name']}'), styles: styles);
@@ -266,14 +267,15 @@ class PrinterService {
           double price = double.tryParse(item['price'].toString()) ?? 0.0;
           double lineTotal = qty * price;
           
-          // Print Name (Full width, bold)
+          // Print Name
           bytes += generator.text(_normalizeString(item['name']), 
-              styles: styles.copyWith(bold: true, fontType: PosFontType.fontA, height: isKitchenOnly ? PosTextSize.size2 : PosTextSize.size1));
+              styles: styles.copyWith(bold: true, fontType: PosFontType.fontA, height: isKitchenOnly ? PosTextSize.size3 : PosTextSize.size1));
           
           if (isKitchenOnly) {
-            // Kitchen: Only Quantity (Large)
+            // Kitchen: Only Quantity (XLARGE)
             bytes += generator.text(_normalizeString('SONI: $qty ta'), 
-                styles: styles.copyWith(bold: true, height: PosTextSize.size2, width: PosTextSize.size2));
+                styles: styles.copyWith(bold: true, height: PosTextSize.size3, width: PosTextSize.size2));
+            bytes += generator.feed(1); // More space for kitchen
           } else {
             // Bill: Quantity x Price and Total
             bytes += generator.row([
