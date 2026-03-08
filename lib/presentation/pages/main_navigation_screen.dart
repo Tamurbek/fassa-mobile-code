@@ -73,9 +73,9 @@ class MainNavigationScreen extends StatelessWidget {
             ),
           ),
           desktop: Scaffold(
-            body: Row(
+            body: Column(
               children: [
-                _buildPremiumSidebar(context, currentIndex, filteredMenu, pos),
+                _buildDesktopTopNav(context, currentIndex, filteredMenu, pos),
                 Expanded(
                   child: IndexedStack(
                     index: currentIndex.value,
@@ -101,6 +101,87 @@ class MainNavigationScreen extends StatelessWidget {
         if (pos.isPrinting.value) const PrintingOverlay(),
       ],
     ));
+  }
+
+  Widget _buildDesktopTopNav(BuildContext context, RxInt currentIndex, List<Map<String, dynamic>> items, POSController pos) {
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withOpacity(0.5))),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        children: [
+          // Logo
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: const Color(0xFFFF9500), borderRadius: BorderRadius.circular(10)),
+            child: Image.asset('assets/images/app_icon.png', width: 22, height: 22,
+              errorBuilder: (c, e, s) => const Icon(Icons.fastfood, color: Colors.white, size: 22)),
+          ),
+          const SizedBox(width: 10),
+          Obx(() => Text(
+            pos.restaurantName.value.isEmpty ? "Fassa" : pos.restaurantName.value,
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFFFF9500)),
+          )),
+          const SizedBox(width: 32),
+          // Nav items
+          Expanded(
+            child: Obx(() => Row(
+              children: List.generate(items.length, (index) {
+                final item = items[index];
+                final isSel = currentIndex.value == index;
+                return GestureDetector(
+                  onTap: () => currentIndex.value = index,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: const EdgeInsets.only(right: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSel ? const Color(0xFFFF9500).withOpacity(0.1) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(item['icon'] as IconData,
+                          color: isSel ? const Color(0xFFFF9500) : const Color(0xFF9CA3AF), size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          item['label'] as String,
+                          style: TextStyle(
+                            color: isSel ? const Color(0xFFFF9500) : const Color(0xFF9CA3AF),
+                            fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            )),
+          ),
+          // Profile + actions
+          Obx(() => Text(pos.currentUser.value?['name'] ?? "",
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF6B7280)))),
+          const SizedBox(width: 12),
+          IconButton(
+            icon: const Icon(Icons.lock_person_rounded, color: Color(0xFFFF9500), size: 20),
+            tooltip: "Terminalni qulflash",
+            onPressed: () => pos.lockTerminal(),
+          ),
+          IconButton(
+            icon: Obx(() => Icon(
+              pos.isFullScreen.value ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
+              color: const Color(0xFF9CA3AF), size: 20)),
+            tooltip: "To'liq ekran",
+            onPressed: () => pos.toggleFullScreen(),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildPremiumSidebar(BuildContext context, RxInt currentIndex, List<Map<String, dynamic>> items, POSController pos) {
