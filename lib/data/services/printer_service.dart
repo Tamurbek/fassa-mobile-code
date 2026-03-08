@@ -261,23 +261,30 @@ class PrinterService {
           
           // Print Name (Full width, bold)
           bytes += generator.text(_normalizeString(item['name']), 
-              styles: styles.copyWith(bold: true, fontType: PosFontType.fontA));
+              styles: styles.copyWith(bold: true, fontType: PosFontType.fontA, height: isKitchenOnly ? PosTextSize.size2 : PosTextSize.size1));
           
-          // Print Quantity x Price and Total
-          bytes += generator.row([
-            PosColumn(
-                text: _normalizeString('  $qty x ${_formatPrice(price)}'), 
-                width: 7, 
-                styles: styles.copyWith(fontType: PosFontType.fontB)),
-            PosColumn(
-                text: _normalizeString(_formatPrice(lineTotal)), 
-                width: 5, 
-                styles: styles.copyWith(align: PosAlign.right, fontType: PosFontType.fontA)),
-          ]);
+          if (isKitchenOnly) {
+            // Kitchen: Only Quantity (Large)
+            bytes += generator.text(_normalizeString('SONI: $qty ta'), 
+                styles: styles.copyWith(bold: true, height: PosTextSize.size2, width: PosTextSize.size2));
+          } else {
+            // Bill: Quantity x Price and Total
+            bytes += generator.row([
+              PosColumn(
+                  text: _normalizeString('  $qty x ${_formatPrice(price)}'), 
+                  width: 7, 
+                  styles: styles.copyWith(fontType: PosFontType.fontB)),
+              PosColumn(
+                  text: _normalizeString(_formatPrice(lineTotal)), 
+                  width: 5, 
+                  styles: styles.copyWith(align: PosAlign.right, fontType: PosFontType.fontA)),
+            ]);
+          }
         }
         bytes += generator.hr(ch: '-');
         break;
       case 'TOTAL_BLOCK':
+        if (isKitchenOnly) break; // Don't show totals in kitchen
         double subtotal = 0;
         final items = (order['details'] as List);
         for (var item in items) {
@@ -298,7 +305,7 @@ class PrinterService {
         } else if (mode.contains("delivery")) {
           feeFixed = (order['service_fee_delivery'] as num?)?.toDouble() ?? 0.0;
         }
-
+ 
         double feeAmt = feeFixed;
         if (feePercent > 0) {
           feeAmt = subtotal * (feePercent / 100);
@@ -306,7 +313,7 @@ class PrinterService {
         } else if (feeFixed > 0) {
           bytes += _row(generator, 'XIZMAT:', _formatPrice(feeAmt), styles: styles);
         }
-
+ 
         final double discountAmt = (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
         if (discountAmt > 0) {
           bytes += _row(generator, 'CHEGIRMA:', '-${_formatPrice(discountAmt)}', styles: styles.copyWith(bold: true));
@@ -314,7 +321,7 @@ class PrinterService {
         
         double finalTotal = subtotal + feeAmt - discountAmt;
         if (finalTotal < 0) finalTotal = 0;
-
+ 
         bytes += generator.hr(ch: '=');
         bytes += generator.row([
           PosColumn(text: _normalizeString('JAMI:'), width: 5, styles: styles.copyWith(bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
@@ -436,16 +443,14 @@ class PrinterService {
       bytes += generator.feed(1);
       bytes += generator.text(_normalizeString('VAQT: ${DateFormat('HH:mm').format(DateTime.now())}'), styles: const PosStyles(align: PosAlign.center));
       if (order['waiter_name'] != null && order['waiter_name'].toString().isNotEmpty) {
-        bytes += generator.text(_normalizeString('OFITSIANT: ${order['waiter_name']}'), styles: const PosStyles(align: PosAlign.center, bold: true));
+        bytes += generator.text(_normalizeString('AFITSANT: ${order['waiter_name']}'), styles: const PosStyles(align: PosAlign.center, bold: true));
       }
       bytes += generator.hr(ch: '-');
 
       // Cancelled Items
       for (var item in items) {
-        bytes += generator.row([
-          PosColumn(text: _normalizeString('${item['qty']} x'), width: 3, styles: const PosStyles(height: PosTextSize.size2, width: PosTextSize.size2, bold: true)),
-          PosColumn(text: _normalizeString('${item['name']}'), width: 9, styles: const PosStyles(height: PosTextSize.size2, width: PosTextSize.size1, bold: true)),
-        ]);
+        bytes += generator.text(_normalizeString(item['name']), styles: const PosStyles(bold: true, height: PosTextSize.size2));
+        bytes += generator.text(_normalizeString('BEKOR: ${item['qty']} ta'), styles: const PosStyles(bold: true, height: PosTextSize.size2));
         bytes += generator.hr(ch: '-');
       }
 
