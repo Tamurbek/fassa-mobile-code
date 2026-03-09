@@ -65,7 +65,16 @@ class ReportsScreen extends StatelessWidget {
           ordersForReport = ordersForReport.where((o) => o['waiter_name'] == currentWaiterName).toList();
         }
 
-        final todayOrders = ordersForReport.where((o) => (o['timestamp'] ?? '').startsWith(today)).toList();
+        final todayOrders = ordersForReport.where((o) {
+          final ts = o['timestamp']?.toString() ?? '';
+          if (ts.isEmpty) return false;
+          try {
+            final dt = DateTime.parse(ts).toLocal();
+            return DateFormat('yyyy-MM-dd').format(dt) == today;
+          } catch (_) {
+            return ts.startsWith(today);
+          }
+        }).toList();
         
         double todayRevenue = todayOrders.fold(0, (sum, o) => sum + (o['total'] as double));
         int orderCount = todayOrders.length;
@@ -356,11 +365,11 @@ class ReportsScreen extends StatelessWidget {
                 task = pos.printerService.printXorZReport(p, orders, title: "X-REPORT", cashierName: cashierName);
               } else if (title.contains("Z-Report")) {
                 task = pos.printerService.printXorZReport(p, orders, title: "Z-REPORT", cashierName: cashierName);
-              } else if (title.contains("Category")) {
+              } else if (title.contains("Category") || title.contains("kategoriya") || title.contains("Kategoriya")) {
                 task = pos.printerService.printCategoryReport(p, orders, title);
-              } else if (title.contains("Payment")) {
+              } else if (title.contains("To'lov") || title.contains("Payment") || title.contains("payment")) {
                 task = pos.printerService.printPaymentMethodReport(p, orders, title);
-              } else if (title.contains("Hourly")) {
+              } else if (title.contains("Soat") || title.contains("soat") || title.contains("Hourly") || title.contains("hourly")) {
                 task = pos.printerService.printHourlySalesReport(p, orders, title);
               } else {
                 task = pos.printerService.printSalesReport(p, orders, title);
@@ -425,9 +434,9 @@ class ReportsScreen extends StatelessWidget {
       return await ReportGenerator.generateZReport(orders, cafeName, currency, cashierName);
     } else if (title.contains("Category")) {
       return await ReportGenerator.generateCategoryReport(title: title, orders: orders, cafeName: cafeName, currency: currency);
-    } else if (title.contains("To'lov")) {
+    } else if (title.contains("To'lov") || title.contains("Payment") || title.contains("payment")) {
       return await ReportGenerator.generatePaymentMethodReport(orders: orders, cafeName: cafeName, currency: currency);
-    } else if (title.contains("Soat")) {
+    } else if (title.contains("Soat") || title.contains("soat") || title.contains("Hourly") || title.contains("hourly")) {
       return await ReportGenerator.generateHourlySalesReport(orders: orders, cafeName: cafeName, currency: currency);
     }
     return await ReportGenerator.generateSalesReport(title: title, orders: orders, cafeName: cafeName, currency: currency);
