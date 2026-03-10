@@ -117,6 +117,10 @@ class SocketService {
     socket.on('forceLogoutTerminal', (data) => callback(data));
   }
 
+  void onForceLogout(Function(dynamic) callback) {
+    socket.on('forceLogout', (data) => callback(data));
+  }
+
   void onClearOrders(Function(dynamic) callback) {
     socket.on('clearOrders', (data) => callback(data));
   }
