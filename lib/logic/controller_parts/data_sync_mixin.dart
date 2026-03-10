@@ -512,5 +512,16 @@ mixin DataSyncMixin on POSControllerState {
     socket.onDataUpdated((data) {
       refreshData(showMessage: false);
     });
+
+    socket.onClearOrders((_) {
+      allOrders.clear();
+      saveAllOrders();
+      Get.snackbar(
+        "Tozalash",
+        "Barcha buyurtmalar administrator tomonidan o'chirildi.",
+        backgroundColor: Colors.blue.withOpacity(0.9),
+        colorText: Colors.white,
+      );
+    });
   }
 }

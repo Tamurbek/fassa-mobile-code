@@ -117,6 +117,10 @@ class SocketService {
     socket.on('forceLogoutTerminal', (data) => callback(data));
   }
 
+  void onClearOrders(Function(dynamic) callback) {
+    socket.on('clearOrders', (data) => callback(data));
+  }
+
   void emitCartUpdate(Map<String, dynamic> cartData) {
     if (_cafeId != null) {
       cartData['cafe_id'] = _cafeId;

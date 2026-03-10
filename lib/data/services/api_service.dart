@@ -325,6 +325,14 @@ class ApiService {
     }
   }
 
+  Future<void> clearOrders() async {
+    try {
+      await _dio.post('/orders/clear');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> updateOrderStatus(dynamic orderId, String status) async {
     try {
       final backendStatus = status.toUpperCase().replaceAll(" ", "_");

@@ -321,17 +321,24 @@ class SettingsScreen extends StatelessWidget {
   static void _clearDialog(BuildContext ctx, POSController pos, GetStorage storage) {
     Get.defaultDialog(
       title: "clear_data_confirm".tr,
-      titleStyle: const TextStyle(fontWeight: FontWeight.w900),
       middleText: "clear_data_msg".tr,
-      textConfirm: "Ha, tozalash",
-      textCancel: "cancel".tr,
+      textConfirm: "yes".tr,
+      textCancel: "no".tr,
       confirmTextColor: Colors.white,
-      buttonColor: Colors.redAccent,
+      buttonColor: Colors.red,
       radius: 20,
-      onConfirm: () {
+      onConfirm: () async {
         pos.allOrders.clear(); pos.currentOrder.clear(); storage.remove('all_orders');
-        Get.back();
-        Get.snackbar("Tozalandi", "Ma'lumotlar tozalandi.", backgroundColor: Colors.redAccent, colorText: Colors.white);
+        pos.printedKitchenQuantities.clear(); storage.remove('printed_kitchen_items');
+        pos.processedPrintIds.clear();
+        Get.back(); // close dialog
+        
+        try {
+          await pos.api.clearOrders();
+          Get.snackbar("Muvaffaqiyatli", "Hamma ma'lumotlar tozalandi (Backend'dan ham!)", backgroundColor: Colors.green, colorText: Colors.white);
+        } catch (e) {
+          Get.snackbar("Xato", "Mahalliy ma'lumotlar tozalandi, biroq server xatosi yuz berdi", backgroundColor: Colors.orange, colorText: Colors.white);
+        }
       },
     );
   }
