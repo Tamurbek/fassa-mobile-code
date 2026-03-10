@@ -914,6 +914,16 @@ class POSController extends POSControllerState with
       }
       await printOrder(orderToPrint, receiptTitle: "HISOB CHEKI");
 
+      Get.snackbar(
+        "order_locked_title".tr,
+        "order_locked_msg".tr,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        icon: const Icon(Icons.lock_outline, color: Colors.white),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 5),
+      );
+
       if (isWaiter) {
         clearCurrentOrder();
         Get.offAll(() => const MainNavigationScreen());

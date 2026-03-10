@@ -251,6 +251,8 @@ class AppTranslations extends Translations {
           'instagram_link': 'Instagram Link',
           'show_instagram_qr': 'Show Instagram QR',
           'show_phone_on_receipt': 'Show Phone on Receipt',
+          'order_locked_title': 'Order Locked',
+          'order_locked_msg': 'Bill has been printed. Order is now locked for editing.',
         },
 
 
@@ -512,6 +514,8 @@ class AppTranslations extends Translations {
           'instagram_link': 'Instagram havolasi',
           'show_instagram_qr': 'Instagram QR kodini chiqarish',
           'show_phone_on_receipt': 'Chekda telefon ko\'rsatish',
+          'order_locked_title': 'Buyurtma qulflandi',
+          'order_locked_msg': 'Hisob cheki chiqarildi. Buyurtma tahrirlash uchun yopildi.',
         },
 
 
@@ -749,6 +753,8 @@ class AppTranslations extends Translations {
           'barcha_bolimlar': 'Все отделы',
           'buyurtma_tayyor_deb_belgilandi': 'Заказ отмечен как готовый',
           'holatni_yangilashda_xatolik': 'Ошибка при обновлении статуса',
+          'order_locked_title': 'Заказ заблокирован',
+          'order_locked_msg': 'Счет распечатан. Заказ закрыт для редактирования.',
         }
       };
 }
