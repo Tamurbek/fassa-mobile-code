@@ -824,6 +824,15 @@ class OrdersScreen extends StatelessWidget {
               label: "Stolni o'zgartirish",
             ),
           ],
+          if (isActive && (pos.isAdmin || pos.isCashier)) ...[
+            const SizedBox(width: 8),
+            _buildToolbarButton(
+              onPressed: () => _showChangeWaiterDialog(context, order, pos),
+              icon: Icons.person_add_alt_1_rounded,
+              color: Colors.teal,
+              label: "Afitsantni o'zgartirish",
+            ),
+          ],
           if (pos.isAdmin || pos.isCashier) ...[
             const SizedBox(width: 8),
             _buildToolbarButton(
@@ -834,6 +843,72 @@ class OrdersScreen extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  void _showChangeWaiterDialog(BuildContext context, Map<String, dynamic> order, POSController pos) {
+    final waiters = pos.users.where((u) => u['role'] == "WAITER").toList();
+    
+    if (waiters.isEmpty) {
+      Get.snackbar("Ma'lumot", "Tizimda afitsantlar topilmadi", backgroundColor: Colors.orange, colorText: Colors.white);
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Afitsantni o'zgartirish", 
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text("Joriy: ${order['waiter_name'] ?? 'Noma\'lum'}", 
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: waiters.length,
+                separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+                itemBuilder: (context, index) {
+                  final w = waiters[index];
+                  final bool isCurrent = w['id']?.toString() == order['waiter_id']?.toString();
+
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                    leading: CircleAvatar(
+                      backgroundColor: isCurrent ? Colors.teal : Colors.teal.withOpacity(0.1),
+                      child: Text(w['name']?[0] ?? "W", 
+                          style: TextStyle(color: isCurrent ? Colors.white : Colors.teal, fontWeight: FontWeight.bold)),
+                    ),
+                    title: Text(w['name'] ?? "Noma'lum", 
+                        style: TextStyle(fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal)),
+                    subtitle: Text(w['role'] ?? "WAITER", style: const TextStyle(fontSize: 12)),
+                    trailing: isCurrent ? const Icon(Icons.check_circle, color: Colors.teal) : null,
+                    onTap: isCurrent ? null : () {
+                      Navigator.of(ctx).pop();
+                      pos.changeOrderWaiter(order['id'], w['id'].toString(), w['name']);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -902,19 +977,22 @@ class OrdersScreen extends StatelessWidget {
       return;
     }
 
-    // Build set of occupied tables from active orders (excluding current order)
-    final occupiedTables = <String>{};
+    // Build set of occupied table IDs from active orders (excluding current order)
+    final occupiedTableIds = <String>{};
     for (final o in pos.allOrders) {
       if (o['id'] != order['id'] && o['status'] != 'Completed') {
-        final t = o['table']?.toString();
-        if (t != null && t != '-' && t.isNotEmpty) {
-          occupiedTables.add(t);
+        final tid = o['table_id']?.toString();
+        if (tid != null && tid.isNotEmpty) {
+          occupiedTableIds.add(tid);
         }
       }
     }
 
-    final currentTable = order['table']?.toString() ?? '';
-    String? selectedNewTable;
+    final currentTableId = order['table_id']?.toString() ?? '';
+    final currentTableName = order['table']?.toString() ?? '';
+    
+    String? selectedTableId;
+    String? selectedTableName;
 
     showModalBottomSheet(
       context: context,
@@ -964,7 +1042,7 @@ class OrdersScreen extends StatelessWidget {
                               const Text("Stolni o'zgartirish",
                                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                               Text(
-                                "Joriy: $currentTable",
+                                "Joriy: $currentTableName",
                                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                               ),
                             ],
@@ -991,17 +1069,20 @@ class OrdersScreen extends StatelessWidget {
                       children: pos.tablesByArea.isEmpty
                           ? [
                               const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.only(top: 60),
-                                  child: Text("Stollar topilmadi",
-                                      style: TextStyle(color: Colors.grey, fontSize: 15)),
-                                ),
-                              )
+                                  child: Padding(
+                                padding: EdgeInsets.only(top: 60),
+                                child: Text("Stollar topilmadi",
+                                    style: TextStyle(color: Colors.grey, fontSize: 15)),
+                              ))
                             ]
                           : pos.tablesByArea.entries.map((entry) {
                               final area = entry.key;
                               final tables = entry.value;
-                              final freeCount = tables.where((t) => !occupiedTables.contains(t)).length;
+                              
+                              final freeCount = tables.where((t) {
+                                final tid = pos.tableBackendIds["$area-$t"];
+                                return tid != null && !occupiedTableIds.contains(tid);
+                              }).length;
 
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1055,12 +1136,13 @@ class OrdersScreen extends StatelessWidget {
                                     ),
                                     itemCount: tables.length,
                                     itemBuilder: (_, i) {
-                                      final tableKey = tables[i]; // e.g. "Zal-1"
-                                      final tableNum =
-                                          tableKey.contains('-') ? tableKey.split('-').last : tableKey;
-                                      final isOccupied = occupiedTables.contains(tableKey);
-                                      final isCurrent = tableKey == currentTable;
-                                      final isSelected = selectedNewTable == tableKey;
+                                      final tableNum = tables[i];
+                                      final fullTableKey = "$area-$tableNum";
+                                      final tableId = pos.tableBackendIds[fullTableKey];
+
+                                      final isOccupied = tableId != null && occupiedTableIds.contains(tableId);
+                                      final isCurrent = tableId != null && tableId == currentTableId;
+                                      final isSelected = tableId != null && tableId == selectedTableId;
 
                                       Color bgColor;
                                       Color borderColor;
@@ -1089,11 +1171,14 @@ class OrdersScreen extends StatelessWidget {
                                       }
 
                                       return GestureDetector(
-                                        onTap: (isOccupied && !isCurrent)
+                                        onTap: (isOccupied && !isCurrent) || tableId == null
                                             ? null
                                             : () {
                                                 if (!isCurrent) {
-                                                  setState(() => selectedNewTable = tableKey);
+                                                  setState(() {
+                                                    selectedTableId = tableId;
+                                                    selectedTableName = fullTableKey;
+                                                  });
                                                 }
                                               },
                                         child: AnimatedContainer(
@@ -1179,14 +1264,14 @@ class OrdersScreen extends StatelessWidget {
                         Expanded(
                           flex: 2,
                           child: ElevatedButton.icon(
-                            onPressed: selectedNewTable == null
+                            onPressed: selectedTableId == null
                                 ? null
                                 : () {
-                                    pos.changeOrderTable(order['id'], selectedNewTable!);
+                                    pos.changeOrderTable(order['id'], selectedTableName!);
                                     Navigator.of(ctx).pop();
                                     Get.snackbar(
                                       "Muvaffaqiyatli",
-                                      "Stol $currentTable → $selectedNewTable ga o'zgartirildi",
+                                      "Stol $currentTableName → $selectedTableName ga o'zgartirildi",
                                       backgroundColor: Colors.purple,
                                       colorText: Colors.white,
                                       snackPosition: SnackPosition.BOTTOM,
@@ -1195,8 +1280,8 @@ class OrdersScreen extends StatelessWidget {
                                   },
                             icon: const Icon(Icons.sync_alt_rounded, size: 18),
                             label: Text(
-                              selectedNewTable != null
-                                  ? "→ $selectedNewTable ga o'zgartirish"
+                              selectedTableName != null
+                                  ? "→ $selectedTableName"
                                   : "Stol tanlang",
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),

@@ -202,13 +202,13 @@ class _FloorPlanView extends StatelessWidget {
                     Get.to(() => const HomeScreen());
                   }
                 } else {
-                  if (pos.isWaiter && !pos.allowWaiterMobileOrders.value && pos.currentTerminal.value == null) {
-                    Get.snackbar("Ruxsat berilmagan", "Shaxsiy telefondan buyurtma olish taqiqlangan. Iltimos, POS terminaldan foydalaning.", 
-                      backgroundColor: Colors.red, colorText: Colors.white);
-                    return;
+                  if (pos.isAdmin || pos.isCashier) {
+                    _showTableOptions(context, tableId, pos);
+                  } else {
+                    pos.setTable(tableId);
+                    pos.selectedWaiter.value = null;
+                    Get.to(() => const HomeScreen());
                   }
-                  pos.setTable(tableId);
-                  Get.to(() => const HomeScreen());
                 }
               },
               child: () {
@@ -367,19 +367,10 @@ class _FloorPlanView extends StatelessWidget {
                             Get.to(() => const HomeScreen());
                           }
                         } else {
-                          // Check mobile orders permission for waiters if they are on a personal phone
-                          if (pos.isWaiter && !pos.allowWaiterMobileOrders.value && pos.currentTerminal.value == null) {
-                            Get.snackbar("Ruxsat berilmagan", "Shaxsiy telefondan buyurtma olish taqiqlangan.", 
-                              backgroundColor: Colors.red, colorText: Colors.white);
-                            return;
-                          }
-
-                          pos.setTable(tableId);
                           if (pos.isAdmin || pos.isCashier) {
-                            pos.showWaiterSelectionDialog(tableId, () {
-                              Get.to(() => const HomeScreen());
-                            });
+                             _showTableOptions(context, tableId, pos);
                           } else {
+                            pos.setTable(tableId);
                             pos.selectedWaiter.value = null;
                             Get.to(() => const HomeScreen());
                           }
@@ -423,6 +414,123 @@ class _FloorPlanView extends StatelessWidget {
           ),
         ));
       },
+    );
+  }
+
+  void _showTableOptions(BuildContext context, String tableId, POSController pos) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Icon(Icons.table_restaurant_rounded, color: AppColors.primary),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(tableId, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                    Text("Amalni tanlang", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 28),
+            _buildActionItem(
+              icon: Icons.add_shopping_cart_rounded,
+              color: AppColors.primary,
+              title: "Yangi buyurtma",
+              subtitle: "Mijozga xizmat ko'rsatishni boshlash",
+              onTap: () {
+                Navigator.pop(context);
+                pos.setTable(tableId);
+                pos.showWaiterSelectionDialog(tableId, () {
+                  Get.to(() => const HomeScreen());
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildActionItem(
+              icon: Icons.bookmark_add_rounded,
+              color: Colors.teal,
+              title: "Band qilish (Rezerv)",
+              subtitle: "Stolni mijoz uchun band qilib qo'yish",
+              onTap: () {
+                Navigator.pop(context);
+                _showReservationDialog(context, tableId, pos);
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionItem({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade100),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(subtitle, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade300, size: 16),
+          ],
+        ),
+      ),
     );
   }
 
