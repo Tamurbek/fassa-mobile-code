@@ -253,6 +253,15 @@ class AppTranslations extends Translations {
           'show_phone_on_receipt': 'Show Phone on Receipt',
           'order_locked_title': 'Order Locked',
           'order_locked_msg': 'Bill has been printed. Order is now locked for editing.',
+          'no_orders': 'No orders',
+          'reserved': 'Reserved',
+          'refresh_data': 'Refresh Data',
+          'tayyor': 'Ready',
+          'yes': 'Yes',
+          'no': 'No',
+          'confirm': 'Confirm',
+          'new_order_label': 'New Order',
+          'reserve_table': 'Reserve Table',
         },
 
 
@@ -516,6 +525,15 @@ class AppTranslations extends Translations {
           'show_phone_on_receipt': 'Chekda telefon ko\'rsatish',
           'order_locked_title': 'Buyurtma qulflandi',
           'order_locked_msg': 'Hisob cheki chiqarildi. Buyurtma tahrirlash uchun yopildi.',
+          'no_orders': 'Buyurtmalar yo\'q',
+          'reserved': 'Band qilingan',
+          'refresh_data': 'Ma\'lumotlarni yangilash',
+          'tayyor': 'Tayyor',
+          'yes': 'Ha',
+          'no': 'Yo\'q',
+          'confirm': 'Tasdiqlash',
+          'new_order_label': 'Yangi buyurtma',
+          'reserve_table': 'Stolni band qilish',
         },
 
 
@@ -755,6 +773,15 @@ class AppTranslations extends Translations {
           'holatni_yangilashda_xatolik': 'Ошибка при обновлении статуса',
           'order_locked_title': 'Заказ заблокирован',
           'order_locked_msg': 'Счет распечатан. Заказ закрыт для редактирования.',
+          'no_orders': 'Нет заказов',
+          'reserved': 'Забронировано',
+          'refresh_data': 'Обновить данные',
+          'tayyor': 'Готово',
+          'yes': 'Да',
+          'no': 'Нет',
+          'confirm': 'Подтвердить',
+          'new_order_label': 'Новый заказ',
+          'reserve_table': 'Забронировать стол',
         }
       };
 }
