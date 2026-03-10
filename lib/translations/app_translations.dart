@@ -262,6 +262,12 @@ class AppTranslations extends Translations {
           'confirm': 'Confirm',
           'new_order_label': 'New Order',
           'reserve_table': 'Reserve Table',
+          'category_added': 'Category Added',
+          'category_updated': 'Category Updated',
+          'kds_board': 'KDS Board',
+          'lock_terminal': 'Lock Terminal',
+          'preparation_areas': 'Preparation Areas',
+          'TAYYOR': 'READY',
         },
 
 
@@ -534,6 +540,12 @@ class AppTranslations extends Translations {
           'confirm': 'Tasdiqlash',
           'new_order_label': 'Yangi buyurtma',
           'reserve_table': 'Stolni band qilish',
+          'category_added': 'Kategoriya qo\'shildi',
+          'category_updated': 'Kategoriya yangilandi',
+          'kds_board': 'Oshxona ekrani',
+          'lock_terminal': 'Terminalni qulflash',
+          'preparation_areas': 'Tayyorlash joylari',
+          'TAYYOR': 'TAYYOR',
         },
 
 
@@ -782,6 +794,12 @@ class AppTranslations extends Translations {
           'confirm': 'Подтвердить',
           'new_order_label': 'Новый заказ',
           'reserve_table': 'Забронировать стол',
+          'category_added': 'Категория добавлена',
+          'category_updated': 'Категория обновлена',
+          'kds_board': 'Экран кухни',
+          'lock_terminal': 'Заблокировать терминал',
+          'preparation_areas': 'Зоны приготовления',
+          'TAYYOR': 'ГОТОВО',
         }
       };
 }
