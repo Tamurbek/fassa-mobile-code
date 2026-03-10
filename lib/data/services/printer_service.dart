@@ -98,7 +98,13 @@ class PrinterService {
           }
 
           if (order['table'] != null && order['table'] != '-') bytes += generator.text(_normalizeString('STOL: ${order['table']}'), styles: const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2));
+          
+          if (isKitchenOnly && title != null) {
+            bytes += generator.text(_normalizeString('preparation_area'.tr.toUpperCase() + ":"), styles: const PosStyles(align: PosAlign.center, bold: false));
+            bytes += generator.text(_normalizeString(title.toUpperCase()), styles: const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2, width: PosTextSize.size2));
+          }
           bytes += _hr(generator, ch: '-', is80mm: is80mm);
+
           
           final items = (order['details'] as List);
           for (var item in items) {
@@ -106,17 +112,19 @@ class PrinterService {
             double price = double.tryParse(item['price'].toString()) ?? 0.0;
             double lineTotal = qty * price;
             
-            final String prepArea = (item['preparation_area'] != null && item['preparation_area'].toString().isNotEmpty) 
-                ? " [${item['preparation_area']}]" : "";
+            // Preparation area per item removed as it is now at the top
+
 
             if (isKitchenOnly) {
                bytes += generator.row([
-                 PosColumn(text: _normalizeString(item['name'] + prepArea), width: 9, styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
+                 PosColumn(text: _normalizeString(item['name']), width: 9, styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
                  PosColumn(text: _normalizeString('$qty ta'), width: 3, styles: const PosStyles(align: PosAlign.right, bold: true, height: PosTextSize.size2, width: PosTextSize.size2)),
                ]);
+
                bytes += generator.feed(1); 
             } else {
-              bytes += generator.text(_normalizeString(item['name'] + prepArea), styles: const PosStyles(bold: true));
+              bytes += generator.text(_normalizeString(item['name']), styles: const PosStyles(bold: true));
+
               bytes += generator.row([
                 PosColumn(text: _normalizeString('  $qty x ${_formatPrice(price)}'), width: 7, styles: const PosStyles(fontType: PosFontType.fontB)),
                 PosColumn(text: _normalizeString(_formatPrice(lineTotal)), width: 5, styles: const PosStyles(align: PosAlign.right)),
@@ -512,9 +520,7 @@ class PrinterService {
       bytes += _hr(generator, ch: '-', is80mm: is80mm);
 
       for (var item in items) {
-        final String prepArea = (item['preparation_area'] != null && item['preparation_area'].toString().isNotEmpty) 
-            ? " [${item['preparation_area']}]" : "";
-        bytes += generator.text(_normalizeString(item['name'] + prepArea), styles: const PosStyles(bold: true, height: PosTextSize.size2));
+        bytes += generator.text(_normalizeString(item['name']), styles: const PosStyles(bold: true, height: PosTextSize.size2));
         bytes += generator.text(_normalizeString('BEKOR: ${item['qty']} ta'), styles: const PosStyles(bold: true, height: PosTextSize.size2));
         bytes += _hr(generator, ch: '-', is80mm: is80mm);
       }
