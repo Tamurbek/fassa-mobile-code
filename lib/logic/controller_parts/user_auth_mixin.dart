@@ -222,27 +222,22 @@ mixin UserAuthMixin on POSControllerState {
     storage.remove('pin_code');
     
     bool wasTerminal = currentTerminal.value != null;
-    if (wasTerminal) {
-      api.restoreTerminalToken();
+    
+    // Always clear terminal if forced or if it was a terminal session
+    if (forced || wasTerminal) {
+       currentTerminal.value = null;
+       storage.remove('terminal');
+       storage.remove('terminal_token');
+       deviceRole.value = null;
+       storage.remove('device_role');
+       api.setToken(null);
     } else {
-      api.setToken(null);
+       api.setToken(null);
     }
+    
     isPinAuthenticated.value = false;
     currentOrder.clear();
-
-    if (deviceRole.value == null) {
-      Get.offAllNamed('/login');
-    } else if (forced) {
-       Get.offAllNamed('/login');
-    } else {
-      // In terminal app (POS), logout means unlinking terminal and going to Login
-      currentTerminal.value = null;
-      storage.remove('terminal');
-      storage.remove('terminal_token');
-      deviceRole.value = null;
-      storage.remove('device_role');
-      Get.offAllNamed('/login'); 
-    }
+    Get.offAllNamed('/login');
   }
 
   void lockTerminal() {

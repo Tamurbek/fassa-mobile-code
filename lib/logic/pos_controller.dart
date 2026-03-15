@@ -564,6 +564,27 @@ class POSController extends POSControllerState with
       );
     });
 
+    socket.onForceLogoutSession((data) {
+      if (currentUser.value != null && 
+          currentUser.value!['session_id'] != null &&
+          currentUser.value!['session_id'].toString() == data['session_id'].toString()) {
+        logout(forced: true);
+        Get.snackbar("Tizimdan chiqildingiz", "Administrator ushbu qurilmani tizimdan chiqardi.",
+          backgroundColor: Colors.red, colorText: Colors.white, duration: const Duration(seconds: 5));
+      }
+    });
+
+    socket.onForceLogoutUser((data) {
+      if (currentUser.value != null && 
+          currentUser.value!['id'].toString() == data['user_id'].toString() &&
+          currentUser.value!['session_id'] != null &&
+          currentUser.value!['session_id'].toString() != data['session_id'].toString()) {
+        logout(forced: true);
+        Get.snackbar("Tizimdan chiqildi", "Sizning hisobingiz boshqa qurilmada ochildi.",
+          backgroundColor: Colors.red, colorText: Colors.white, duration: const Duration(seconds: 5));
+      }
+    });
+
     socket.onForceLogoutTerminal((data) {
       if (currentTerminal.value != null && data['terminal_id'] == currentTerminal.value!['id']) {
         if (data['login_instance_id'] != currentTerminal.value!['login_instance_id']) {
